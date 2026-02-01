@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Booking extends Model
 {
     use HasFactory;
-    protected $fillable = ['customer_id', 'room_id', 'check_in', 'check_out', 'price', 'deposit', 'status', 'notes'];
+    protected $fillable = ['customer_id', 'room_id', 'check_in', 'check_out', 'price_type', 'unit_price', 'price', 'deposit', 'status', 'notes'];
 
     protected $casts = [
         'check_in' => 'datetime',
@@ -23,5 +23,16 @@ class Booking extends Model
     public function room()
     {
         return $this->belongsTo(Room::class);
+    }
+    public function services()
+    {
+        return $this->belongsToMany(Service::class)
+            ->withPivot(['quantity', 'start_index', 'end_index', 'usage', 'unit_price', 'total_amount', 'note'])
+            ->withTimestamps();
+    }
+
+    public function usageLogs()
+    {
+        return $this->hasMany(BookingUsageLog::class);
     }
 }

@@ -16,13 +16,16 @@ class CustomerFactory extends Factory
      */
     public function definition(): array
     {
+        // Use Vietnamese locale for realistic names and addresses
+        $faker = \Faker\Factory::create('vi_VN');
+
         return [
-            'name' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
-            'phone' => fake()->phoneNumber(),
-            'identity_id' => fake()->numerify('##########'),
-            'birthday' => fake()->date('Y-m-d', '-18 years'),
-            'nationality' => fake()->country(),
+            'name' => $faker->name(),
+            'email' => $faker->unique()->safeEmail(),
+            'phone' => $faker->phoneNumber(),
+            'identity_id' => $faker->numerify('0##0##00####'), // Realistic CCCD format
+            'birthday' => $faker->dateTimeBetween('-60 years', '-18 years')->format('Y-m-d'),
+            'nationality' => 'Vietnam',
         ];
     }
 }

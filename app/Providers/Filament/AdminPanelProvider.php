@@ -26,8 +26,9 @@ class AdminPanelProvider extends PanelProvider
         return $panel
             ->default()
             ->id('admin')
-            ->path('admin')
+            ->path('filament') // Changed from 'admin' to 'filament' to avoid conflict
             ->login()
+            ->sidebarCollapsibleOnDesktop() // Enable collapse/expand sidebar
             ->colors([
                 'primary' => Color::Amber,
             ])

@@ -7,6 +7,7 @@ use App\Models\Booking;
 use App\Models\Customer;
 use App\Models\Room;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Carbon;
 
 class DatabaseSeeder extends Seeder
 {
@@ -15,58 +16,149 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // 1. Create User
-        // \App\Models\User::factory()->create([
-        //     'name' => 'Test User',
-        //     'email' => 'test@example.com',
-        // ]);
+        // 1. Create User (Admin)
+        \App\Models\User::firstOrCreate(
+            ['email' => 'admin@sala.vn'],
+            [
+                'name' => 'Admin User',
+                'password' => bcrypt('password'),
+            ]
+        );
 
-        // 2. Create Areas
-        $areas = [
-            ['name' => 'SALA Sarina', 'address' => 'District 2, HCMC', 'description' => 'Luxury apartment complex'],
-            ['name' => 'SALA Sarica', 'address' => 'District 2, HCMC', 'description' => 'Modern living space'],
-            ['name' => 'SALA Sadora', 'address' => 'District 2, HCMC', 'description' => 'Green living environment'],
+        // 2. Create Areas (Vietnamese)
+        $areasData = [
+            [
+                'name' => 'Khu Đô Thị Sala - Sarina',
+                'address' => '10 Mai Chí Thọ, Thủ Thiêm, Quận 2, TP.HCM',
+                'description' => 'Căn hộ cao cấp thấp tầng, không gian sống nghỉ dưỡng.',
+            ],
+            [
+                'name' => 'Khu Đô Thị Sala - Sarica',
+                'address' => '6 đường D9, Thủ Thiêm, Quận 2, TP.HCM',
+                'description' => 'Vị trí đắc địa dọc công viên sông nước.',
+            ],
+            [
+                'name' => 'Khu Đô Thị Sala - Sadora',
+                'address' => 'Đường Nguyễn Cơ Thạch, Thủ Thiêm, Quận 2, TP.HCM',
+                'description' => 'Tổ hợp căn hộ cao tầng với view nhìn trọn vẹn trung tâm thành phố.',
+            ],
         ];
 
-        foreach ($areas as $areaData) {
-            $area = Area::create($areaData);
+        $areas = [];
+        foreach ($areasData as $data) {
+            $areas[] = Area::create($data);
+        }
 
-            // 3. Create Rooms for each Area
-            $roomTypes = ['Studio', '1BR', '2BR', 'Penthouse'];
-            $statuses = ['available', 'occupied', 'maintenance'];
+        // 3. Create Rooms for each Area
+        $roomTypes = ['Studio', '1PN', '2PN', '3PN', 'Penthouse'];
+        
+        // Status definition: reserved means booked but not checked in yet (or deposit paid)
+        // occupied means currently checked in.
+        // available means free.
+        $statuses = ['available', 'occupied', 'maintenance', 'reserved'];
 
-            for ($i = 1; $i <= 10; $i++) {
+        foreach ($areas as $area) {
+            // Generate 15-20 rooms per area
+            $numRooms = rand(15, 20);
+            
+            // Generate prefix based on Area Name (e.g. Sarina -> SAR)
+            // Naive extraction: take first 3 chars after " - "
+            $parts = explode(' - ', $area->name);
+            $prefix = isset($parts[1]) ? strtoupper(substr($parts[1], 0, 3)) : 'APT';
+
+            for ($i = 1; $i <= $numRooms; $i++) {
+                $type = $roomTypes[array_rand($roomTypes)];
+                
+                // Price logic based on type (USD assumed based on existing seeder, but let's make it VND for "Vietnamese" context?)
+                // User said "tiếng việt", usually implies VND.
+                // Studio: 15-20M, 1PN: 20-30M, 2PN: 30-45M, 3PN: 50-70M.
+                // Let's us raw numbers.
+                $basePrice = match($type) {
+                    'Studio' => rand(15000000, 20000000),
+                    '1PN' => rand(20000000, 30000000),
+                    '2PN' => rand(30000000, 45000000),
+                    '3PN' => rand(50000000, 70000000),
+                    'Penthouse' => rand(80000000, 120000000),
+                };
+
                 Room::create([
                     'area_id' => $area->id,
-                    'code' => strtoupper(substr($area->name, 5, 3)) . '-' . str_pad($i, 3, '0', STR_PAD_LEFT),
-                    'type' => $roomTypes[array_rand($roomTypes)],
-                    'price' => rand(500, 2000), // Random price
+                    'code' => $prefix . '-' . str_pad($i, 3, '0', STR_PAD_LEFT), // e.g., SAR-001
+                    'type' => $type,
+                    'price' => $basePrice,
                     'status' => $statuses[array_rand($statuses)],
-                    'description' => 'Fully furnished room with city view.',
+                    'description' => "Căn hộ $type đầy đủ nội thất, view đẹp, thoáng mát.",
                 ]);
             }
         }
 
-        // 4. Create Customers
-        Customer::factory(20)->create();
-
-        // 5. Create Bookings
+        // 4. Create Customers (Vietnamese via Factory)
+        Customer::factory(50)->create(); 
         $customers = Customer::all();
         $rooms = Room::all();
 
-        foreach ($customers as $customer) {
-            if (rand(0, 1)) { // 50% chance to have a booking
-                $room = $rooms->random();
+        // 5. Create Bookings
+        // Logic: Iterate through rooms to determine if they need active bookings based on their status
+        // AND create some past/future bookings for history.
+
+        foreach ($rooms as $room) {
+            // Create some history (past bookings) for every room (0-3 past bookings)
+            $pastBookingsCount = rand(0, 3);
+            for ($k = 0; $k < $pastBookingsCount; $k++) {
+                $customer = $customers->random();
+                $stayDuration = rand(2, 14); // days
+                $daysAgo = rand(10, 365);
+                
+                $checkIn = Carbon::now()->subDays($daysAgo);
+                $checkOut = (clone $checkIn)->addDays($stayDuration);
+
                 Booking::create([
                     'customer_id' => $customer->id,
                     'room_id' => $room->id,
-                    'check_in' => now()->subDays(rand(1, 30)),
-                    'check_out' => now()->addDays(rand(1, 30)),
-                    'price' => $room->price,
-                    'deposit' => $room->price * 0.1,
-                    'status' => 'confirmed',
-                    'notes' => 'Generated by seeder',
+                    'check_in' => $checkIn,
+                    'check_out' => $checkOut,
+                    'price' => $room->price * $stayDuration / 30, // Pro-rated or just stored price. Let's assume price is monthly?
+                    // "Price (Ngày/Tháng)" in requirements. Let's assume stored price is Monthly.
+                    // If booking is short term, calculate. If long term, calculate. 
+                    // Let's just store a random "Total Price" for the booking period for simplicity here.
+                    // Or if schema price is per month, and booking price is "Total Amount".
+                    // Let's assume schema price is Per Month.
+                    // Daily price ~= Monthly / 30.
+                    'check_out' => $checkOut,
+                    'price' => ($room->price / 30) * $stayDuration, 
+                    'deposit' => 0,
+                    'status' => 'checked_out', // Completed
+                    'notes' => 'Đã hoàn thành thuê.',
                 ]);
+            }
+
+            // Current Active Booking logic based on Room Status
+            if ($room->status === 'occupied') {
+                // Create a current active booking (checked_in)
+                $customer = $customers->random();
+                Booking::create([
+                    'customer_id' => $customer->id,
+                    'room_id' => $room->id,
+                    'check_in' => Carbon::now()->subDays(rand(1, 10)),
+                    'check_out' => Carbon::now()->addDays(rand(2, 30)),
+                    'price' => $room->price, // One month rent as placeholder
+                    'deposit' => $room->price * 2, // 2 months deposit
+                    'status' => 'checked_in',
+                    'notes' => 'Đang thuê.',
+                ]);
+            } elseif ($room->status === 'reserved') {
+                 // Create a future/pending booking
+                 $customer = $customers->random();
+                 Booking::create([
+                     'customer_id' => $customer->id,
+                     'room_id' => $room->id,
+                     'check_in' => Carbon::now()->addDays(rand(1, 5)),
+                     'check_out' => Carbon::now()->addDays(rand(30, 60)),
+                     'price' => $room->price,
+                     'deposit' => $room->price * 0.5, // 50% deposit
+                     'status' => 'confirmed', // Confirmed but not checked in
+                     'notes' => 'Đã đặt cọc giữ chỗ.',
+                 ]);
             }
         }
     }
