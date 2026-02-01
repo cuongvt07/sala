@@ -1,0 +1,16 @@
+- [x] **Setup Booking Calendar Page** <!-- id: 0 -->
+    - [x] Create Filament Page `BookingCalendar` <!-- id: 1 -->
+    - [x] Add menu item to navigation <!-- id: 2 -->
+- [x] **Implement Calendar Layout** <!-- id: 3 -->
+    - [x] Build Header (Month/Year Picker, Area Filter) <!-- id: 4 -->
+    - [x] Build Grid Structure (CSS Grid: Rooms × Days) <!-- id: 5 -->
+    - [x] Handle Responsive Layout (Scrollable container) <!-- id: 6 -->
+- [x] **Refine Booking Calendar UI** <!-- id: 15 -->
+    - [x] Add Area Selector (Dropdown) to Header <!-- id: 16 -->
+    - [x] Filter Rooms/Bookings by Selected Area <!-- id: 17 -->
+    - [x] **Refactor to Table Layout** (CSS Grid for alignment) <!-- id: 18 -->
+    - [x] **Persist Area Selection** (Session-based context) <!-- id: 19 -->
+- [x] **Interactivity** <!-- id: 11 -->
+    - [x] Click empty cell to Create Booking (Redirect with Pre-fill) <!-- id: 12 -->
+    - [x] Click booking to Edit (Redirect) <!-- id: 13 -->
+    - [ ] (Optional) Drag & Drop implementation <!-- id: 14 -->
