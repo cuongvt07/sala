@@ -126,7 +126,7 @@
 
                 <div class="mt-auto pt-2 border-t border-slate-900">
                     <div class="p-2 bg-slate-900/50 rounded-lg">
-                        <p class="text-[11px] text-slate-400 uppercase font-black tracking-widest mb-1.5 px-1">Trạng thái</p>
+                        <p class="text-[11px] text-slate-400 uppercase font-normal tracking-widest mb-1.5 px-1">Trạng thái</p>
                         <select wire:model="status" class="w-full bg-slate-900 border-slate-700 text-white text-[12px] font-bold rounded p-1.5 focus:ring-blue-600 focus:border-blue-500 transition-all">
                             <option value="pending">Chờ xác nhận</option>
                             <option value="confirmed">Đã xác nhận</option>
@@ -148,7 +148,7 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 <div class="bg-indigo-600 p-4 rounded-xl text-white shadow-lg overflow-hidden relative">
                                     <div class="absolute -right-4 -top-4 w-16 h-16 bg-white/10 rounded-full blur-2xl"></div>
-                                    <p class="text-[11px] font-black uppercase tracking-widest mb-1 opacity-80">Tổng cộng hóa đơn</p>
+                                    <p class="text-[11px] font-normal uppercase tracking-widest mb-1 opacity-80">Tổng cộng hóa đơn</p>
                                     <p class="text-2xl font-black">
                                         @php
                                             $logTotal = collect($usage_logs)->sum('total_amount');
@@ -163,7 +163,7 @@
                                     </div>
                                 </div>
                                 <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex flex-col justify-center">
-                                    <p class="text-[11px] font-black text-gray-900 uppercase tracking-widest mb-2 px-1">Phân bổ nguồn thu</p>
+                                    <p class="text-[11px] font-normal text-gray-900 uppercase tracking-widest mb-2 px-1">Phân bổ nguồn thu</p>
                                     <div class="space-y-1.5 text-[12px]">
                                         <div class="flex justify-between items-center text-gray-900">
                                             <span>Tiền phòng gốc:</span>
@@ -254,7 +254,7 @@
                             <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-4">
                                 <div class="space-y-1">
                                     <label class="text-[12px] font-bold text-gray-900 uppercase">Chọn phòng</label>
-                                    <select wire:model.live="room_id" class="block w-full rounded-lg border-gray-200 bg-white p-2.5 text-[13px] font-black text-gray-900 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm">
+                                    <select wire:model.live="room_id" class="block w-full rounded-lg border-gray-200 bg-white p-2.5 text-[13px] font-normal text-gray-900 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm">
                                         <option value="">-- Chọn Phòng --</option>
                                         @foreach($rooms as $room)
                                             <option value="{{ $room->id }}">{{ $room->code }} ({{ $room->type }}) - {{ $room->area->name ?? '' }}</option>
@@ -266,8 +266,8 @@
                                     <div class="col-span-2 p-3 bg-gray-50 rounded-lg space-y-2">
                                         <label class="text-[12px] font-bold text-gray-900 uppercase">Loại hình thuê</label>
                                         <div class="flex p-0.5 bg-gray-200 rounded-lg">
-                                            <button type="button" wire:click="$set('price_type', 'day')" class="flex-1 py-1.5 rounded-md text-[11px] font-black uppercase {{ $price_type === 'day' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600' }}">Ngày</button>
-                                            <button type="button" wire:click="$set('price_type', 'month')" class="flex-1 py-1.5 rounded-md text-[11px] font-black uppercase {{ $price_type === 'month' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600' }}">Dài hạn</button>
+                                            <button type="button" wire:click="$set('price_type', 'day')" class="flex-1 py-1.5 rounded-md text-[11px] font-normal uppercase {{ $price_type === 'day' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600' }}">Ngày</button>
+                                            <button type="button" wire:click="$set('price_type', 'month')" class="flex-1 py-1.5 rounded-md text-[11px] font-normal uppercase {{ $price_type === 'month' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600' }}">Dài hạn</button>
                                         </div>
                                     </div>
                                     <x-ui.input label="Đơn giá" wire:model.blur="unit_price" x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')" compact />
@@ -313,13 +313,13 @@
                                                 <div class="grid grid-cols-2 lg:grid-cols-6 gap-2 items-end">
                                                     <div class="lg:col-span-1 pb-1.5"><p class="text-[12px] font-black text-blue-600 uppercase truncate">{{ $service->name }}</p></div>
                                                     @if($service->type === 'meter')
-                                                        <div class="space-y-0.5"><label class="text-[10px] text-gray-900 uppercase font-black">Số đầu</label><input type="number" wire:model="service_inputs.{{ $service->id }}.start_index" class="w-full text-[12px] font-bold border-gray-200 bg-white text-gray-900 rounded p-1 h-7 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"></div>
-                                                        <div class="space-y-0.5"><label class="text-[10px] text-gray-900 uppercase font-black">Số mới</label><input type="number" wire:model="service_inputs.{{ $service->id }}.end_index" class="w-full text-[12px] font-bold border-blue-200 bg-white rounded p-1 h-7 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"></div>
+                                                        <div class="space-y-0.5"><label class="text-[10px] text-gray-900 uppercase font-normal">Số đầu</label><input type="number" wire:model="service_inputs.{{ $service->id }}.start_index" class="w-full text-[12px] font-bold border-gray-200 bg-white text-gray-900 rounded p-1 h-7 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"></div>
+                                                        <div class="space-y-0.5"><label class="text-[10px] text-gray-900 uppercase font-normal">Số mới</label><input type="number" wire:model="service_inputs.{{ $service->id }}.end_index" class="w-full text-[12px] font-bold border-blue-200 bg-white rounded p-1 h-7 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"></div>
                                                     @else
-                                                        <div class="space-y-0.5 lg:col-span-2"><label class="text-[10px] text-gray-900 uppercase font-black">S.Lượng ({{ $service->unit_name }})</label><input type="number" wire:model="service_inputs.{{ $service->id }}.quantity" class="w-full text-[12px] font-bold border-gray-200 bg-white rounded p-1 h-7 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"></div>
+                                                        <div class="space-y-0.5 lg:col-span-2"><label class="text-[10px] text-gray-900 uppercase font-normal">S.Lượng ({{ $service->unit_name }})</label><input type="number" wire:model="service_inputs.{{ $service->id }}.quantity" class="w-full text-[12px] font-bold border-gray-200 bg-white rounded p-1 h-7 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"></div>
                                                     @endif
-                                                    <div class="space-y-0.5"><label class="text-[10px] text-gray-900 uppercase font-black">Đơn giá</label><input type="text" wire:model.blur="service_inputs.{{ $service->id }}.unit_price" class="w-full text-[12px] font-bold border-gray-200 bg-white rounded p-1 h-7 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all" x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')"></div>
-                                                    <div class="flex flex-col items-center pb-1"><p class="text-[10px] text-gray-900 uppercase font-black">Tạm tính</p><p class="text-[12px] font-black text-blue-600">@php $inp = $service_inputs[$service->id] ?? []; $up = (float)str_replace(['.',','],'',$inp['unit_price']??'0'); if($service->type==='meter'){ $rt = max(0, ((float)($inp['end_index']??0) - (float)($inp['start_index']??0))) * $up; }else{ $rt = ((float)($inp['quantity'] ?? 1)) * $up; } @endphp {{ number_format($rt, 0, ',', '.') }}đ</p></div>
+                                                    <div class="space-y-0.5"><label class="text-[10px] text-gray-900 uppercase font-normal">Đơn giá</label><input type="text" wire:model.blur="service_inputs.{{ $service->id }}.unit_price" class="w-full text-[12px] font-bold border-gray-200 bg-white rounded p-1 h-7 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all" x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')"></div>
+                                                    <div class="flex flex-col items-center pb-1"><p class="text-[10px] text-gray-900 uppercase font-normal">Tạm tính</p><p class="text-[12px] font-black text-blue-600">@php $inp = $service_inputs[$service->id] ?? []; $up = (float)str_replace(['.',','],'',$inp['unit_price']??'0'); if($service->type==='meter'){ $rt = max(0, ((float)($inp['end_index']??0) - (float)($inp['start_index']??0))) * $up; }else{ $rt = ((float)($inp['quantity'] ?? 1)) * $up; } @endphp {{ number_format($rt, 0, ',', '.') }}đ</p></div>
                                                     <div class="pb-0.5"><button type="button" wire:click="addServiceLog({{ $service->id }})" class="w-full bg-blue-600 text-white rounded text-[11px] font-black uppercase py-1.5 hover:bg-blue-700 shadow-sm active:scale-95 transition-all">Chốt</button></div>
                                                 </div>
                                             </div>
@@ -347,11 +347,11 @@
                                         </p>
                                         <div class="grid grid-cols-12 gap-1.5 bg-indigo-50/50 p-2 rounded-lg border border-indigo-100/50">
                                             <div class="col-span-4 space-y-0.5">
-                                                <label class="text-[10px] text-gray-900 uppercase font-black">Số tiền</label>
+                                                <label class="text-[10px] text-gray-900 uppercase font-normal">Số tiền</label>
                                                 <input type="text" wire:model.blur="manual_fee_amount" class="w-full text-[12px] font-bold border-indigo-200 bg-white rounded p-1 h-7" placeholder="Số tiền..." x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')">
                                             </div>
                                             <div class="col-span-6 space-y-0.5">
-                                                <label class="text-[10px] text-gray-900 uppercase font-black">Ghi chú phí</label>
+                                                <label class="text-[10px] text-gray-900 uppercase font-normal">Ghi chú phí</label>
                                                 <input type="text" wire:model="manual_fee_notes" class="w-full text-[12px] font-bold border-indigo-100 bg-white rounded p-1 h-7" placeholder="Lý do phụ thu...">
                                             </div>
                                             <div class="col-span-2 flex items-end pb-0.5">
@@ -363,7 +363,7 @@
                             </div>
 
                             <div class="space-y-2">
-                                <p class="text-[11px] font-black text-gray-900 uppercase tracking-widest px-1">Lịch sử tiêu thụ</p>
+                                <p class="text-[11px] font-normal text-gray-900 uppercase tracking-widest px-1">Lịch sử tiêu thụ</p>
                                 <div class="space-y-1.5 h-48 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gray-200">
                                     @forelse($usage_logs as $idx => $log)
                                         <div class="group flex items-center gap-2 bg-white px-2 py-1.5 rounded-lg border border-gray-100 hover:border-indigo-200 shadow-sm transition-all animate-fadeIn">

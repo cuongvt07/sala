@@ -75,7 +75,7 @@
             
             <div class="grid grid-cols-2 gap-4">
                 <div class="space-y-1">
-                    <label class="block text-[11px] font-black text-gray-900 uppercase tracking-widest">Đơn giá (VNĐ)</label>
+                    <label class="block text-[11px] font-normal text-gray-900 uppercase tracking-widest">Đơn giá (VNĐ)</label>
                     <input 
                         type="text" 
                         wire:model="unit_price" 

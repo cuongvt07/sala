@@ -25,6 +25,9 @@
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Họ và Tên</th>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Liên hệ</th>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">CCCD / CMND</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Số Visa</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Hạn Visa</th>
+
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Quốc tịch</th>
                     <th class="px-6 py-4 text-right text-xs font-semibold text-gray-900 uppercase tracking-wider">Hành động</th>
                 </tr>
@@ -43,6 +46,26 @@
                         <td class="px-6 py-4 whitespace-nowrap text-[13px] font-bold text-gray-900">
                             {{ $customer->identity_id }}
                         </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-[13px] text-gray-900">{{ $customer->visa_number ?? '-' }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            @if($customer->visa_expiry)
+                                @php
+                                    $expiry = \Carbon\Carbon::parse($customer->visa_expiry);
+                                    $isExpiring = $expiry->diffInDays(now(), false) > -30;
+                                    $isExpired = $expiry->isPast();
+                                @endphp
+                                <div class="text-[13px] {{ $isExpired || $isExpiring ? 'text-red-600 font-bold' : 'text-gray-900' }}">
+                                    {{ $expiry->format('d/m/Y') }}
+                                    @if($isExpired) <span class="text-[10px] text-red-600 block">(Đã hết)</span>
+                                    @elseif($isExpiring) <span class="text-[10px] text-red-600 block">(Sắp hết)</span> @endif
+                                </div>
+                            @else
+                                <span class="text-gray-400 text-xs">-</span>
+                            @endif
+                        </td>
+
                         <td class="px-6 py-4 whitespace-nowrap text-[13px] text-gray-900">
                             {{ $customer->nationality }}
                         </td>
@@ -76,7 +99,7 @@
                 wire:model="name" 
                 :error="$errors->first('name')" 
                 required 
-                class="font-bold text-[12px]"
+                class="text-[12px]"
             />
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -86,7 +109,7 @@
                     wire:model="phone" 
                     :error="$errors->first('phone')" 
                     required 
-                    class="font-bold text-[12px]"
+                    class="text-[12px]"
                 />
                 
                 <x-ui.input 
@@ -95,7 +118,7 @@
                     id="email" 
                     wire:model="email" 
                     :error="$errors->first('email')" 
-                    class="font-bold text-[12px]"
+                    class="text-[12px]"
                 />
             </div>
 
@@ -106,7 +129,7 @@
                     wire:model="identity_id" 
                     :error="$errors->first('identity_id')" 
                     required 
-                    class="font-bold text-[12px]"
+                    class="text-[12px]"
                 />
                 
                 <x-ui.input 
@@ -115,17 +138,39 @@
                     id="birthday" 
                     wire:model="birthday" 
                     :error="$errors->first('birthday')" 
-                    class="font-bold text-[12px]"
+                    class="text-[12px]"
                 />
             </div>
 
-            <x-ui.input 
-                label="Quốc tịch" 
-                id="nationality" 
-                wire:model="nationality" 
-                :error="$errors->first('nationality')" 
-                class="font-bold text-[12px]"
-            />
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <x-ui.select-search 
+                    label="Quốc tịch" 
+                    wire:model="nationality" 
+                    :options="$countries"
+                    :error="$errors->first('nationality')"
+                    placeholder="Chọn quốc tịch"
+                />
+
+                 <x-ui.input 
+                    label="Số Visa" 
+                    id="visa_number" 
+                    wire:model="visa_number" 
+                    :error="$errors->first('visa_number')" 
+                    placeholder="Số Visa (nếu có)"
+                    class="text-[12px]"
+                />
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <x-ui.input 
+                    type="date" 
+                    label="Hạn Visa" 
+                    id="visa_expiry" 
+                    wire:model="visa_expiry" 
+                    :error="$errors->first('visa_expiry')" 
+                    class="text-[12px]"
+                />
+            </div>
 
             <div class="flex justify-end pt-4 gap-3">
                 <x-ui.button @click="show = false" variant="secondary" type="button">

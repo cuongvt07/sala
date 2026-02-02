@@ -22,6 +22,10 @@
                 <x-ui.input type="date" label="Ngày sinh" id="birthday" wire:model="birthday" :error="$errors->first('birthday')" />
 
                 <x-ui.input label="Quốc tịch" id="nationality" wire:model="nationality" :error="$errors->first('nationality')" />
+
+                <x-ui.input label="Số Visa" id="visa_number" wire:model="visa_number" :error="$errors->first('visa_number')" placeholder="Số Visa (nếu có)" />
+
+                <x-ui.input type="date" label="Hạn Visa" id="visa_expiry" wire:model="visa_expiry" :error="$errors->first('visa_expiry')" />
             </div>
 
             <div class="flex justify-end pt-2">

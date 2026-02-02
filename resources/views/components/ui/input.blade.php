@@ -7,7 +7,7 @@
 
 <div class="space-y-1.5">
     @if ($label)
-        <label {{ $attributes->has('id') ? 'for=' . $attributes->get('id') : '' }} class="block font-black text-gray-900 uppercase tracking-widest {{ $compact ? 'text-[9px] mb-0.5' : 'text-[11px] mb-1.5' }}">
+        <label {{ $attributes->has('id') ? 'for=' . $attributes->get('id') : '' }} class="block font-normal text-gray-900 uppercase tracking-widest {{ $compact ? 'text-[9px] mb-0.5' : 'text-[11px] mb-1.5' }}">
             {{ $label }} 
             @if($attributes->has('required')) <span class="text-red-500">*</span> @endif
         </label>

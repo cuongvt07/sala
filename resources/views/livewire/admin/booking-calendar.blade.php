@@ -307,12 +307,12 @@
                     {{-- Basic Info --}}
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-1">Thời gian nhận</label>
+                            <label class="block text-sm font-normal text-gray-700 mb-1">Thời gian nhận</label>
                             <input type="datetime-local" wire:model.live="check_in" class="w-full rounded-lg border-gray-300">
                             @error('check_in') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                         </div>
                         <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-1">Thời gian trả</label>
+                            <label class="block text-sm font-normal text-gray-700 mb-1">Thời gian trả</label>
                             <input type="datetime-local" wire:model.live="check_out" class="w-full rounded-lg border-gray-300">
                             @error('check_out') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                         </div>
@@ -323,11 +323,11 @@
                         <div class="flex gap-4 mb-4">
                             <label class="inline-flex items-center">
                                 <input type="radio" wire:model.live="activeTab" value="existing" class="text-blue-600">
-                                <span class="ml-2 text-sm font-medium">Khách cũ</span>
+                                <span class="ml-2 text-sm font-normal">Khách cũ</span>
                             </label>
                             <label class="inline-flex items-center">
                                 <input type="radio" wire:model.live="activeTab" value="new" class="text-blue-600">
-                                <span class="ml-2 text-sm font-medium">Khách mới</span>
+                                <span class="ml-2 text-sm font-normal">Khách mới</span>
                             </label>
                         </div>
 
@@ -336,7 +336,13 @@
                                 <select wire:model.blur="customer_id" class="w-full rounded-lg border-gray-300">
                                     <option value="">-- Chọn khách hàng --</option>
                                     @foreach($customers as $c)
-                                        <option value="{{ $c->id }}">{{ $c->name }} ({{ $c->phone }})</option>
+                                        @php
+                                            $expiry = $c->visa_expiry ? \Carbon\Carbon::parse($c->visa_expiry) : null;
+                                            $isExpiring = $expiry && $expiry->diffInDays(now(), false) > -30;
+                                        @endphp
+                                        <option value="{{ $c->id }}" class="{{ $isExpiring ? 'text-red-500 font-bold' : '' }}">
+                                            {{ $c->name }} ({{ $c->phone }}) {{ $isExpiring ? '⚠️ Visa sắp hết hạn' : '' }}
+                                        </option>
                                     @endforeach
                                 </select>
                                 @error('customer_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
@@ -352,7 +358,7 @@
 
                     {{-- Room Info --}}
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Phòng</label>
+                        <label class="block text-sm font-normal text-gray-700 mb-1">Phòng</label>
                         <select wire:model.live="room_id" class="w-full rounded-lg border-gray-300">
                             @foreach($all_rooms as $r)
                                 <option value="{{ $r->id }}">{{ $r->code }} ({{ $r->area->name ?? '' }})</option>
@@ -364,11 +370,11 @@
                     {{-- Price & Notes --}}
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-1">Tiền phòng</label>
+                            <label class="block text-sm font-normal text-gray-700 mb-1">Tiền phòng</label>
                             <input type="text" wire:model.blur="price" class="w-full rounded-lg border-gray-300 font-bold text-blue-600">
                         </div>
                         <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-1">Trạng thái</label>
+                            <label class="block text-sm font-normal text-gray-700 mb-1">Trạng thái</label>
                             <select wire:model.blur="status" class="w-full rounded-lg border-gray-300">
                                 <option value="pending">Đang chờ</option>
                                 <option value="confirmed">Đã xác nhận</option>

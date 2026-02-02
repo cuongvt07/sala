@@ -77,7 +77,7 @@
             />
 
             <div class="space-y-1.5">
-                <label for="description" class="block font-black text-gray-900 uppercase tracking-widest text-[11px] mb-1.5">Mô tả</label>
+                <label for="description" class="block font-normal text-gray-900 uppercase tracking-widest text-[11px] mb-1.5">Mô tả</label>
                 <textarea 
                     id="description" 
                     wire:model="description"

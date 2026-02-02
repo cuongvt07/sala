@@ -93,7 +93,7 @@
 
             <!-- Area Select -->
             <div class="space-y-1.5">
-                <label for="area_id" class="block font-black text-gray-900 uppercase tracking-widest text-[11px] mb-1.5">Khu vực <span class="text-red-500">*</span></label>
+                <label for="area_id" class="block font-normal text-gray-900 uppercase tracking-widest text-[11px] mb-1.5">Khu vực <span class="text-red-500">*</span></label>
                 <select id="area_id" wire:model="area_id" class="block w-full rounded-lg border-gray-200 bg-white p-2 text-[12px] font-bold text-gray-900 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm">
                     <option value="">-- Chọn Khu vực --</option>
                     @foreach($areas as $area)
@@ -105,7 +105,7 @@
 
             <!-- Type -->
             <div class="space-y-1.5">
-                <label for="type" class="block font-black text-gray-900 uppercase tracking-widest text-[11px] mb-1.5">Loại phòng <span class="text-red-500">*</span></label>
+                <label for="type" class="block font-normal text-gray-900 uppercase tracking-widest text-[11px] mb-1.5">Loại phòng <span class="text-red-500">*</span></label>
                 <select id="type" wire:model="type" class="block w-full rounded-lg border-gray-200 bg-white p-2 text-[12px] font-bold text-gray-900 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm">
                     <option value="Studio">Studio</option>
                     <option value="1PN">1 Phòng ngủ</option>
@@ -138,7 +138,7 @@
 
             <!-- Status -->
             <div class="space-y-1.5">
-                <label for="status" class="block font-black text-gray-900 uppercase tracking-widest text-[11px] mb-1.5">Trạng thái <span class="text-red-500">*</span></label>
+                <label for="status" class="block font-normal text-gray-900 uppercase tracking-widest text-[11px] mb-1.5">Trạng thái <span class="text-red-500">*</span></label>
                 <select id="status" wire:model="status" class="block w-full rounded-lg border-gray-200 bg-white p-2 text-[12px] font-bold text-gray-900 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm">
                     <option value="available">Trống</option>
                     <option value="occupied">Đang có khách</option>
@@ -149,7 +149,7 @@
             </div>
 
             <div class="space-y-1.5">
-                <label for="description" class="block font-black text-gray-900 uppercase tracking-widest text-[11px] mb-1.5">Mô tả</label>
+                <label for="description" class="block font-normal text-gray-900 uppercase tracking-widest text-[11px] mb-1.5">Mô tả</label>
                 <textarea 
                     id="description" 
                     wire:model="description"

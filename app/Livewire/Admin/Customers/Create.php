@@ -13,6 +13,8 @@ class Create extends Component
     public $identity_id;
     public $birthday;
     public $nationality = 'Vietnam';
+    public $visa_number;
+    public $visa_expiry;
 
     protected $rules = [
         'name' => 'required|string|max:255',
@@ -21,6 +23,8 @@ class Create extends Component
         'identity_id' => 'required|string|max:20|unique:customers,identity_id',
         'birthday' => 'nullable|date',
         'nationality' => 'nullable|string',
+        'visa_number' => 'nullable|string|max:50',
+        'visa_expiry' => 'nullable|date',
     ];
 
     public function save()
@@ -33,7 +37,10 @@ class Create extends Component
             'email' => $this->email,
             'identity_id' => $this->identity_id,
             'birthday' => $this->birthday,
+
             'nationality' => $this->nationality,
+            'visa_number' => $this->visa_number,
+            'visa_expiry' => $this->visa_expiry,
         ]);
 
         session()->flash('success', 'Thêm khách hàng mới thành công.');

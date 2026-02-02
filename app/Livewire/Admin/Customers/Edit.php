@@ -15,14 +15,16 @@ class Edit extends Component
     public $identity_id;
     public $birthday;
     public $nationality;
+    public $visa_number;
+    public $visa_expiry;
 
     public function mount($customer)
     {
         $customerModel = Customer::find($customer);
         if (!$customerModel) {
-             return redirect()->route('admin.customers.index');
+            return redirect()->route('admin.customers.index');
         }
-        
+
         $this->customerId = $customerModel->id;
         $this->name = $customerModel->name;
         $this->phone = $customerModel->phone;
@@ -30,6 +32,8 @@ class Edit extends Component
         $this->identity_id = $customerModel->identity_id;
         $this->birthday = $customerModel->birthday;
         $this->nationality = $customerModel->nationality;
+        $this->visa_number = $customerModel->visa_number;
+        $this->visa_expiry = $customerModel->visa_expiry;
     }
 
     public function rules()
@@ -41,6 +45,8 @@ class Edit extends Component
             'identity_id' => ['required', 'string', 'max:20', Rule::unique('customers', 'identity_id')->ignore($this->customerId)],
             'birthday' => 'nullable|date',
             'nationality' => 'nullable|string',
+            'visa_number' => 'nullable|string|max:50',
+            'visa_expiry' => 'nullable|date',
         ];
     }
 
@@ -56,6 +62,8 @@ class Edit extends Component
             'identity_id' => $this->identity_id,
             'birthday' => $this->birthday,
             'nationality' => $this->nationality,
+            'visa_number' => $this->visa_number,
+            'visa_expiry' => $this->visa_expiry,
         ]);
 
         session()->flash('success', 'Cập nhật khách hàng thành công.');
