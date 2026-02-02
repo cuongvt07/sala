@@ -17,31 +17,31 @@
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50/50">
                 <tr>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Mã Phòng</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Loại</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Khu vực</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Đơn giá</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Tiền phòng</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Trạng thái</th>
-                    <th class="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Hành động</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Mã Phòng</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Loại</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Khu vực</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Đơn giá</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Tiền phòng</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Trạng thái</th>
+                    <th class="px-6 py-4 text-right text-xs font-semibold text-gray-900 uppercase tracking-wider">Hành động</th>
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
                 @foreach ($rooms as $room)
                     <tr class="hover:bg-gray-50/50 transition-colors">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <td class="px-6 py-4 whitespace-nowrap text-[13px] font-bold text-gray-900">
                             {{ $room->code }}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td class="px-6 py-4 whitespace-nowrap text-[13px] text-gray-900">
                             {{ $room->type }}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td class="px-6 py-4 whitespace-nowrap text-[13px] text-gray-900">
                             {{ $room->area->name ?? 'N/A' }}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <td class="px-6 py-4 whitespace-nowrap text-[13px] font-bold text-gray-900">
                             {{ number_format($room->price_day, 0, ',', '.') }}đ
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500">
+                        <td class="px-6 py-4 whitespace-nowrap text-[13px] font-bold text-gray-500">
                             {{ $room->price_hour ? number_format($room->price_hour, 0, ',', '.') . 'đ' : '-' }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
@@ -88,30 +88,31 @@
                 wire:model="code" 
                 :error="$errors->first('code')" 
                 required 
+                class="font-bold text-[12px]"
             />
 
             <!-- Area Select -->
             <div class="space-y-1.5">
-                <label for="area_id" class="block text-sm font-semibold text-gray-700">Khu vực <span class="text-red-500">*</span></label>
-                <select id="area_id" wire:model="area_id" class="block w-full rounded-lg border-gray-200 bg-gray-50 p-2.5 text-sm text-gray-900 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm">
+                <label for="area_id" class="block font-black text-gray-900 uppercase tracking-widest text-[11px] mb-1.5">Khu vực <span class="text-red-500">*</span></label>
+                <select id="area_id" wire:model="area_id" class="block w-full rounded-lg border-gray-200 bg-white p-2 text-[12px] font-bold text-gray-900 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm">
                     <option value="">-- Chọn Khu vực --</option>
                     @foreach($areas as $area)
                         <option value="{{ $area->id }}">{{ $area->name }}</option>
                     @endforeach
                 </select>
-                @error('area_id') <p class="text-xs text-red-500">{{ $message }}</p> @enderror
+                @error('area_id') <p class="text-[11px] text-red-500">{{ $message }}</p> @enderror
             </div>
 
             <!-- Type -->
             <div class="space-y-1.5">
-                <label for="type" class="block text-sm font-semibold text-gray-700">Loại phòng <span class="text-red-500">*</span></label>
-                <select id="type" wire:model="type" class="block w-full rounded-lg border-gray-200 bg-gray-50 p-2.5 text-sm text-gray-900 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm">
+                <label for="type" class="block font-black text-gray-900 uppercase tracking-widest text-[11px] mb-1.5">Loại phòng <span class="text-red-500">*</span></label>
+                <select id="type" wire:model="type" class="block w-full rounded-lg border-gray-200 bg-white p-2 text-[12px] font-bold text-gray-900 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm">
                     <option value="Studio">Studio</option>
                     <option value="1PN">1 Phòng ngủ</option>
                     <option value="2PN">2 Phòng ngủ</option>
                     <option value="Duplex">Duplex</option>
                 </select>
-                @error('type') <p class="text-xs text-red-500">{{ $message }}</p> @enderror
+                @error('type') <p class="text-[11px] text-red-500">{{ $message }}</p> @enderror
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -122,6 +123,7 @@
                     wire:model="price_day" 
                     :error="$errors->first('price_day')" 
                     required 
+                    class="font-bold text-[12px]"
                 />
 
                 <x-ui.input 
@@ -130,30 +132,31 @@
                     id="price_hour" 
                     wire:model="price_hour" 
                     :error="$errors->first('price_hour')" 
+                    class="font-bold text-[12px]"
                 />
             </div>
 
             <!-- Status -->
             <div class="space-y-1.5">
-                <label for="status" class="block text-sm font-semibold text-gray-700">Trạng thái <span class="text-red-500">*</span></label>
-                <select id="status" wire:model="status" class="block w-full rounded-lg border-gray-200 bg-gray-50 p-2.5 text-sm text-gray-900 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm">
+                <label for="status" class="block font-black text-gray-900 uppercase tracking-widest text-[11px] mb-1.5">Trạng thái <span class="text-red-500">*</span></label>
+                <select id="status" wire:model="status" class="block w-full rounded-lg border-gray-200 bg-white p-2 text-[12px] font-bold text-gray-900 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm">
                     <option value="available">Trống</option>
                     <option value="occupied">Đang có khách</option>
                     <option value="reserved">Đã đặt</option>
                     <option value="maintenance">Bảo trì</option>
                 </select>
-                @error('status') <p class="text-xs text-red-500">{{ $message }}</p> @enderror
+                @error('status') <p class="text-[11px] text-red-500">{{ $message }}</p> @enderror
             </div>
 
             <div class="space-y-1.5">
-                <label for="description" class="block text-sm font-semibold text-gray-700">Mô tả</label>
+                <label for="description" class="block font-black text-gray-900 uppercase tracking-widest text-[11px] mb-1.5">Mô tả</label>
                 <textarea 
                     id="description" 
                     wire:model="description"
-                    class="block w-full rounded-lg border-gray-200 bg-gray-50 p-2.5 text-sm text-gray-900 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm"
+                    class="block w-full rounded-lg border-gray-200 bg-white p-2 text-[12px] font-bold text-gray-900 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm"
                     rows="3"
                 ></textarea>
-                @error('description') <p class="text-xs text-red-500">{{ $message }}</p> @enderror
+                @error('description') <p class="text-[11px] text-red-500">{{ $message }}</p> @enderror
             </div>
 
             <div class="flex justify-end pt-4 gap-3">

@@ -206,7 +206,7 @@
             @php $rowIndex = 2; @endphp
 
             {{-- Rooms & Bookings --}}
-            @foreach($this->rooms as $areaName => $rooms)
+            @foreach($roomsData as $areaName => $rooms)
                 {{-- Area Header --}}
                 <div class="area-header" style="grid-column: 1 / -1; grid-row: {{ $rowIndex }};">
                     {{ $areaName }}
@@ -235,29 +235,44 @@
                     {{-- Booking Bars --}}
                     @foreach($room->bookings as $booking)
                         @php
-                            $checkIn = \Carbon\Carbon::parse($booking->check_in);
-                            $checkOut = \Carbon\Carbon::parse($booking->check_out);
+                            // Robustly parse CheckIn/CheckOut
+                            $checkIn = is_a($booking->check_in, 'Carbon\Carbon') ? $booking->check_in : \Carbon\Carbon::parse($booking->check_in);
                             
-                            $monthStart = \Carbon\Carbon::create($year, $month, 1);
-                            $monthEnd = $monthStart->copy()->endOfMonth();
+                            $checkOut = null;
+                            if ($booking->check_out) {
+                                $checkOut = is_a($booking->check_out, 'Carbon\Carbon') ? $booking->check_out : \Carbon\Carbon::parse($booking->check_out);
+                            } else {
+                                // Long term: End of view range
+                                $checkOut = $checkIn->copy()->addYears(1);
+                            }
+                            
+                            $currentMonth = $this->month;
+                            $currentYear = $this->year;
+                            
+                            $monthStart = \Carbon\Carbon::create($currentYear, $currentMonth, 1)->startOfDay();
+                            $monthEnd = $monthStart->copy()->endOfMonth()->endOfDay();
 
-                            $displayStart = $checkIn->max($monthStart);
-                            $displayEnd = $checkOut->min($monthEnd);
+                            // Clamp dates to the current month view
+                            $displayStart = $checkIn->copy()->max($monthStart);
+                            $displayEnd = $checkOut->copy()->min($monthEnd);
                             
-                            $startCol = $displayStart->day + 1;
+                            // Column 1 is Room info, so Day 1 is Column 2
+                            $startCol = (int)$displayStart->format('j') + 1;
                             
-                            // Exact duration logic for grid
-                            $duration = ceil($displayEnd->diffInDays($displayStart));
-                            // Minimum 1 day width
-                            $duration = max(1, $duration);
-                            
-                            // Prevent overflow visual glitch if ends on first day of next month? No, min handles it.
+                            // Duration in days (inclusive)
+                            $duration = (int)$displayStart->startOfDay()->diffInDays($displayEnd->startOfDay()) + 1;
                         @endphp
 
-                        <div class="booking-bar booking-{{ $booking->status }}"
+                        <div wire:click="editBooking({{ $booking->id }})"
+                             class="booking-bar booking-{{ $booking->status }} group relative"
                              style="grid-column: {{ $startCol }} / span {{ $duration }}; grid-row: {{ $rowIndex }};"
-                             title="{{ $booking->customer->name }}">
-                            <span class="truncate">{{ $booking->customer->name }}</span>
+                             title="{{ $booking->customer->name }} ({{ $duration }} ngày)">
+                            <div class="sticky left-0 px-2 truncate w-full group-hover:overflow-visible group-hover:whitespace-normal group-hover:bg-inherit group-hover:z-50 py-0.5 flex flex-col leading-tight">
+                                <span class="font-bold uppercase text-[10px]">{{ $booking->customer->name }}</span>
+                                <span class="text-[8.5px] opacity-90 whitespace-nowrap">
+                                    {{ $checkIn->format('h:i A d/m') }} - {{ $checkOut ? $checkOut->format('h:i A d/m') : '...' }}
+                                </span>
+                            </div>
                         </div>
                     @endforeach
 
@@ -266,4 +281,112 @@
             @endforeach
         </div>
     </div>
+
+    {{-- Simplified Booking Modal --}}
+    @if($showModal)
+    <div class="fixed inset-0 z-[100] overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            {{-- Backdrop with Blur --}}
+            <div class="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity" aria-hidden="true" wire:click="$set('showModal', false)"></div>
+            
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            
+            {{-- Modal Content --}}
+            <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full border border-gray-100 z-[110] relative">
+                
+                {{-- Header --}}
+                <div class="bg-blue-600 px-6 py-4 flex justify-between items-center text-white">
+                    <h3 class="text-lg font-bold">{{ $editingBookingId ? 'Chỉnh sửa đặt phòng' : 'Tạo đặt phòng mới' }}</h3>
+                    <button wire:click="$set('showModal', false)" class="text-white hover:text-gray-200">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+
+                {{-- Body --}}
+                <div class="px-6 py-6 space-y-6">
+                    {{-- Basic Info --}}
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Thời gian nhận</label>
+                            <input type="datetime-local" wire:model.live="check_in" class="w-full rounded-lg border-gray-300">
+                            @error('check_in') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Thời gian trả</label>
+                            <input type="datetime-local" wire:model.live="check_out" class="w-full rounded-lg border-gray-300">
+                            @error('check_out') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                        </div>
+                    </div>
+
+                    {{-- Customer Selection --}}
+                    <div class="p-4 bg-gray-50 rounded-lg border border-gray-100">
+                        <div class="flex gap-4 mb-4">
+                            <label class="inline-flex items-center">
+                                <input type="radio" wire:model.live="activeTab" value="existing" class="text-blue-600">
+                                <span class="ml-2 text-sm font-medium">Khách cũ</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="radio" wire:model.live="activeTab" value="new" class="text-blue-600">
+                                <span class="ml-2 text-sm font-medium">Khách mới</span>
+                            </label>
+                        </div>
+
+                        @if($activeTab === 'existing')
+                            <div>
+                                <select wire:model.blur="customer_id" class="w-full rounded-lg border-gray-300">
+                                    <option value="">-- Chọn khách hàng --</option>
+                                    @foreach($customers as $c)
+                                        <option value="{{ $c->id }}">{{ $c->name }} ({{ $c->phone }})</option>
+                                    @endforeach
+                                </select>
+                                @error('customer_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                            </div>
+                        @else
+                            <div class="space-y-3">
+                                <input type="text" wire:model.blur="new_customer_name" placeholder="Tên khách hàng *" class="w-full rounded-lg border-gray-300">
+                                @error('new_customer_name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                                <input type="text" wire:model.blur="new_customer_phone" placeholder="Số điện thoại" class="w-full rounded-lg border-gray-300">
+                            </div>
+                        @endif
+                    </div>
+
+                    {{-- Room Info --}}
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Phòng</label>
+                        <select wire:model.live="room_id" class="w-full rounded-lg border-gray-300">
+                            @foreach($all_rooms as $r)
+                                <option value="{{ $r->id }}">{{ $r->code }} ({{ $r->area->name ?? '' }})</option>
+                            @endforeach
+                        </select>
+                        @error('room_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                    </div>
+
+                    {{-- Price & Notes --}}
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Tiền phòng</label>
+                            <input type="text" wire:model.blur="price" class="w-full rounded-lg border-gray-300 font-bold text-blue-600">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Trạng thái</label>
+                            <select wire:model.blur="status" class="w-full rounded-lg border-gray-300">
+                                <option value="pending">Đang chờ</option>
+                                <option value="confirmed">Đã xác nhận</option>
+                                <option value="checked_in">Đã nhận phòng</option>
+                                <option value="checked_out">Đã trả phòng</option>
+                                <option value="cancelled">Đã hủy</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Footer --}}
+                <div class="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t">
+                    <button wire:click="$set('showModal', false)" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 rounded-lg">Hủy</button>
+                    <button wire:click="save" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 shadow-md">Lưu đặt phòng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
 </div>

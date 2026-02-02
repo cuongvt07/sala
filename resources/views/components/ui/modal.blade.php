@@ -33,11 +33,11 @@
          x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
          class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
         
-        <div class="relative transform overflow-hidden rounded-xl bg-white text-left shadow-xl transition-all w-full {{ $width }} sm:my-8 border border-gray-100">
+        <div class="relative transform overflow-hidden rounded-xl bg-white text-left text-[12px] shadow-xl transition-all w-full {{ $width }} sm:my-8 border border-gray-100">
             <!-- Header -->
             @if($title)
                 <div class="bg-gray-50 px-4 py-3 sm:px-6 flex justify-between items-center border-b border-gray-100">
-                    <h3 class="text-base font-semibold leading-6 text-gray-900">
+                    <h3 class="text-[14px] font-bold leading-6 text-gray-900">
                         {{ $title }}
                     </h3>
                     <button @click="show = false" type="button" class="text-gray-400 hover:text-gray-500">

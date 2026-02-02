@@ -23,7 +23,7 @@ class Index extends Component
 
     // Form inputs
     public $activeTab = 'existing'; // 'existing' or 'new' for customer tab
-    
+
     // Services
     public $selected_services = [];
 
@@ -43,10 +43,10 @@ class Index extends Component
         'billing_date' => '',
         'notes' => '',
     ];
-    
+
     // Existing Customer
     public $customer_id;
-    
+
     // New Customer
     public $new_customer_name;
     public $new_customer_phone;
@@ -85,7 +85,7 @@ class Index extends Component
             'check_out' => [
                 $this->price_type === 'month' ? 'nullable' : 'required',
                 'date',
-                 $this->price_type !== 'month' ? 'after:check_in' : '',
+                $this->price_type !== 'month' ? 'after:check_in' : '',
             ],
             'price' => 'required|numeric|min:0',
             'deposit' => 'nullable|numeric|min:0',
@@ -120,21 +120,23 @@ class Index extends Component
 
     protected function updatePricing()
     {
-        if (!$this->room_id) return;
-        
+        if (!$this->room_id)
+            return;
+
         $room = Room::find($this->room_id);
-        if (!$room) return;
+        if (!$room)
+            return;
 
         if ($this->price_type === 'hour') {
             $this->unit_price = $room->price_hour ?? 0;
             // $this->price = $this->unit_price; // Removed auto-calc per user request
         } elseif ($this->price_type === 'day') {
             $this->unit_price = $room->price_day ?? 0;
-             // $this->price = $this->unit_price; // Removed auto-calc per user request
+            // $this->price = $this->unit_price; // Removed auto-calc per user request
         } elseif ($this->price_type === 'month') {
-             // For month, we default to day price as unit, but total is manual
-             $this->unit_price = $room->price_day ?? 0;
-             // $this->price = $this->unit_price * 30; // Removed auto-calc per user request
+            // For month, we default to day price as unit, but total is manual
+            $this->unit_price = $room->price_day ?? 0;
+            // $this->price = $this->unit_price * 30; // Removed auto-calc per user request
         }
     }
 
@@ -164,15 +166,15 @@ class Index extends Component
         $this->activeTab = 'existing'; // Always default to existing for edit
 
         $this->room_id = $booking->room_id;
-        $this->price_type = $booking->price_type ?? 'day'; // Default to day if null (backward compat)
+        $this->price_type = ($booking->price_type === 'month') ? 'month' : 'day'; // Default to day, map legacy 'hour' to day
         $this->unit_price = $booking->unit_price ?? 0;
-        $this->check_in = $booking->check_in ? $booking->check_in->format('Y-m-d') : null; // Ensure Y-m-d
-        $this->check_out = $booking->check_out ? $booking->check_out->format('Y-m-d') : null;
-        
+        $this->check_in = $booking->check_in ? $booking->check_in->format('Y-m-d\TH:i') : null; // Ensure Y-m-d\TH:i for datetime-local
+        $this->check_out = $booking->check_out ? $booking->check_out->format('Y-m-d\TH:i') : null;
+
         // Format money fields for display
         $this->price = number_format($booking->price, 0, ',', '.');
         $this->deposit = $booking->deposit ? number_format($booking->deposit, 0, ',', '.') : 0;
-        
+
         $this->status = $booking->status;
         $this->notes = $booking->notes;
 
@@ -186,13 +188,13 @@ class Index extends Component
                 'quantity' => $service->pivot->quantity,
                 'note' => $service->pivot->note,
             ];
-            
+
             // Initialize service inputs for History tab
             $this->initServiceInput($service->id);
         }
 
         // Load Usage Logs
-        $this->usage_logs = $booking->usageLogs->map(function($log) {
+        $this->usage_logs = $booking->usageLogs->map(function ($log) {
             return [
                 'id' => $log->id,
                 'service_name' => $log->service->name ?? 'Phí phòng/Khác',
@@ -222,7 +224,7 @@ class Index extends Component
 
         $price = str_replace('.', '', $this->new_log['unit_price']);
         $quantity = $this->new_log['quantity'] ?: 1;
-        
+
         $total = 0;
         if ($this->new_log['type'] === 'meter') {
             $usage = max(0, ($this->new_log['end_index'] ?? 0) - ($this->new_log['start_index'] ?? 0));
@@ -267,7 +269,7 @@ class Index extends Component
     public function removeUsageLog($index)
     {
         $log = $this->usage_logs[$index] ?? null;
-        
+
         if ($log && isset($log['id'])) {
             BookingUsageLog::find($log['id'])?->delete();
         }
@@ -279,7 +281,8 @@ class Index extends Component
     public function initServiceInput($serviceId)
     {
         $service = Service::find($serviceId);
-        if (!$service) return;
+        if (!$service)
+            return;
 
         // Find last index from usage logs if it exists
         $startIndex = 0;
@@ -301,15 +304,17 @@ class Index extends Component
     public function addServiceLog($serviceId)
     {
         $input = $this->service_inputs[$serviceId] ?? null;
-        if (!$input) return;
+        if (!$input)
+            return;
 
         $service = Service::find($serviceId);
-        if (!$service) return;
+        if (!$service)
+            return;
 
         // Sanitize price: remove dots and commas, then cast to float
         $priceStr = str_replace([',', '.'], '', $input['unit_price'] ?? '0');
         $price = (float) $priceStr;
-        
+
         $total = 0;
         if ($service->type === 'meter') {
             // Ensure indices are treated as numbers, cleaning any accidental dots/commas
@@ -366,10 +371,11 @@ class Index extends Component
 
     public function addManualSurcharge()
     {
-        if (!$this->manual_fee_amount) return;
+        if (!$this->manual_fee_amount)
+            return;
 
         $amount = (float) str_replace([',', '.'], '', $this->manual_fee_amount);
-        
+
         $logData = [
             'service_id' => null,
             'service_name' => 'Phí phụ thu khác',
@@ -400,7 +406,7 @@ class Index extends Component
         }
 
         $this->usage_logs[] = $logData;
-        
+
         // Reset inputs
         $this->manual_fee_amount = '';
         $this->manual_fee_notes = '';
@@ -417,7 +423,7 @@ class Index extends Component
                 'note' => '',
             ];
         }
-        
+
         $this->selected_services[$serviceId]['selected'] = !($this->selected_services[$serviceId]['selected'] ?? false);
 
         if ($this->selected_services[$serviceId]['selected']) {
@@ -446,17 +452,21 @@ class Index extends Component
                 $originalPath = $this->new_customer_image->getRealPath();
                 $filename = 'customers/' . uniqid() . '.jpg';
                 $storagePath = storage_path('app/public/' . $filename);
-                
+
                 // Ensure directory exists
                 if (!file_exists(dirname($storagePath))) {
                     mkdir(dirname($storagePath), 0755, true);
                 }
 
                 $info = getimagesize($originalPath);
-                if ($info['mime'] == 'image/jpeg') $image = imagecreatefromjpeg($originalPath);
-                elseif ($info['mime'] == 'image/gif') $image = imagecreatefromgif($originalPath);
-                elseif ($info['mime'] == 'image/png') $image = imagecreatefrompng($originalPath);
-                else $image = imagecreatefromstring(file_get_contents($originalPath));
+                if ($info['mime'] == 'image/jpeg')
+                    $image = imagecreatefromjpeg($originalPath);
+                elseif ($info['mime'] == 'image/gif')
+                    $image = imagecreatefromgif($originalPath);
+                elseif ($info['mime'] == 'image/png')
+                    $image = imagecreatefrompng($originalPath);
+                else
+                    $image = imagecreatefromstring(file_get_contents($originalPath));
 
                 // Save with 60% quality
                 if ($image) {
@@ -465,7 +475,7 @@ class Index extends Component
                     $imagePath = $filename;
                 } else {
                     // Fallback if compression fails
-                     $imagePath = $this->new_customer_image->store('customers', 'public');
+                    $imagePath = $this->new_customer_image->store('customers', 'public');
                 }
             }
 
@@ -478,7 +488,7 @@ class Index extends Component
                 'visa_number' => $this->new_customer_visa_number,
                 'visa_expiry' => $this->new_customer_visa_expiry,
                 'notes' => $this->new_customer_notes,
-                'images' => $imagePath, 
+                'images' => $imagePath,
             ]);
             $customerId = $customer->id;
         }
@@ -487,9 +497,9 @@ class Index extends Component
             'customer_id' => $customerId,
             'room_id' => $this->room_id,
             'price_type' => $this->price_type,
-            'unit_price' => $this->unit_price, 
+            'unit_price' => $this->unit_price,
             'check_in' => $this->check_in,
-            'check_out' => $this->check_out,
+            'check_out' => ($this->price_type === 'month' && empty($this->check_out)) ? null : $this->check_out,
             'price' => $this->price,
             'deposit' => $this->deposit,
             'status' => $this->status,

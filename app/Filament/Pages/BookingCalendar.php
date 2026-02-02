@@ -46,10 +46,18 @@ class BookingCalendar extends Page
         $query = \App\Models\Room::query()->with([
             'area',
             'bookings' => function ($q) {
-                $q->whereMonth('check_in', $this->month)->whereYear('check_in', $this->year)
-                    ->orWhere(function ($sq) {
-                        $sq->whereMonth('check_out', $this->month)->whereYear('check_out', $this->year);
+                // Determine the start and end of the current month view
+                $startOfMonth = \Carbon\Carbon::create($this->year, $this->month, 1)->startOfDay();
+                $endOfMonth = $startOfMonth->copy()->endOfMonth()->endOfDay();
+
+                $q->where(function ($query) use ($startOfMonth, $endOfMonth) {
+                    // 1. Bookings that start before (or in) this month AND (end after start of month OR stay forever)
+                    $query->where('check_in', '<=', $endOfMonth)
+                        ->where(function ($sub) use ($startOfMonth) {
+                        $sub->where('check_out', '>=', $startOfMonth)
+                            ->orWhereNull('check_out'); // Handle long-term
                     });
+                });
             }
         ]);
 

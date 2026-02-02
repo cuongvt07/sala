@@ -238,24 +238,47 @@
                         {{-- Booking Bars --}}
                         @foreach($room->bookings as $booking)
                             @php
-                                $checkIn = \Carbon\Carbon::parse($booking->check_in);
-                                $checkOut = \Carbon\Carbon::parse($booking->check_out);
+                                // Robustly parse CheckIn/CheckOut
+                                $checkIn = is_a($booking->check_in, 'Carbon\Carbon') ? $booking->check_in : \Carbon\Carbon::parse($booking->check_in);
                                 
-                                $monthStart = \Carbon\Carbon::create($year, $month, 1);
-                                $monthEnd = $monthStart->copy()->endOfMonth();
+                                $checkOut = null;
+                                if ($booking->check_out) {
+                                    $checkOut = is_a($booking->check_out, 'Carbon\Carbon') ? $booking->check_out : \Carbon\Carbon::parse($booking->check_out);
+                                } else {
+                                    // Long term: End of view range
+                                    $checkOut = $checkIn->copy()->addYears(1);
+                                }
+                                
+                                $currentMonth = $this->month;
+                                $currentYear = $this->year;
+                                
+                                $monthStart = \Carbon\Carbon::create($currentYear, $currentMonth, 1)->startOfDay();
+                                $monthEnd = $monthStart->copy()->endOfMonth()->endOfDay();
 
-                                $displayStart = $checkIn->max($monthStart);
-                                $displayEnd = $checkOut->min($monthEnd);
+                                // Clamp dates to the current month view
+                                $displayStart = $checkIn->copy()->startOfDay()->max($monthStart);
+                                $displayEnd = $checkOut->copy()->startOfDay()->min($monthEnd);
                                 
+                                // Calculate Duration (Inclusive)
+                                // Diff in days between Start and End. 
+                                // e.g. Start=6, End=6. Diff=0. Days=1.
+                                // e.g. Start=6, End=8. Diff=2. Days=3.
+                                $diffDays = $displayStart->diffInDays($displayEnd);
+                                $duration = $diffDays + 1;
+                                
+                                // Calculate Start Column (Day 1 is Col 2)
                                 $startCol = $displayStart->day + 1;
-                                $duration = max(1, ceil($displayEnd->diffInDays($displayStart)));
                             @endphp
 
                             <div wire:click="editBooking({{ $booking->id }})"
-                                 class="booking-bar booking-{{ $booking->status }}"
+                                 class="booking-bar booking-{{ $booking->status }} group relative"
                                  style="grid-column: {{ $startCol }} / span {{ $duration }}; grid-row: {{ $rowIndex }};"
-                                 title="{{ $booking->customer->name }}">
-                                <span class="truncate">{{ $booking->customer->name }}</span>
+                                 title="{{ $booking->customer->name }} ({{ $duration }} ngày)">
+                                <div class="sticky left-0 px-2 truncate w-full group-hover:overflow-visible group-hover:whitespace-normal group-hover:bg-inherit group-hover:z-50 flex items-center gap-1">
+                                    <span>{{ $booking->customer->name }}</span>
+                                    {{-- Debug: Visible duration to verify fix --}}
+                                    {{-- <span class="text-[9px] opacity-70">({{ $duration }}d)</span> --}}
+                                </div>
                             </div>
                         @endforeach
 

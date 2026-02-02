@@ -51,7 +51,7 @@ class DatabaseSeeder extends Seeder
 
         // 3. Create Rooms for each Area
         $roomTypes = ['Studio', '1PN', '2PN', '3PN', 'Penthouse'];
-        
+
         // Status definition: reserved means booked but not checked in yet (or deposit paid)
         // occupied means currently checked in.
         // available means free.
@@ -60,7 +60,7 @@ class DatabaseSeeder extends Seeder
         foreach ($areas as $area) {
             // Generate 15-20 rooms per area
             $numRooms = rand(15, 20);
-            
+
             // Generate prefix based on Area Name (e.g. Sarina -> SAR)
             // Naive extraction: take first 3 chars after " - "
             $parts = explode(' - ', $area->name);
@@ -68,12 +68,12 @@ class DatabaseSeeder extends Seeder
 
             for ($i = 1; $i <= $numRooms; $i++) {
                 $type = $roomTypes[array_rand($roomTypes)];
-                
+
                 // Price logic based on type (USD assumed based on existing seeder, but let's make it VND for "Vietnamese" context?)
                 // User said "tiếng việt", usually implies VND.
                 // Studio: 15-20M, 1PN: 20-30M, 2PN: 30-45M, 3PN: 50-70M.
                 // Let's us raw numbers.
-                $basePrice = match($type) {
+                $basePrice = match ($type) {
                     'Studio' => rand(15000000, 20000000),
                     '1PN' => rand(20000000, 30000000),
                     '2PN' => rand(30000000, 45000000),
@@ -85,7 +85,7 @@ class DatabaseSeeder extends Seeder
                     'area_id' => $area->id,
                     'code' => $prefix . '-' . str_pad($i, 3, '0', STR_PAD_LEFT), // e.g., SAR-001
                     'type' => $type,
-                    'price' => $basePrice,
+                    'price_day' => $basePrice,
                     'status' => $statuses[array_rand($statuses)],
                     'description' => "Căn hộ $type đầy đủ nội thất, view đẹp, thoáng mát.",
                 ]);
@@ -93,7 +93,7 @@ class DatabaseSeeder extends Seeder
         }
 
         // 4. Create Customers (Vietnamese via Factory)
-        Customer::factory(50)->create(); 
+        Customer::factory(50)->create();
         $customers = Customer::all();
         $rooms = Room::all();
 
@@ -108,7 +108,7 @@ class DatabaseSeeder extends Seeder
                 $customer = $customers->random();
                 $stayDuration = rand(2, 14); // days
                 $daysAgo = rand(10, 365);
-                
+
                 $checkIn = Carbon::now()->subDays($daysAgo);
                 $checkOut = (clone $checkIn)->addDays($stayDuration);
 
@@ -117,15 +117,7 @@ class DatabaseSeeder extends Seeder
                     'room_id' => $room->id,
                     'check_in' => $checkIn,
                     'check_out' => $checkOut,
-                    'price' => $room->price * $stayDuration / 30, // Pro-rated or just stored price. Let's assume price is monthly?
-                    // "Price (Ngày/Tháng)" in requirements. Let's assume stored price is Monthly.
-                    // If booking is short term, calculate. If long term, calculate. 
-                    // Let's just store a random "Total Price" for the booking period for simplicity here.
-                    // Or if schema price is per month, and booking price is "Total Amount".
-                    // Let's assume schema price is Per Month.
-                    // Daily price ~= Monthly / 30.
-                    'check_out' => $checkOut,
-                    'price' => ($room->price / 30) * $stayDuration, 
+                    'price' => round(($room->price_day / 30) * $stayDuration),
                     'deposit' => 0,
                     'status' => 'checked_out', // Completed
                     'notes' => 'Đã hoàn thành thuê.',
@@ -141,25 +133,28 @@ class DatabaseSeeder extends Seeder
                     'room_id' => $room->id,
                     'check_in' => Carbon::now()->subDays(rand(1, 10)),
                     'check_out' => Carbon::now()->addDays(rand(2, 30)),
-                    'price' => $room->price, // One month rent as placeholder
-                    'deposit' => $room->price * 2, // 2 months deposit
+                    'price' => $room->price_day, // One month rent as placeholder
+                    'deposit' => $room->price_day * 2, // 2 months deposit
                     'status' => 'checked_in',
                     'notes' => 'Đang thuê.',
                 ]);
             } elseif ($room->status === 'reserved') {
-                 // Create a future/pending booking
-                 $customer = $customers->random();
-                 Booking::create([
-                     'customer_id' => $customer->id,
-                     'room_id' => $room->id,
-                     'check_in' => Carbon::now()->addDays(rand(1, 5)),
-                     'check_out' => Carbon::now()->addDays(rand(30, 60)),
-                     'price' => $room->price,
-                     'deposit' => $room->price * 0.5, // 50% deposit
-                     'status' => 'confirmed', // Confirmed but not checked in
-                     'notes' => 'Đã đặt cọc giữ chỗ.',
-                 ]);
+                // Create a future/pending booking
+                $customer = $customers->random();
+                Booking::create([
+                    'customer_id' => $customer->id,
+                    'room_id' => $room->id,
+                    'check_in' => Carbon::now()->addDays(rand(1, 5)),
+                    'check_out' => Carbon::now()->addDays(rand(30, 60)),
+                    'price' => $room->price_day,
+                    'deposit' => round($room->price_day * 0.5), // 50% deposit
+                    'status' => 'confirmed', // Confirmed but not checked in
+                    'notes' => 'Đã đặt cọc giữ chỗ.',
+                ]);
             }
         }
+
+        // 6. Create Services
+        $this->call(ServiceSeeder::class);
     }
 }
