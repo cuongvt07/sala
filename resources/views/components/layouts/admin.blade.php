@@ -16,14 +16,11 @@
            :class="sidebarOpen ? 'w-64' : 'w-16'">
         
         <!-- Logo -->
-        <div class="flex h-16 items-center justify-center bg-slate-950 px-4 shadow-sm">
+        <div class="flex h-16 items-center justify-center bg-slate-950 px-4 shadow-sm space-x-2">
+            <img src="{{ asset('sala.png') }}" alt="Sala Logo" class="h-8 w-8 transition-all duration-300" :class="sidebarOpen ? '' : 'mx-auto'">
             <span class="text-xl font-bold text-white transition-opacity duration-200"
                   x-show="sidebarOpen">
                 SALA ADMIN
-            </span>
-            <span class="text-xl font-bold text-white transition-opacity duration-200"
-                  x-show="!sidebarOpen" x-cloak>
-                S
             </span>
         </div>
 
