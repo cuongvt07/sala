@@ -71,28 +71,52 @@
     <!-- Create/Edit Modal -->
     <x-ui.modal name="showModal" :title="$editingServiceId ? 'Chỉnh sửa Dịch vụ' : 'Thêm Dịch vụ mới'">
         <form wire:submit="save" class="space-y-4">
-            <x-ui.input label="Tên dịch vụ" id="name" wire:model="name" :error="$errors->first('name')" required placeholder="VD: Điện, Nước, Wifi..." class="font-bold text-[12px]" />
-            
-            <div class="grid grid-cols-2 gap-4">
-                <div class="space-y-1">
-                    <label class="block text-[11px] font-normal text-gray-900 uppercase tracking-widest">Đơn giá (VNĐ)</label>
-                    <input 
-                        type="text" 
-                        wire:model="unit_price" 
-                        class="block w-full rounded-lg border-gray-200 bg-white p-2 text-[12px] font-bold text-gray-900 focus:border-blue-500 focus:ring-blue-500 shadow-sm"
-                        x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')"
-                        required
-                    >
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {{-- Col 1 --}}
+                <div class="space-y-4">
+                    <div class="space-y-1">
+                        <label for="name" class="block font-semibold text-gray-700 text-[11px] uppercase">Tên dịch vụ <span class="text-red-500">*</span></label>
+                        <input type="text" id="name" wire:model="name" required placeholder="VD: Điện, Nước..." class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm font-bold focus:ring-blue-500 focus:border-blue-500">
+                        @error('name') <p class="text-[10px] text-red-500">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div class="space-y-1">
+                        <label for="type" class="block font-semibold text-gray-700 text-[11px] uppercase">Loại dịch vụ <span class="text-red-500">*</span></label>
+                        <select id="type" wire:model="type" class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm focus:ring-blue-500 focus:border-blue-500">
+                            <option value="fixed">Cố định (Tháng/Người)</option>
+                            <option value="meter">Theo chỉ số (Điện/Nước)</option>
+                        </select>
+                        @error('type') <p class="text-[10px] text-red-500">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div class="space-y-1">
+                         <label for="unit_name" class="block font-semibold text-gray-700 text-[11px] uppercase">Đơn vị tính</label>
+                        <input type="text" id="unit_name" wire:model="unit_name" placeholder="VD: kWh, m3, Tháng..." class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm font-bold focus:ring-blue-500 focus:border-blue-500">
+                        @error('unit_name') <p class="text-[10px] text-red-500">{{ $message }}</p> @enderror
+                    </div>
                 </div>
-            </div>
 
-            <x-ui.input label="Tên đơn vị" id="unit_name" wire:model="unit_name" :error="$errors->first('unit_name')" placeholder="VD: kWh, m3, Tháng, Lần..." class="font-bold text-[12px]" />
+                {{-- Col 2 --}}
+                <div class="space-y-4">
+                    <div class="space-y-1" x-data>
+                        <label for="unit_price" class="block font-semibold text-gray-700 text-[11px] uppercase">Đơn giá (VNĐ) <span class="text-red-500">*</span></label>
+                        <input type="text" id="unit_price" wire:model="unit_price" required
+                               class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm font-bold text-blue-600 focus:ring-blue-500 focus:border-blue-500"
+                               x-on:input="$el.value = $el.value.replace(/\D/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')">
+                        @error('unit_price') <p class="text-[10px] text-red-500">{{ $message }}</p> @enderror
+                    </div>
 
-            <x-ui.input label="Mô tả" id="description" wire:model="description" :error="$errors->first('description')" class="font-bold text-[12px]" />
-
-            <div class="flex items-center gap-2">
-                <input type="checkbox" id="is_active" wire:model="is_active" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                <label for="is_active" class="text-sm font-medium text-gray-700">Đang hoạt động</label>
+                    <div class="space-y-1">
+                        <label for="description" class="block font-semibold text-gray-700 text-[11px] uppercase">Mô tả</label>
+                        <textarea id="description" wire:model="description" rows="3" class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm focus:ring-blue-500 focus:border-blue-500"></textarea>
+                         @error('description') <p class="text-[10px] text-red-500">{{ $message }}</p> @enderror
+                    </div>
+                    
+                    <div class="flex items-center gap-2 pt-2">
+                        <input type="checkbox" id="is_active" wire:model="is_active" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <label for="is_active" class="text-sm font-medium text-gray-700 select-none cursor-pointer">Đang hoạt động</label>
+                    </div>
+                </div>
             </div>
 
             <div class="flex justify-end pt-4 gap-3 border-t border-gray-100">

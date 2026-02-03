@@ -46,16 +46,23 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             @php
-                                $statusVariant = match($room->status) {
-                                    'available' => 'green',
-                                    'occupied' => 'red',
-                                    'maintenance' => 'yellow',
-                                    'reserved' => 'blue',
-                                    default => 'gray',
+                                    $statusVariant = match($room->status) {
+                                    'active' => 'green',
+                                    'maintenance' => 'red',
+                                    default => 'gray', // Should catch old statuses temporarily
+                                };
+                                $statusLabel = match($room->status) {
+                                    'active' => 'Hoạt động',
+                                    'maintenance' => 'Bảo trì',
+                                    // Fallback for old data if needed (optional)
+                                    'available' => 'Hoạt động',
+                                    'occupied' => 'Hoạt động', 
+                                    'reserved' => 'Hoạt động',
+                                    default => $room->status,
                                 };
                             @endphp
                             <x-ui.badge :variant="$statusVariant">
-                                {{ $room->status }}
+                                {{ $statusLabel }}
                             </x-ui.badge>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
@@ -82,81 +89,77 @@
     <!-- Create/Edit Modal -->
     <x-ui.modal name="showModal" :title="$editingRoomId ? 'Chỉnh sửa Phòng' : 'Thêm Phòng mới'">
         <form wire:submit="save" class="space-y-4 p-4 sm:p-0">
-            <x-ui.input 
-                label="Mã Phòng" 
-                id="code" 
-                wire:model="code" 
-                :error="$errors->first('code')" 
-                required 
-                class="font-bold text-[12px]"
-            />
 
-            <!-- Area Select -->
-            <div class="space-y-1.5">
-                <label for="area_id" class="block font-normal text-gray-900 uppercase tracking-widest text-[11px] mb-1.5">Khu vực <span class="text-red-500">*</span></label>
-                <select id="area_id" wire:model="area_id" class="block w-full rounded-lg border-gray-200 bg-white p-2 text-[12px] font-bold text-gray-900 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm">
-                    <option value="">-- Chọn Khu vực --</option>
-                    @foreach($areas as $area)
-                        <option value="{{ $area->id }}">{{ $area->name }}</option>
-                    @endforeach
-                </select>
-                @error('area_id') <p class="text-[11px] text-red-500">{{ $message }}</p> @enderror
+
+            <div class="grid grid-cols-3 gap-4">
+                {{-- Col 1: Area & Status --}}
+                <div class="space-y-4">
+                     <div class="space-y-1">
+                        <label for="area_id" class="block font-semibold text-gray-700 text-[11px] uppercase">Khu vực <span class="text-red-500">*</span></label>
+                        <select id="area_id" wire:model="area_id" class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">-- Chọn --</option>
+                            @foreach($areas as $area)
+                                <option value="{{ $area->id }}">{{ $area->name }}</option>
+                            @endforeach
+                        </select>
+                        @error('area_id') <p class="text-[10px] text-red-500">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div class="space-y-1">
+                        <label for="status" class="block font-semibold text-gray-700 text-[11px] uppercase">Trạng thái <span class="text-red-500">*</span></label>
+                        <select id="status" wire:model="status" class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm focus:ring-blue-500 focus:border-blue-500">
+                            <option value="active">Hoạt động</option>
+                            <option value="maintenance">Bảo trì</option>
+                        </select>
+                        @error('status') <p class="text-[10px] text-red-500">{{ $message }}</p> @enderror
+                    </div>
+                </div>
+
+                {{-- Col 2: Info --}}
+                <div class="space-y-4">
+                    <div class="space-y-1">
+                        <label for="code" class="block font-semibold text-gray-700 text-[11px] uppercase">Mã Phòng <span class="text-red-500">*</span></label>
+                        <input type="text" id="code" wire:model="code" required
+                               class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm font-bold focus:ring-blue-500 focus:border-blue-500">
+                        @error('code') <p class="text-[10px] text-red-500">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div class="space-y-1">
+                        <label for="type" class="block font-semibold text-gray-700 text-[11px] uppercase">Loại phòng <span class="text-red-500">*</span></label>
+                        <select id="type" wire:model="type" class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm focus:ring-blue-500 focus:border-blue-500">
+                            <option value="Studio">Studio</option>
+                            <option value="1PN">1PN</option>
+                            <option value="2PN">2PN</option>
+                            <option value="Duplex">Duplex</option>
+                        </select>
+                        @error('type') <p class="text-[10px] text-red-500">{{ $message }}</p> @enderror
+                    </div>
+                </div>
+
+                {{-- Col 3: Pricing --}}
+                <div class="space-y-4">
+                    <div class="space-y-1" x-data>
+                        <label for="price_day" class="block font-semibold text-gray-700 text-[11px] uppercase">Đơn giá (VNĐ) <span class="text-red-500">*</span></label>
+                        <input type="text" id="price_day" wire:model="price_day" required
+                               class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm font-bold text-blue-600 focus:ring-blue-500 focus:border-blue-500"
+                               x-on:input="$el.value = $el.value.replace(/\D/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')">
+                        @error('price_day') <p class="text-[10px] text-red-500">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div class="space-y-1" x-data>
+                        <label for="price_hour" class="block font-semibold text-gray-700 text-[11px] uppercase">Tiền phòng (VNĐ)</label>
+                        <input type="text" id="price_hour" wire:model="price_hour"
+                               class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm font-bold text-gray-600 focus:ring-blue-500 focus:border-blue-500"
+                               x-on:input="$el.value = $el.value.replace(/\D/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')">
+                        @error('price_hour') <p class="text-[10px] text-red-500">{{ $message }}</p> @enderror
+                    </div>
+                </div>
             </div>
 
-            <!-- Type -->
-            <div class="space-y-1.5">
-                <label for="type" class="block font-normal text-gray-900 uppercase tracking-widest text-[11px] mb-1.5">Loại phòng <span class="text-red-500">*</span></label>
-                <select id="type" wire:model="type" class="block w-full rounded-lg border-gray-200 bg-white p-2 text-[12px] font-bold text-gray-900 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm">
-                    <option value="Studio">Studio</option>
-                    <option value="1PN">1 Phòng ngủ</option>
-                    <option value="2PN">2 Phòng ngủ</option>
-                    <option value="Duplex">Duplex</option>
-                </select>
-                @error('type') <p class="text-[11px] text-red-500">{{ $message }}</p> @enderror
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <x-ui.input 
-                    type="number" 
-                    label="Đơn giá (VNĐ)" 
-                    id="price_day" 
-                    wire:model="price_day" 
-                    :error="$errors->first('price_day')" 
-                    required 
-                    class="font-bold text-[12px]"
-                />
-
-                <x-ui.input 
-                    type="number" 
-                    label="Tiền phòng (VNĐ)" 
-                    id="price_hour" 
-                    wire:model="price_hour" 
-                    :error="$errors->first('price_hour')" 
-                    class="font-bold text-[12px]"
-                />
-            </div>
-
-            <!-- Status -->
-            <div class="space-y-1.5">
-                <label for="status" class="block font-normal text-gray-900 uppercase tracking-widest text-[11px] mb-1.5">Trạng thái <span class="text-red-500">*</span></label>
-                <select id="status" wire:model="status" class="block w-full rounded-lg border-gray-200 bg-white p-2 text-[12px] font-bold text-gray-900 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm">
-                    <option value="available">Trống</option>
-                    <option value="occupied">Đang có khách</option>
-                    <option value="reserved">Đã đặt</option>
-                    <option value="maintenance">Bảo trì</option>
-                </select>
-                @error('status') <p class="text-[11px] text-red-500">{{ $message }}</p> @enderror
-            </div>
-
-            <div class="space-y-1.5">
-                <label for="description" class="block font-normal text-gray-900 uppercase tracking-widest text-[11px] mb-1.5">Mô tả</label>
-                <textarea 
-                    id="description" 
-                    wire:model="description"
-                    class="block w-full rounded-lg border-gray-200 bg-white p-2 text-[12px] font-bold text-gray-900 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm"
-                    rows="3"
-                ></textarea>
-                @error('description') <p class="text-[11px] text-red-500">{{ $message }}</p> @enderror
+            <div class="space-y-1 mt-2">
+                <label for="description" class="block font-semibold text-gray-700 text-[11px] uppercase">Mô tả</label>
+                <textarea id="description" wire:model="description" rows="2" class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm focus:ring-blue-500 focus:border-blue-500"></textarea>
+                 @error('description') <p class="text-[10px] text-red-500">{{ $message }}</p> @enderror
             </div>
 
             <div class="flex justify-end pt-4 gap-3">

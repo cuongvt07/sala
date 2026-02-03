@@ -97,7 +97,7 @@ class BookingCalendar extends Component
             'deposit' => 'nullable',
             'status' => 'required|in:pending,confirmed,checked_in,checked_out,cancelled',
             'notes' => 'nullable|string',
-            'customer_id' => $this->activeTab === 'existing' ? 'required|exists:customers,id' : 'nullable',
+            'customer_id' => $this->activeTab === 'existing' ? 'required' : 'nullable',
             'new_customer_name' => $this->activeTab === 'new' ? 'required|string|max:255' : 'nullable',
         ];
     }
@@ -110,6 +110,59 @@ class BookingCalendar extends Component
     public function updatedPriceType()
     {
         $this->updatePricing();
+        $this->calculateTotal();
+    }
+
+    public function updatedCheckIn()
+    {
+        $this->calculateTotal();
+    }
+
+    public function updatedCheckOut()
+    {
+        $this->calculateTotal();
+    }
+
+    public function calculateTotal()
+    {
+        if (!$this->check_in || !$this->check_out || !$this->unit_price) return;
+        
+        try {
+            $start = Carbon::parse($this->check_in);
+            $end = Carbon::parse($this->check_out);
+            
+            if ($end->lte($start)) return;
+            
+            $unitPrice = (float) str_replace(['.', ','], '', $this->unit_price);
+            
+            if ($this->price_type === 'day') {
+                // Calculate days, including partial days if needed, but per requirement "day" usually means 24h blocks or calendar days.
+                // Logic based on nightly rate:
+                 $diff = abs($start->diffInDays($end));
+                 // If less than 1 day but parsed, count as 1? Or float? 
+                 // Usually hotels count nights. 
+                 $days = max(1, $diff);
+                 $total = $days * $unitPrice;
+            } else {
+                 // Month
+                 $months = $start->diffInMonths($end);
+                 $days = $start->copy()->addMonths($months)->diffInDays($end);
+                 // Simple approximation or exact logic? 
+                 // Let's stick to simple unit_price propagation for now if month, or 1 month default.
+                 // Actually, if price_type is month, usually fixed monthly price.
+                 // Let's just use unit_price if month, or calculate if multiple months.
+                 $total = max(1, $months) * $unitPrice; 
+                 if ($months < 1 && $days > 0) {
+                     // Partial month logic? For now let's just default to unitPrice for simplicity unless duration > 1 month
+                     $total = $unitPrice;
+                 }
+            }
+            
+            $this->price = number_format($total, 0, ',', '.');
+            
+        } catch (\Exception $e) {
+            // Ignore parse errors
+        }
     }
 
     protected function updatePricing()
@@ -144,6 +197,7 @@ class BookingCalendar extends Component
         $this->showModal = true;
 
         $this->updatePricing();
+        $this->calculateTotal();
     }
 
     public function editBooking($id)
@@ -438,14 +492,15 @@ class BookingCalendar extends Component
                 'bookings' => function ($q) {
                     $startOfMonth = \Carbon\Carbon::create($this->year, $this->month, 1)->startOfDay();
                     $endOfMonth = $startOfMonth->copy()->endOfMonth()->endOfDay();
-
-                    $q->where(function ($query) use ($startOfMonth, $endOfMonth) {
-                        $query->where('check_in', '<=', $endOfMonth)
-                            ->where(function ($sub) use ($startOfMonth) {
-                                $sub->where('check_out', '>=', $startOfMonth)
-                                    ->orWhereNull('check_out');
-                            });
-                    });
+                    // Eager load bookings for the displayed month
+                    $q->where('status', '!=', 'checked_out')
+                      ->where(function ($query) use ($startOfMonth, $endOfMonth) {
+                            $query->where('check_in', '<=', $endOfMonth)
+                                ->where(function ($sub) use ($startOfMonth) {
+                                    $sub->where('check_out', '>=', $startOfMonth)
+                                        ->orWhereNull('check_out');
+                                });
+                        });
                 }
             ]);
 
@@ -457,7 +512,82 @@ class BookingCalendar extends Component
             $query->where('area_id', $this->selectedArea);
         }
 
-        return $query->get()->groupBy('area.name');
+        return $query->get()->groupBy('area.name')->map(function ($rooms) {
+            foreach ($rooms as $room) {
+                $this->calculateStacking($room);
+            }
+            return $rooms;
+        });
+    }
+
+    public function calculateStacking($room)
+    {
+        $bookings = $room->bookings->sortBy('check_in');
+        // "k cần xếp chồng nữa mà để 1 dòng hết" -> No lanes needed, stack_index always 0.
+        
+        foreach ($bookings as $booking) {
+            // Determine Visual Start Day (relative to month start)
+            $monthStart = \Carbon\Carbon::create($this->year, $this->month, 1)->startOfDay();
+            
+            // "lúc này k quan tâm thười gain nữa" -> Normalize to StartOfDay
+            $checkInDate = (is_a($booking->check_in, 'Carbon\Carbon') ? $booking->check_in : \Carbon\Carbon::parse($booking->check_in))->startOfDay();
+            $checkOutDate = ($booking->check_out ? (is_a($booking->check_out, 'Carbon\Carbon') ? $booking->check_out : \Carbon\Carbon::parse($booking->check_out)) : $checkInDate->copy()->addDay())->startOfDay();
+
+            // Raw start index based on Date only
+            $diffStartDays = $monthStart->diffInDays($checkInDate, false); // Int
+            
+            if ($booking->price_type === 'month') {
+                // Keep existing Month logic but mapped to new base?
+                // Visual Start usually at start of day (0.0) for Month?
+                $visualStart = (float) $diffStartDays;
+                
+                // Cross-month handling specific for Month Type
+                if ($visualStart < 0) {
+                     $visualStart = 0;
+                     $diffM1vcCheckout = $monthStart->diffInDays($checkOutDate, false);
+                     $remainingDays = max(1, $diffM1vcCheckout);
+                     if ($remainingDays <= 10) {
+                         $visualDays = $remainingDays;
+                     } else {
+                         $visualDays = 5;
+                     }
+                } else {
+                     $visualDays = 10;
+                }
+            } elseif ($booking->price_type === 'hour') {
+                $visualStart = (float) $diffStartDays;
+                $visualDays = 0.5;
+                if ($visualStart < 0) $visualStart = 0; 
+            } else {
+                // Type 'day'.
+                // "chia đổi ngày đó ra" -> Start and End at 0.5 (Noon)
+                // Visual Start = Date + 0.5
+                // Visual End = Date + 0.5
+                
+                $rawStartPos = $diffStartDays + 0.5;
+                $diffEndDays = $monthStart->diffInDays($checkOutDate, false);
+                $rawEndPos = $diffEndDays + 0.5;
+                
+                $visualStart = $rawStartPos;
+                $visualDays = $rawEndPos - $rawStartPos;
+                
+                // Minimum width safety? Request says "chia đôi". 1 day -> 1.5 - 0.5 = 1.0. Correct.
+                
+                // Cross-month handling
+                // If started prev month (Start < 0)
+                if ($visualStart < 0) {
+                     $loss = abs($visualStart);
+                     $visualStart = 0;
+                     $visualDays = max(0, $visualDays - $loss);
+                }
+            }
+            
+            $booking->visual_days = $visualDays;
+            $booking->visual_start = $visualStart;
+            $booking->stack_index = 0; // Always top row
+        }
+        
+        $room->max_stack_index = 0; // Single row height
     }
 
     public function render()

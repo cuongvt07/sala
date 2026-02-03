@@ -59,32 +59,26 @@
     <!-- Create/Edit Modal -->
     <x-ui.modal name="showModal" :title="$editingAreaId ? 'Chỉnh sửa Khu vực' : 'Thêm Khu vực mới'">
         <form wire:submit="save" class="space-y-4 p-4 sm:p-0">
-            <x-ui.input 
-                label="Tên Khu vực" 
-                id="name" 
-                wire:model="name" 
-                :error="$errors->first('name')" 
-                required 
-                class="font-bold text-[12px]"
-            />
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="space-y-4">
+                    <div class="space-y-1">
+                        <label for="name" class="block font-semibold text-gray-700 text-[11px] uppercase">Tên Khu vực <span class="text-red-500">*</span></label>
+                        <input type="text" id="name" wire:model="name" required class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm font-bold focus:ring-blue-500 focus:border-blue-500">
+                        @error('name') <p class="text-[10px] text-red-500">{{ $message }}</p> @enderror
+                    </div>
 
-            <x-ui.input 
-                label="Địa chỉ" 
-                id="address" 
-                wire:model="address" 
-                :error="$errors->first('address')" 
-                class="font-bold text-[12px]"
-            />
+                    <div class="space-y-1">
+                        <label for="address" class="block font-semibold text-gray-700 text-[11px] uppercase">Địa chỉ</label>
+                        <input type="text" id="address" wire:model="address" class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm focus:ring-blue-500 focus:border-blue-500">
+                        @error('address') <p class="text-[10px] text-red-500">{{ $message }}</p> @enderror
+                    </div>
+                </div>
 
-            <div class="space-y-1.5">
-                <label for="description" class="block font-normal text-gray-900 uppercase tracking-widest text-[11px] mb-1.5">Mô tả</label>
-                <textarea 
-                    id="description" 
-                    wire:model="description"
-                    class="block w-full rounded-lg border-gray-200 bg-white p-2 text-[12px] font-bold text-gray-900 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm"
-                    rows="3"
-                ></textarea>
-                @error('description') <p class="text-[11px] text-red-500">{{ $message }}</p> @enderror
+                <div class="space-y-1">
+                    <label for="description" class="block font-semibold text-gray-700 text-[11px] uppercase">Mô tả</label>
+                    <textarea id="description" wire:model="description" rows="4" class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm focus:ring-blue-500 focus:border-blue-500"></textarea>
+                    @error('description') <p class="text-[10px] text-red-500">{{ $message }}</p> @enderror
+                </div>
             </div>
 
             <div class="flex justify-end pt-4 gap-3">

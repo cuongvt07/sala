@@ -61,8 +61,8 @@ class Index extends Component
         $this->area_id = $room->area_id;
         $this->code = $room->code;
         $this->type = $room->type;
-        $this->price_day = $room->price_day;
-        $this->price_hour = $room->price_hour;
+        $this->price_day = $room->price_day ? number_format($room->price_day, 0, '', '.') : '';
+        $this->price_hour = $room->price_hour ? number_format($room->price_hour, 0, '', '.') : '';
         $this->status = $room->status;
         $this->description = $room->description;
         
@@ -71,6 +71,10 @@ class Index extends Component
 
     public function save()
     {
+        // Sanitize currency inputs
+        $this->price_day = str_replace(['.', ','], '', $this->price_day);
+        $this->price_hour = str_replace(['.', ','], '', $this->price_hour);
+
         $this->validate();
 
         $data = [

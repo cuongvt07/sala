@@ -123,10 +123,6 @@
             width: 6px; height: 6px; border-radius: 50%;
             display: inline-block; margin-right: 4px;
         }
-        .status-available { background: #22c55e; }
-        .status-occupied { background: #ef4444; }
-        .status-maintenance { background: #f59e0b; }
-        .status-reserved { background: #3b82f6; }
 
         /* Legend Badge */
         .legend-badge {
@@ -205,7 +201,6 @@
 
             @php $rowIndex = 2; @endphp
 
-            {{-- Rooms & Bookings --}}
             @foreach($roomsData as $areaName => $rooms)
                 {{-- Area Header --}}
                 <div class="area-header" style="grid-column: 1 / -1; grid-row: {{ $rowIndex }};">
@@ -214,67 +209,68 @@
                 @php $rowIndex++; @endphp
 
                 @foreach($rooms as $room)
+                    @php
+                        // Single row layout, fixed height
+                        $rowHeight = 52; 
+                    @endphp
+
                     {{-- Room Info Cell --}}
-                    <div class="room-cell room-info" style="grid-column: 1; grid-row: {{ $rowIndex }};">
+                    <div class="room-cell room-info" style="grid-column: 1; grid-row: {{ $rowIndex }}; height: {{ $rowHeight }}px;">
                         <div class="flex items-center gap-1">
-                            <span class="status-dot status-{{ $room->status }}"></span>
+                            @php
+                                $statusColor = match($room->status) {
+                                    'active' => 'bg-green-500',
+                                    'maintenance' => 'bg-red-500',
+                                    'available' => 'bg-green-500', // Fallback
+                                    'occupied' => 'bg-green-500', // Fallback
+                                    default => 'bg-gray-400'
+                                };
+                            @endphp
+                            <span class="w-2 h-2 rounded-full {{ $statusColor }}"></span>
                             <span class="room-code">{{ $room->code }}</span>
                         </div>
                         <span class="room-type">{{ $room->type }}</span>
                         <span class="room-price">{{ number_format($room->price, 0, ',', '.') }}đ</span>
                     </div>
 
-                    {{-- Day Cells --}}
+                    {{-- Day Cells Background --}}
                     @foreach($this->daysInMonth as $dayIndex => $day)
                         <div wire:click="createBooking({{ $room->id }}, '{{ $day->format('Y-m-d') }}')"
-                             class="day-cell {{ $day->isWeekend() ? 'weekend' : '' }} {{ $day->isToday() ? 'today' : '' }}"
-                             style="grid-column: {{ $dayIndex + 2 }}; grid-row: {{ $rowIndex }};">
+                             class="day-cell {{ $day->isWeekend() ? 'weekend' : '' }}"
+                             style="grid-column: {{ $dayIndex + 2 }}; grid-row: {{ $rowIndex }}; height: {{ $rowHeight }}px;">
                         </div>
                     @endforeach
 
-                    {{-- Booking Bars --}}
-                    @foreach($room->bookings as $booking)
-                        @php
-                            // Robustly parse CheckIn/CheckOut
-                            $checkIn = is_a($booking->check_in, 'Carbon\Carbon') ? $booking->check_in : \Carbon\Carbon::parse($booking->check_in);
-                            
-                            $checkOut = null;
-                            if ($booking->check_out) {
-                                $checkOut = is_a($booking->check_out, 'Carbon\Carbon') ? $booking->check_out : \Carbon\Carbon::parse($booking->check_out);
-                            } else {
-                                // Long term: End of view range
-                                $checkOut = $checkIn->copy()->addYears(1);
-                            }
-                            
-                            $currentMonth = $this->month;
-                            $currentYear = $this->year;
-                            
-                            $monthStart = \Carbon\Carbon::create($currentYear, $currentMonth, 1)->startOfDay();
-                            $monthEnd = $monthStart->copy()->endOfMonth()->endOfDay();
+                    {{-- Bookings Overlay Container --}}
+                    <div class="relative w-full h-full pointer-events-none custom-scrollbar-hide overflow-hidden" 
+                         style="grid-column: 2 / -1; grid-row: {{ $rowIndex }}; height: {{ $rowHeight }}px;">
+                        
+                        @foreach($room->bookings as $booking)
+                            @php
+                                $dayWidth = 48; // px
+                                $left = $booking->visual_start * $dayWidth;
+                                $width = max(12, $booking->visual_days * $dayWidth); // Min 12px
+                                $top = 10; // Centered vertically in 52px (height 28 -> margin 12 top/bottom)
+                            @endphp
 
-                            // Clamp dates to the current month view
-                            $displayStart = $checkIn->copy()->max($monthStart);
-                            $displayEnd = $checkOut->copy()->min($monthEnd);
-                            
-                            // Column 1 is Room info, so Day 1 is Column 2
-                            $startCol = (int)$displayStart->format('j') + 1;
-                            
-                            // Duration in days (inclusive)
-                            $duration = (int)$displayStart->startOfDay()->diffInDays($displayEnd->startOfDay()) + 1;
-                        @endphp
-
-                        <div wire:click="editBooking({{ $booking->id }})"
-                             class="booking-bar booking-{{ $booking->status }} group relative"
-                             style="grid-column: {{ $startCol }} / span {{ $duration }}; grid-row: {{ $rowIndex }};"
-                             title="{{ $booking->customer->name }} ({{ $duration }} ngày)">
-                            <div class="sticky left-0 px-2 truncate w-full group-hover:overflow-visible group-hover:whitespace-normal group-hover:bg-inherit group-hover:z-50 py-0.5 flex flex-col leading-tight">
-                                <span class="font-bold uppercase text-[10px]">{{ $booking->customer->name }}</span>
-                                <span class="text-[8.5px] opacity-90 whitespace-nowrap">
-                                    {{ $checkIn->format('h:i A d/m') }} - {{ $checkOut ? $checkOut->format('h:i A d/m') : '...' }}
-                                </span>
+                            <div wire:click="editBooking({{ $booking->id }})"
+                                 class="booking-bar booking-{{ $booking->status }} group absolute pointer-events-auto shadow-sm hover:brightness-110 hover:shadow-md hover:scale-[1.01] transition-all duration-200 ease-in-out cursor-pointer z-10 hover:z-20"
+                                 style="left: {{ $left }}px; width: {{ $width }}px; top: {{ $top }}px; height: 28px;"
+                                 title="{{ $booking->customer->name }} - {{ \Carbon\Carbon::parse($booking->check_in)->format('d/m H:i') }} bis {{ \Carbon\Carbon::parse($booking->check_out)->format('d/m H:i') }}">
+                                <div class="px-2 w-full flex flex-col leading-tight h-full justify-center text-white relative select-none">
+                                    {{-- Name: Visible if space permits --}}
+                                    <span class="font-bold uppercase text-[10px] truncate">{{ $booking->customer->name }}</span>
+                                    
+                                    {{-- Dates: Only if width > 60px --}}
+                                    @if($width > 60)
+                                        <span class="text-[8.5px] opacity-90 whitespace-nowrap truncate">
+                                            {{ \Carbon\Carbon::parse($booking->check_in)->format('d/m') }} - {{ \Carbon\Carbon::parse($booking->check_out)->format('d/m') }}
+                                        </span>
+                                    @endif
+                                </div>
                             </div>
-                        </div>
-                    @endforeach
+                        @endforeach
+                    </div>
 
                     @php $rowIndex++; @endphp
                 @endforeach
@@ -356,26 +352,39 @@
                         @endif
                     </div>
 
-                    {{-- Room Info --}}
-                    <div>
-                        <label class="block text-sm font-normal text-gray-700 mb-1">Phòng</label>
-                        <select wire:model.live="room_id" class="w-full rounded-lg border-gray-300">
-                            @foreach($all_rooms as $r)
-                                <option value="{{ $r->id }}">{{ $r->code }} ({{ $r->area->name ?? '' }})</option>
-                            @endforeach
-                        </select>
-                        @error('room_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                    </div>
+                    {{-- Booking Details Row --}}
+                    <div class="grid grid-cols-4 gap-4">
+                        {{-- Room --}}
+                        <div>
+                            <label class="block text-sm font-normal text-gray-700 mb-1">Phòng</label>
+                            <select wire:model.live="room_id" class="w-full rounded-lg border-gray-300 h-10">
+                                @foreach($all_rooms as $r)
+                                    <option value="{{ $r->id }}">{{ $r->code }} ({{ $r->area->name ?? '' }})</option>
+                                @endforeach
+                            </select>
+                            @error('room_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                        </div>
 
-                    {{-- Price & Notes --}}
-                    <div class="grid grid-cols-2 gap-4">
+                        {{-- Price Type --}}
+                        <div>
+                            <label class="block text-sm font-normal text-gray-700 mb-1">Loại giá</label>
+                            <select wire:model.live="price_type" class="w-full rounded-lg border-gray-300 h-10">
+                                <option value="day">Theo ngày</option>
+                                <option value="month">Theo tháng</option>
+                            </select>
+                        </div>
+
+                        {{-- Price --}}
                         <div>
                             <label class="block text-sm font-normal text-gray-700 mb-1">Tiền phòng</label>
-                            <input type="text" wire:model.blur="price" class="w-full rounded-lg border-gray-300 font-bold text-blue-600">
+                            <input type="text" wire:model.blur="price" class="w-full rounded-lg border-gray-300 font-bold text-blue-600 h-10">
+                            @error('price') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                         </div>
+
+                        {{-- Status --}}
                         <div>
                             <label class="block text-sm font-normal text-gray-700 mb-1">Trạng thái</label>
-                            <select wire:model.blur="status" class="w-full rounded-lg border-gray-300">
+                            <select wire:model.blur="status" class="w-full rounded-lg border-gray-300 h-10">
                                 <option value="pending">Đang chờ</option>
                                 <option value="confirmed">Đã xác nhận</option>
                                 <option value="checked_in">Đã nhận phòng</option>

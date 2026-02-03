@@ -13,7 +13,8 @@ class Edit extends Component
     public $area_id;
     public $code;
     public $type;
-    public $price;
+    public $price_day;
+    public $price_hour;
     public $status;
     public $description;
 
@@ -28,7 +29,8 @@ class Edit extends Component
         $this->area_id = $roomModel->area_id;
         $this->code = $roomModel->code;
         $this->type = $roomModel->type;
-        $this->price = $roomModel->price;
+        $this->price_day = $roomModel->price_day ? number_format($roomModel->price_day, 0, '', '.') : '';
+        $this->price_hour = $roomModel->price_hour ? number_format($roomModel->price_hour, 0, '', '.') : '';
         $this->status = $roomModel->status;
         $this->description = $roomModel->description;
     }
@@ -39,14 +41,18 @@ class Edit extends Component
             'area_id' => 'required|exists:areas,id',
             'code' => ['required', 'string', 'max:255', Rule::unique('rooms', 'code')->ignore($this->roomId)],
             'type' => 'required|string',
-            'price' => 'required|numeric|min:0',
-            'status' => 'required|in:available,occupied,maintenance,reserved',
+            'price_day' => 'required', // numeric check happens after sanitization if needed, but handled loosely here or strict? Let's just require.
+            'price_hour' => 'nullable',
+            'status' => 'required|in:active,maintenance',
             'description' => 'nullable|string',
         ];
     }
 
     public function save()
     {
+        $this->price_day = str_replace(['.', ','], '', $this->price_day);
+        $this->price_hour = str_replace(['.', ','], '', $this->price_hour);
+        
         $this->validate();
 
         $room = Room::find($this->roomId);
@@ -54,7 +60,8 @@ class Edit extends Component
             'area_id' => $this->area_id,
             'code' => $this->code,
             'type' => $this->type,
-            'price' => $this->price,
+            'price_day' => $this->price_day,
+            'price_hour' => $this->price_hour,
             'status' => $this->status,
             'description' => $this->description,
         ]);

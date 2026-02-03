@@ -42,10 +42,8 @@
                 <div class="space-y-1.5">
                     <label for="status" class="block text-sm font-semibold text-gray-700">Trạng thái <span class="text-red-500">*</span></label>
                     <select id="status" wire:model="status" class="block w-full rounded-lg border-gray-200 bg-gray-50 p-2.5 text-sm text-gray-900 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm">
-                        <option value="available">Trống</option>
-                        <option value="occupied">Đang thuê</option>
+                        <option value="active">Hoạt động</option>
                         <option value="maintenance">Bảo trì</option>
-                        <option value="reserved">Đã cọc</option>
                     </select>
                     @error('status') <p class="text-xs text-red-500">{{ $message }}</p> @enderror
                 </div>

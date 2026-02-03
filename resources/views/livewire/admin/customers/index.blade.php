@@ -24,10 +24,8 @@
                 <tr>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Họ và Tên</th>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Liên hệ</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">CCCD / CMND</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Số Visa</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">CCCD / Visa / Passport</th>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Hạn Visa</th>
-
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Quốc tịch</th>
                     <th class="px-6 py-4 text-right text-xs font-semibold text-gray-900 uppercase tracking-wider">Hành động</th>
                 </tr>
@@ -45,9 +43,6 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-[13px] font-bold text-gray-900">
                             {{ $customer->identity_id }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-[13px] text-gray-900">{{ $customer->visa_number ?? '-' }}</div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             @if($customer->visa_expiry)
@@ -93,83 +88,63 @@
     <!-- Create/Edit Modal -->
     <x-ui.modal name="showModal" :title="$editingCustomerId ? 'Chỉnh sửa Khách hàng' : 'Thêm Khách hàng mới'">
         <form wire:submit="save" class="space-y-4 p-4 sm:p-0">
-            <x-ui.input 
-                label="Họ và Tên" 
-                id="name" 
-                wire:model="name" 
-                :error="$errors->first('name')" 
-                required 
-                class="text-[12px]"
-            />
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {{-- Col 1 --}}
+                <div class="space-y-4">
+                     <div class="space-y-1">
+                        <label for="name" class="block font-semibold text-gray-700 text-[11px] uppercase">Họ và Tên <span class="text-red-500">*</span></label>
+                        <input type="text" id="name" wire:model="name" required class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm font-bold focus:ring-blue-500 focus:border-blue-500">
+                        @error('name') <p class="text-[10px] text-red-500">{{ $message }}</p> @enderror
+                    </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <x-ui.input 
-                    label="Số điện thoại" 
-                    id="phone" 
-                    wire:model="phone" 
-                    :error="$errors->first('phone')" 
-                    required 
-                    class="text-[12px]"
-                />
-                
-                <x-ui.input 
-                    label="Email" 
-                    type="email"
-                    id="email" 
-                    wire:model="email" 
-                    :error="$errors->first('email')" 
-                    class="text-[12px]"
-                />
-            </div>
+                    <div class="space-y-1">
+                        <label for="phone" class="block font-semibold text-gray-700 text-[11px] uppercase">Số điện thoại <span class="text-red-500">*</span></label>
+                        <input type="text" id="phone" wire:model="phone" required class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm font-bold focus:ring-blue-500 focus:border-blue-500">
+                        @error('phone') <p class="text-[10px] text-red-500">{{ $message }}</p> @enderror
+                    </div>
+                    
+                    <div class="space-y-1">
+                         <label for="email" class="block font-semibold text-gray-700 text-[11px] uppercase">Email</label>
+                        <input type="email" id="email" wire:model="email" class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm focus:ring-blue-500 focus:border-blue-500">
+                        @error('email') <p class="text-[10px] text-red-500">{{ $message }}</p> @enderror
+                    </div>
+                </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <x-ui.input 
-                    label="CCCD / CMND" 
-                    id="identity_id" 
-                    wire:model="identity_id" 
-                    :error="$errors->first('identity_id')" 
-                    required 
-                    class="text-[12px]"
-                />
-                
-                <x-ui.input 
-                    label="Ngày sinh" 
-                    type="date"
-                    id="birthday" 
-                    wire:model="birthday" 
-                    :error="$errors->first('birthday')" 
-                    class="text-[12px]"
-                />
-            </div>
+                {{-- Col 2 --}}
+                <div class="space-y-4">
+                    <div class="space-y-1">
+                        <label for="identity_id" class="block font-semibold text-gray-700 text-[11px] uppercase">CCCD / Visa / Passport <span class="text-red-500">*</span></label>
+                        <input type="text" id="identity_id" wire:model="identity_id" required class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm font-bold focus:ring-blue-500 focus:border-blue-500">
+                        @error('identity_id') <p class="text-[10px] text-red-500">{{ $message }}</p> @enderror
+                    </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <x-ui.select-search 
-                    label="Quốc tịch" 
-                    wire:model="nationality" 
-                    :options="$countries"
-                    :error="$errors->first('nationality')"
-                    placeholder="Chọn quốc tịch"
-                />
+                    <div class="space-y-1">
+                        <label for="nationality" class="block font-semibold text-gray-700 text-[11px] uppercase">Quốc tịch</label>
+                        <div class="relative">
+                            <x-ui.select-search 
+                                wire:model="nationality" 
+                                :options="$countries"
+                                :error="$errors->first('nationality')"
+                                placeholder="Chọn quốc tịch"
+                                class="bg-gray-50 border-gray-300"
+                            />
+                        </div>
+                    </div>
 
-                 <x-ui.input 
-                    label="Số Visa" 
-                    id="visa_number" 
-                    wire:model="visa_number" 
-                    :error="$errors->first('visa_number')" 
-                    placeholder="Số Visa (nếu có)"
-                    class="text-[12px]"
-                />
-            </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-1">
+                            <label for="birthday" class="block font-semibold text-gray-700 text-[11px] uppercase">Ngày sinh</label>
+                            <input type="date" id="birthday" wire:model="birthday" class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm focus:ring-blue-500 focus:border-blue-500">
+                            @error('birthday') <p class="text-[10px] text-red-500">{{ $message }}</p> @enderror
+                        </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <x-ui.input 
-                    type="date" 
-                    label="Hạn Visa" 
-                    id="visa_expiry" 
-                    wire:model="visa_expiry" 
-                    :error="$errors->first('visa_expiry')" 
-                    class="text-[12px]"
-                />
+                         <div class="space-y-1">
+                            <label for="visa_expiry" class="block font-semibold text-gray-700 text-[11px] uppercase">Hạn Visa</label>
+                            <input type="date" id="visa_expiry" wire:model="visa_expiry" class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm focus:ring-blue-500 focus:border-blue-500">
+                             @error('visa_expiry') <p class="text-[10px] text-red-500">{{ $message }}</p> @enderror
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="flex justify-end pt-4 gap-3">
