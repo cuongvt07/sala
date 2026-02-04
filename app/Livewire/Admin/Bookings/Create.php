@@ -15,6 +15,8 @@ class Create extends Component
     public $check_out;
     public $price;
     public $deposit = 0;
+    public $deposit_2 = 0;
+    public $deposit_3 = 0;
     public $status = 'pending';
 
     protected $rules = [
@@ -24,7 +26,9 @@ class Create extends Component
         'check_out' => 'required|date|after:check_in',
         'price' => 'required|numeric|min:0',
         'deposit' => 'nullable|numeric|min:0',
-        'status' => 'required|in:pending,confirmed,checked_in,checked_out,cancelled',
+        'deposit_2' => 'nullable|numeric|min:0',
+        'deposit_3' => 'nullable|numeric|min:0',
+        'status' => 'required|in:pending,checked_in,checked_out,cancelled',
     ];
 
     public function save()
@@ -38,6 +42,8 @@ class Create extends Component
             'check_out' => $this->check_out,
             'price' => $this->price,
             'deposit' => $this->deposit,
+            'deposit_2' => $this->deposit_2,
+            'deposit_3' => $this->deposit_3,
             'status' => $this->status,
         ]);
 

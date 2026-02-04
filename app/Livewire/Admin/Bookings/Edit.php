@@ -16,6 +16,8 @@ class Edit extends Component
     public $check_out;
     public $price;
     public $deposit;
+    public $deposit_2;
+    public $deposit_3;
     public $status;
 
     public function mount($booking)
@@ -32,6 +34,8 @@ class Edit extends Component
         $this->check_out = $bookingModel->check_out;
         $this->price = $bookingModel->price;
         $this->deposit = $bookingModel->deposit;
+        $this->deposit_2 = $bookingModel->deposit_2;
+        $this->deposit_3 = $bookingModel->deposit_3;
         $this->status = $bookingModel->status;
     }
 
@@ -42,7 +46,9 @@ class Edit extends Component
         'check_out' => 'required|date|after:check_in',
         'price' => 'required|numeric|min:0',
         'deposit' => 'nullable|numeric|min:0',
-        'status' => 'required|in:pending,confirmed,checked_in,checked_out,cancelled',
+        'deposit_2' => 'nullable|numeric|min:0',
+        'deposit_3' => 'nullable|numeric|min:0',
+        'status' => 'required|in:pending,checked_in,checked_out,cancelled',
     ];
 
     public function save()
@@ -57,6 +63,8 @@ class Edit extends Component
             'check_out' => $this->check_out,
             'price' => $this->price,
             'deposit' => $this->deposit,
+            'deposit_2' => $this->deposit_2,
+            'deposit_3' => $this->deposit_3,
             'status' => $this->status,
         ]);
 

@@ -53,20 +53,25 @@
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                             {{ number_format($booking->deposit, 0, ',', '.') }}đ
+                            <div class="flex flex-col gap-1">
+                                @if($booking->deposit > 0) <span class="text-xs">L1: {{ number_format($booking->deposit, 0, ',', '.') }}đ</span> @endif
+                                @if($booking->deposit_2 > 0) <span class="text-xs">L2: {{ number_format($booking->deposit_2, 0, ',', '.') }}đ</span> @endif
+                                @if($booking->deposit_3 > 0) <span class="text-xs">L3: {{ number_format($booking->deposit_3, 0, ',', '.') }}đ</span> @endif
+                                @if($booking->deposit == 0 && $booking->deposit_2 == 0 && $booking->deposit_3 == 0) - @endif
+                            </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
                             @php
                                 $statusColors = [
                                     'pending' => 'yellow',
-                                    'confirmed' => 'blue',
+
                                     'checked_in' => 'green',
                                     'checked_out' => 'gray',
                                     'cancelled' => 'red',
                                 ];
                                 $statusLabels = [
-                                    'pending' => 'Chờ xác nhận',
-                                    'confirmed' => 'Đã xác nhận',
+                                    'pending' => 'Chờ lấy phòng',
+
                                     'checked_in' => 'Đang ở',
                                     'checked_out' => 'Đã trả',
                                     'cancelled' => 'Đã hủy',
@@ -128,8 +133,8 @@
                     <div class="p-2 bg-slate-900/50 rounded-lg">
                         <p class="text-xs text-slate-500 uppercase font-black tracking-widest mb-1.5 px-1">Trạng thái</p>
                         <select wire:model="status" class="w-full bg-slate-900 border-slate-700 text-white text-sm font-bold rounded p-1.5 focus:ring-blue-600 focus:border-blue-500 transition-all">
-                            <option value="pending">Chờ xác nhận</option>
-                            <option value="confirmed">Đã xác nhận</option>
+                            <option value="pending">Chờ lấy phòng</option>
+
                             <option value="checked_in">Nhận phòng</option>
                             <option value="checked_out">Trả phòng</option>
                             <option value="cancelled">Hủy</option>
@@ -275,7 +280,11 @@
                                     <x-ui.input label="Check-in" type="datetime-local" wire:model="check_in" compact />
                                     <x-ui.input label="Check-out" type="datetime-local" wire:model="check_out" compact />
                                     <x-ui.input label="Tổng tiền phòng" wire:model.blur="price" x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')" compact />
-                                    <x-ui.input label="Tiền cọc" wire:model.blur="deposit" x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')" compact />
+                                    <div class="col-span-2 grid grid-cols-3 gap-2">
+                                        <x-ui.input label="Cọc L1" wire:model.blur="deposit" x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')" compact />
+                                        <x-ui.input label="Cọc L2" wire:model.blur="deposit_2" x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')" compact />
+                                        <x-ui.input label="Cọc L3" wire:model.blur="deposit_3" x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')" compact />
+                                    </div>
                                 </div>
 
                                 <x-ui.textarea label="Ghi chú" wire:model="notes" rows="2" compact />

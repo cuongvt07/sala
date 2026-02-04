@@ -65,6 +65,8 @@ class Index extends Component
     public $check_out;
     public $price;
     public $deposit = 0;
+    public $deposit_2 = 0;
+    public $deposit_3 = 0;
     public $status = 'pending';
     public $notes;
 
@@ -89,7 +91,9 @@ class Index extends Component
             ],
             'price' => 'required|numeric|min:0',
             'deposit' => 'nullable|numeric|min:0',
-            'status' => 'required|in:pending,confirmed,checked_in,checked_out,cancelled',
+            'deposit_2' => 'nullable|numeric|min:0',
+            'deposit_3' => 'nullable|numeric|min:0',
+            'status' => 'required|in:pending,checked_in,checked_out,cancelled',
             'notes' => 'nullable|string',
         ];
 
@@ -148,7 +152,7 @@ class Index extends Component
     public function create()
     {
         $this->resetValidation();
-        $this->reset(['customer_id', 'new_customer_name', 'new_customer_phone', 'new_customer_email', 'new_customer_identity', 'new_customer_visa_number', 'new_customer_visa_expiry', 'new_customer_notes', 'new_customer_image', 'room_id', 'price_type', 'unit_price', 'check_in', 'check_out', 'price', 'deposit', 'status', 'notes', 'editingBookingId', 'selected_services', 'usage_logs']);
+        $this->reset(['customer_id', 'new_customer_name', 'new_customer_phone', 'new_customer_email', 'new_customer_identity', 'new_customer_visa_number', 'new_customer_visa_expiry', 'new_customer_notes', 'new_customer_image', 'room_id', 'price_type', 'unit_price', 'check_in', 'check_out', 'price', 'deposit', 'deposit_2', 'deposit_3', 'status', 'notes', 'editingBookingId', 'selected_services', 'usage_logs']);
         $this->price_type = 'day';
         $this->activeTab = 'existing';
         $this->manual_fee_date = date('Y-m-d');
@@ -174,6 +178,8 @@ class Index extends Component
         // Format money fields for display
         $this->price = number_format($booking->price, 0, ',', '.');
         $this->deposit = $booking->deposit ? number_format($booking->deposit, 0, ',', '.') : 0;
+        $this->deposit_2 = $booking->deposit_2 ? number_format($booking->deposit_2, 0, ',', '.') : 0;
+        $this->deposit_3 = $booking->deposit_3 ? number_format($booking->deposit_3, 0, ',', '.') : 0;
 
         $this->status = $booking->status;
         $this->notes = $booking->notes;
@@ -438,6 +444,8 @@ class Index extends Component
         // Sanitize money fields (remove dots)
         $this->price = str_replace('.', '', $this->price);
         $this->deposit = str_replace('.', '', $this->deposit);
+        $this->deposit_2 = str_replace('.', '', $this->deposit_2);
+        $this->deposit_3 = str_replace('.', '', $this->deposit_3);
         $this->unit_price = str_replace('.', '', $this->unit_price);
 
         $this->validate();
@@ -502,6 +510,8 @@ class Index extends Component
             'check_out' => ($this->price_type === 'month' && empty($this->check_out)) ? null : $this->check_out,
             'price' => $this->price,
             'deposit' => $this->deposit,
+            'deposit_2' => $this->deposit_2,
+            'deposit_3' => $this->deposit_3,
             'status' => $this->status,
             'notes' => $this->notes,
         ];
@@ -563,7 +573,7 @@ class Index extends Component
 
         if (!$this->editingBookingId) {
             $this->showModal = false;
-            $this->reset(['customer_id', 'new_customer_name', 'new_customer_phone', 'new_customer_email', 'new_customer_identity', 'new_customer_visa_number', 'new_customer_visa_expiry', 'new_customer_notes', 'new_customer_image', 'room_id', 'price_type', 'unit_price', 'check_in', 'check_out', 'price', 'deposit', 'status', 'notes', 'editingBookingId', 'selected_services', 'usage_logs']);
+            $this->reset(['customer_id', 'new_customer_name', 'new_customer_phone', 'new_customer_email', 'new_customer_identity', 'new_customer_visa_number', 'new_customer_visa_expiry', 'new_customer_notes', 'new_customer_image', 'room_id', 'price_type', 'unit_price', 'check_in', 'check_out', 'price', 'deposit', 'deposit_2', 'deposit_3', 'status', 'notes', 'editingBookingId', 'selected_services', 'usage_logs']);
         } else {
             // Re-load to ensure everything is fresh
             $this->edit($this->editingBookingId);

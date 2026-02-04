@@ -4,7 +4,12 @@ namespace App\Livewire\Admin;
 
 use Livewire\Component;
 use App\Models\Room;
+use App\Models\Booking;
 use App\Models\Area;
+use App\Models\Service;
+use App\Models\Customer;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
 
 class BookingCalendar extends Component
@@ -46,6 +51,12 @@ class BookingCalendar extends Component
     public $new_customer_notes;
     public $new_customer_image;
 
+    // Customer Details for Check-in
+    public $customer_identity;
+    public $customer_nationality;
+    public $customer_visa_number;
+    public $customer_visa_expiry;
+
     public $room_id;
     public $price_type = 'day';
     public $unit_price = 0;
@@ -53,19 +64,51 @@ class BookingCalendar extends Component
     public $check_out;
     public $price;
     public $deposit = 0;
+    public $deposit_2 = 0;
+    public $deposit_3 = 0;
     public $status = 'pending';
     public $notes;
 
     public $manual_fee_amount;
     public $manual_fee_notes;
     public $manual_fee_date;
+    public $countries = [];
 
     protected $listeners = ['area-selected' => '$refresh', 'refreshView' => '$refresh'];
+
+    public function updatedCustomerId($value)
+    {
+        if ($value) {
+            $customer = Customer::find($value);
+            if ($customer) {
+                // Pre-fill check-in info from existing customer
+                $this->customer_identity = $customer->identity_id;
+                $this->customer_nationality = $customer->nationality;
+                $this->customer_visa_number = $customer->visa_number;
+                $this->customer_visa_expiry = $customer->visa_expiry ? $customer->visa_expiry->format('Y-m-d') : null;
+            }
+        } else {
+            $this->reset(['customer_identity', 'customer_nationality', 'customer_visa_number', 'customer_visa_expiry']);
+        }
+    }
 
     public function mount()
     {
         $this->month = now()->month;
         $this->year = now()->year;
+
+        // Load countries list
+        $this->countries = Cache::remember('countries_list', 86400, function () {
+            try {
+                $response = Http::get('https://open.oapi.vn/location/countries');
+                if ($response->successful()) {
+                    return collect($response->json()['data'])->pluck('niceName')->toArray();
+                }
+            } catch (\Exception $e) {
+                // Fallback or log error
+            }
+            return [];
+        });
     }
 
     public function nextMonth()
@@ -95,7 +138,9 @@ class BookingCalendar extends Component
             ],
             'price' => 'required',
             'deposit' => 'nullable',
-            'status' => 'required|in:pending,confirmed,checked_in,checked_out,cancelled',
+            'deposit_2' => 'nullable',
+            'deposit_3' => 'nullable',
+            'status' => 'required|in:pending,checked_in,checked_out,cancelled',
             'notes' => 'nullable|string',
             'customer_id' => $this->activeTab === 'existing' ? 'required' : 'nullable',
             'new_customer_name' => $this->activeTab === 'new' ? 'required|string|max:255' : 'nullable',
@@ -125,41 +170,43 @@ class BookingCalendar extends Component
 
     public function calculateTotal()
     {
-        if (!$this->check_in || !$this->check_out || !$this->unit_price) return;
-        
+        if (!$this->check_in || !$this->check_out || !$this->unit_price)
+            return;
+
         try {
             $start = Carbon::parse($this->check_in);
             $end = Carbon::parse($this->check_out);
-            
-            if ($end->lte($start)) return;
-            
+
+            if ($end->lte($start))
+                return;
+
             $unitPrice = (float) str_replace(['.', ','], '', $this->unit_price);
-            
+
             if ($this->price_type === 'day') {
                 // Calculate days, including partial days if needed, but per requirement "day" usually means 24h blocks or calendar days.
                 // Logic based on nightly rate:
-                 $diff = abs($start->diffInDays($end));
-                 // If less than 1 day but parsed, count as 1? Or float? 
-                 // Usually hotels count nights. 
-                 $days = max(1, $diff);
-                 $total = $days * $unitPrice;
+                $diff = abs($start->diffInDays($end));
+                // If less than 1 day but parsed, count as 1? Or float? 
+                // Usually hotels count nights. 
+                $days = max(1, $diff);
+                $total = $days * $unitPrice;
             } else {
-                 // Month
-                 $months = $start->diffInMonths($end);
-                 $days = $start->copy()->addMonths($months)->diffInDays($end);
-                 // Simple approximation or exact logic? 
-                 // Let's stick to simple unit_price propagation for now if month, or 1 month default.
-                 // Actually, if price_type is month, usually fixed monthly price.
-                 // Let's just use unit_price if month, or calculate if multiple months.
-                 $total = max(1, $months) * $unitPrice; 
-                 if ($months < 1 && $days > 0) {
-                     // Partial month logic? For now let's just default to unitPrice for simplicity unless duration > 1 month
-                     $total = $unitPrice;
-                 }
+                // Month
+                $months = $start->diffInMonths($end);
+                $days = $start->copy()->addMonths($months)->diffInDays($end);
+                // Simple approximation or exact logic? 
+                // Let's stick to simple unit_price propagation for now if month, or 1 month default.
+                // Actually, if price_type is month, usually fixed monthly price.
+                // Let's just use unit_price if month, or calculate if multiple months.
+                $total = max(1, $months) * $unitPrice;
+                if ($months < 1 && $days > 0) {
+                    // Partial month logic? For now let's just default to unitPrice for simplicity unless duration > 1 month
+                    $total = $unitPrice;
+                }
             }
-            
+
             $this->price = number_format($total, 0, ',', '.');
-            
+
         } catch (\Exception $e) {
             // Ignore parse errors
         }
@@ -185,7 +232,7 @@ class BookingCalendar extends Component
     public function createBooking($roomId, $date)
     {
         $this->resetValidation();
-        $this->reset(['customer_id', 'new_customer_name', 'new_customer_phone', 'new_customer_email', 'new_customer_identity', 'new_customer_nationality', 'new_customer_visa_number', 'new_customer_visa_expiry', 'new_customer_notes', 'new_customer_image', 'room_id', 'price_type', 'unit_price', 'check_in', 'check_out', 'price', 'deposit', 'status', 'notes', 'editingBookingId', 'selected_services', 'usage_logs']);
+        $this->reset(['customer_id', 'new_customer_name', 'new_customer_phone', 'new_customer_email', 'new_customer_identity', 'new_customer_nationality', 'new_customer_visa_number', 'new_customer_visa_expiry', 'new_customer_notes', 'new_customer_image', 'customer_identity', 'customer_nationality', 'customer_visa_number', 'customer_visa_expiry', 'room_id', 'price_type', 'unit_price', 'check_in', 'check_out', 'price', 'deposit', 'deposit_2', 'deposit_3', 'status', 'notes', 'editingBookingId', 'selected_services', 'usage_logs']);
 
         $this->room_id = $roomId;
         $this->check_in = $date . 'T14:00';
@@ -215,8 +262,18 @@ class BookingCalendar extends Component
         $this->check_out = $booking->check_out ? $booking->check_out->format('Y-m-d\TH:i') : null;
         $this->price = number_format($booking->price, 0, ',', '.');
         $this->deposit = $booking->deposit ? number_format($booking->deposit, 0, ',', '.') : 0;
+        $this->deposit_2 = $booking->deposit_2 ? number_format($booking->deposit_2, 0, ',', '.') : 0;
+        $this->deposit_3 = $booking->deposit_3 ? number_format($booking->deposit_3, 0, ',', '.') : 0;
         $this->status = $booking->status;
         $this->notes = $booking->notes;
+
+        // Load Customer Check-in Info
+        if ($booking->customer) {
+            $this->customer_identity = $booking->customer->identity_id;
+            $this->customer_nationality = $booking->customer->nationality;
+            $this->customer_visa_number = $booking->customer->visa_number;
+            $this->customer_visa_expiry = $booking->customer->visa_expiry ? $booking->customer->visa_expiry->format('Y-m-d') : null;
+        }
 
         $this->selected_services = [];
         foreach ($booking->services as $service) {
@@ -394,19 +451,47 @@ class BookingCalendar extends Component
     {
         $cleanPrice = str_replace('.', '', $this->price);
         $cleanDeposit = str_replace('.', '', $this->deposit);
+        $cleanDeposit2 = str_replace('.', '', $this->deposit_2);
+        $cleanDeposit3 = str_replace('.', '', $this->deposit_3);
         $cleanUnitPrice = str_replace('.', '', $this->unit_price);
+
+        // Check-in Requirement Validation
+        if ($this->status === 'checked_in') {
+            $this->validate([
+                'customer_identity' => 'required',
+                'customer_nationality' => 'required',
+            ], [
+                'customer_identity.required' => 'Vui lòng nhập CMT/CCCD/Passport khi nhận phòng.',
+                'customer_nationality.required' => 'Vui lòng nhập quốc tịch khi nhận phòng.',
+            ]);
+        }
 
         $this->validate();
 
         $customerId = $this->customer_id;
+        $customerDataToUpdate = [
+            'identity_id' => $this->customer_identity,
+            'nationality' => $this->customer_nationality,
+            'visa_number' => $this->customer_visa_number,
+            'visa_expiry' => $this->customer_visa_expiry,
+        ];
+
         if ($this->activeTab === 'new') {
-            $customer = \App\Models\Customer::create([
+            $customer = \App\Models\Customer::create(array_merge([
                 'name' => $this->new_customer_name,
                 'phone' => $this->new_customer_phone,
                 'email' => $this->new_customer_email,
                 'identity_id' => $this->new_customer_identity,
-            ]);
+            ], $customerDataToUpdate));
             $customerId = $customer->id;
+        } elseif ($customerId) {
+            // Update existing customer check-in info
+            $customer = \App\Models\Customer::find($customerId);
+            if ($customer) {
+                // Filter out nulls if you only want to update detailed info when provided
+                // But for check-in requirement, we want to save what's in the form.
+                $customer->update($customerDataToUpdate);
+            }
         }
 
         $data = [
@@ -418,6 +503,8 @@ class BookingCalendar extends Component
             'check_out' => ($this->price_type === 'month' && empty($this->check_out)) ? null : $this->check_out,
             'price' => $cleanPrice,
             'deposit' => $cleanDeposit,
+            'deposit_2' => $cleanDeposit2,
+            'deposit_3' => $cleanDeposit3,
             'status' => $this->status,
             'notes' => $this->notes,
         ];
@@ -467,7 +554,9 @@ class BookingCalendar extends Component
             }
         }
 
-        $this->showModal = false;
+        session()->flash('message', $this->editingBookingId ? 'Cập nhật đặt phòng thành công!' : 'Tạo đặt phòng thành công!');
+
+        $this->reset(['editingBookingId', 'showModal']);
         $this->dispatch('refreshView');
     }
 
@@ -494,13 +583,13 @@ class BookingCalendar extends Component
                     $endOfMonth = $startOfMonth->copy()->endOfMonth()->endOfDay();
                     // Eager load bookings for the displayed month
                     $q->where('status', '!=', 'checked_out')
-                      ->where(function ($query) use ($startOfMonth, $endOfMonth) {
-                            $query->where('check_in', '<=', $endOfMonth)
-                                ->where(function ($sub) use ($startOfMonth) {
-                                    $sub->where('check_out', '>=', $startOfMonth)
-                                        ->orWhereNull('check_out');
-                                });
-                        });
+                        ->where(function ($query) use ($startOfMonth, $endOfMonth) {
+                        $query->where('check_in', '<=', $endOfMonth)
+                            ->where(function ($sub) use ($startOfMonth) {
+                                $sub->where('check_out', '>=', $startOfMonth)
+                                    ->orWhereNull('check_out');
+                            });
+                    });
                 }
             ]);
 
@@ -524,69 +613,70 @@ class BookingCalendar extends Component
     {
         $bookings = $room->bookings->sortBy('check_in');
         // "k cần xếp chồng nữa mà để 1 dòng hết" -> No lanes needed, stack_index always 0.
-        
+
         foreach ($bookings as $booking) {
             // Determine Visual Start Day (relative to month start)
             $monthStart = \Carbon\Carbon::create($this->year, $this->month, 1)->startOfDay();
-            
+
             // "lúc này k quan tâm thười gain nữa" -> Normalize to StartOfDay
             $checkInDate = (is_a($booking->check_in, 'Carbon\Carbon') ? $booking->check_in : \Carbon\Carbon::parse($booking->check_in))->startOfDay();
             $checkOutDate = ($booking->check_out ? (is_a($booking->check_out, 'Carbon\Carbon') ? $booking->check_out : \Carbon\Carbon::parse($booking->check_out)) : $checkInDate->copy()->addDay())->startOfDay();
 
             // Raw start index based on Date only
             $diffStartDays = $monthStart->diffInDays($checkInDate, false); // Int
-            
+
             if ($booking->price_type === 'month') {
                 // Keep existing Month logic but mapped to new base?
                 // Visual Start usually at start of day (0.0) for Month?
                 $visualStart = (float) $diffStartDays;
-                
+
                 // Cross-month handling specific for Month Type
                 if ($visualStart < 0) {
-                     $visualStart = 0;
-                     $diffM1vcCheckout = $monthStart->diffInDays($checkOutDate, false);
-                     $remainingDays = max(1, $diffM1vcCheckout);
-                     if ($remainingDays <= 10) {
-                         $visualDays = $remainingDays;
-                     } else {
-                         $visualDays = 5;
-                     }
+                    $visualStart = 0;
+                    $diffM1vcCheckout = $monthStart->diffInDays($checkOutDate, false);
+                    $remainingDays = max(1, $diffM1vcCheckout);
+                    if ($remainingDays <= 10) {
+                        $visualDays = $remainingDays;
+                    } else {
+                        $visualDays = 5;
+                    }
                 } else {
-                     $visualDays = 10;
+                    $visualDays = 10;
                 }
             } elseif ($booking->price_type === 'hour') {
                 $visualStart = (float) $diffStartDays;
                 $visualDays = 0.5;
-                if ($visualStart < 0) $visualStart = 0; 
+                if ($visualStart < 0)
+                    $visualStart = 0;
             } else {
                 // Type 'day'.
                 // "chia đổi ngày đó ra" -> Start and End at 0.5 (Noon)
                 // Visual Start = Date + 0.5
                 // Visual End = Date + 0.5
-                
+
                 $rawStartPos = $diffStartDays + 0.5;
                 $diffEndDays = $monthStart->diffInDays($checkOutDate, false);
                 $rawEndPos = $diffEndDays + 0.5;
-                
+
                 $visualStart = $rawStartPos;
                 $visualDays = $rawEndPos - $rawStartPos;
-                
+
                 // Minimum width safety? Request says "chia đôi". 1 day -> 1.5 - 0.5 = 1.0. Correct.
-                
+
                 // Cross-month handling
                 // If started prev month (Start < 0)
                 if ($visualStart < 0) {
-                     $loss = abs($visualStart);
-                     $visualStart = 0;
-                     $visualDays = max(0, $visualDays - $loss);
+                    $loss = abs($visualStart);
+                    $visualStart = 0;
+                    $visualDays = max(0, $visualDays - $loss);
                 }
             }
-            
+
             $booking->visual_days = $visualDays;
             $booking->visual_start = $visualStart;
             $booking->stack_index = 0; // Always top row
         }
-        
+
         $room->max_stack_index = 0; // Single row height
     }
 

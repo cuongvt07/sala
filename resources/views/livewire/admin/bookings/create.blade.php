@@ -41,14 +41,18 @@
 
                 <x-ui.input type="number" label="Tổng tiền (VNĐ)" id="price" wire:model="price" :error="$errors->first('price')" required />
 
-                <x-ui.input type="number" label="Tiền cọc (VNĐ)" id="deposit" wire:model="deposit" :error="$errors->first('deposit')" />
+                <div class="grid grid-cols-3 gap-4">
+                    <x-ui.input type="number" label="Cọc Lần 1" id="deposit" wire:model="deposit" :error="$errors->first('deposit')" />
+                    <x-ui.input type="number" label="Cọc Lần 2" id="deposit_2" wire:model="deposit_2" :error="$errors->first('deposit_2')" />
+                    <x-ui.input type="number" label="Cọc Lần 3" id="deposit_3" wire:model="deposit_3" :error="$errors->first('deposit_3')" />
+                </div>
 
                  <!-- Status -->
                 <div class="space-y-1.5">
                     <label for="status" class="block text-sm font-semibold text-gray-700">Trạng thái <span class="text-red-500">*</span></label>
                     <select id="status" wire:model="status" class="block w-full rounded-lg border-gray-200 bg-gray-50 p-2.5 text-sm text-gray-900 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm">
-                        <option value="pending">Chờ xác nhận</option>
-                        <option value="confirmed">Đã xác nhận</option>
+                        <option value="pending">Chờ lấy phòng</option>
+
                         <option value="checked_in">Đã nhận phòng</option>
                         <option value="checked_out">Đã trả phòng</option>
                         <option value="cancelled">Đã hủy</option>

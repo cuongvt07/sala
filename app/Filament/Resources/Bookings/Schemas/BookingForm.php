@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Bookings\Schemas;
 
 use Filament\Schemas\Schema;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
@@ -25,14 +26,18 @@ class BookingForm
                 DateTimePicker::make('check_in')->required(),
                 DateTimePicker::make('check_out')->required(),
                 TextInput::make('price')->numeric()->required()->prefix('$'),
-                TextInput::make('deposit')->numeric()->prefix('$'),
+                \Filament\Forms\Components\Grid::make(3)
+                    ->schema([
+                        TextInput::make('deposit')->label('Cọc Lần 1')->numeric()->prefix('$'),
+                        TextInput::make('deposit_2')->label('Cọc Lần 2')->numeric()->prefix('$'),
+                        TextInput::make('deposit_3')->label('Cọc Lần 3')->numeric()->prefix('$'),
+                    ]),
                 Select::make('status')
                     ->options([
-                        'pending' => 'Pending',
-                        'confirmed' => 'Confirmed',
-                        'checked_in' => 'Checked In',
-                        'checked_out' => 'Checked Out',
-                        'cancelled' => 'Cancelled',
+                        'pending' => 'Chờ lấy phòng',
+                        'checked_in' => 'Đã nhận phòng',
+                        'checked_out' => 'Đã trả phòng',
+                        'cancelled' => 'Đã hủy',
                     ])
                     ->default('pending')
                     ->required(),

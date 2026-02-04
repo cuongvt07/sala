@@ -99,8 +99,8 @@
         }
 
         /* Status Colors */
-        .booking-confirmed { background: #3b82f6; color: #fff; }
-        .booking-pending { background: #fbbf24; color: #78350f; }
+
+        .booking-pending { background: #facc15; color: #713f12; }
         .booking-checked_in { background: #22c55e; color: #fff; }
         .booking-checked_out { background: #6b7280; color: #fff; }
         .booking-cancelled { background: #ef4444; color: #fff; }
@@ -164,8 +164,8 @@
 
         {{-- Legend with colored badges --}}
         <div class="flex flex-wrap gap-2 text-xs">
-            <span class="legend-badge bg-blue-500 text-white">Đã xác nhận</span>
-            <span class="legend-badge bg-yellow-400 text-yellow-900">Đang chờ</span>
+
+            <span class="legend-badge bg-yellow-400 text-yellow-900">Chờ lấy phòng</span>
             <span class="legend-badge bg-green-500 text-white">Đã nhận phòng</span>
             <span class="legend-badge bg-gray-500 text-white">Đã trả phòng</span>
             <span class="legend-badge bg-red-500 text-white">Đã hủy</span>
@@ -268,10 +268,18 @@
                                 
                                 // Calculate Start Column (Day 1 is Col 2)
                                 $startCol = $displayStart->day + 1;
+
+                                $statusClasses = [
+                                    'pending' => 'bg-yellow-400 text-yellow-900',
+                                    'checked_in' => 'bg-green-500 text-white',
+                                    'checked_out' => 'bg-gray-500 text-white',
+                                    'cancelled' => 'bg-red-500 text-white',
+                                ];
+                                $bkClass = $statusClasses[$booking->status] ?? 'bg-gray-400 text-white';
                             @endphp
 
                             <div wire:click="editBooking({{ $booking->id }})"
-                                 class="booking-bar booking-{{ $booking->status }} group relative"
+                                 class="booking-bar {{ $bkClass }} group relative"
                                  style="grid-column: {{ $startCol }} / span {{ $duration }}; grid-row: {{ $rowIndex }};"
                                  title="{{ $booking->customer->name }} ({{ $duration }} ngày)">
                                 <div class="sticky left-0 px-2 truncate w-full group-hover:overflow-visible group-hover:whitespace-normal group-hover:bg-inherit group-hover:z-50 flex items-center gap-1">
