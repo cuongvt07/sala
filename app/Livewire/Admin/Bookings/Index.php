@@ -19,7 +19,7 @@ class Index extends Component
 
     public $showModal = false;
     public $editingBookingId = null;
-    public $activeModalTab = 'overview'; // overview, customer, room, services, history
+    public $activeModalTab = 'info'; // info, billing
 
     // Form inputs
     public $activeTab = 'existing'; // 'existing' or 'new' for customer tab
@@ -156,7 +156,7 @@ class Index extends Component
         $this->price_type = 'day';
         $this->activeTab = 'existing';
         $this->manual_fee_date = date('Y-m-d');
-        $this->activeModalTab = 'overview';
+        $this->activeModalTab = 'info';
         $this->showModal = true;
     }
 
@@ -217,7 +217,7 @@ class Index extends Component
         })->toArray();
 
         $this->manual_fee_date = date('Y-m-d');
-        $this->activeModalTab = 'overview';
+        $this->activeModalTab = 'info';
         $this->showModal = true;
     }
 
@@ -372,6 +372,16 @@ class Index extends Component
         if ($service->type === 'meter') {
             $this->service_inputs[$serviceId]['start_index'] = $input['end_index'];
             $this->service_inputs[$serviceId]['end_index'] = '';
+        }
+    }
+
+    public function addAllServiceLogs()
+    {
+        // Chốt tất cả dịch vụ đã chọn cùng lúc
+        foreach ($this->selected_services as $serviceId => $data) {
+            if (!empty($data['selected']) && isset($this->service_inputs[$serviceId])) {
+                $this->addServiceLog($serviceId);
+            }
         }
     }
 
@@ -586,6 +596,11 @@ class Index extends Component
         session()->flash('success', 'Xóa booking thành công.');
     }
 
+    // Filters
+    public $filterStatus = '';
+    public $filterType = '';
+    public $search = '';
+
     public function render()
     {
         $query = Booking::with(['customer', 'room.area'])->latest();
@@ -593,6 +608,26 @@ class Index extends Component
         if (session('admin_selected_area_id')) {
             $query->whereHas('room', function ($q) {
                 $q->where('area_id', session('admin_selected_area_id'));
+            });
+        }
+
+        // Apply filters
+        if ($this->filterStatus) {
+            $query->where('status', $this->filterStatus);
+        }
+
+        if ($this->filterType) {
+            $query->where('price_type', $this->filterType);
+        }
+
+        if ($this->search) {
+            $query->where(function ($q) {
+                $q->whereHas('customer', function ($subQ) {
+                    $subQ->where('name', 'like', '%' . $this->search . '%')
+                        ->orWhere('phone', 'like', '%' . $this->search . '%');
+                })->orWhereHas('room', function ($subQ) {
+                    $subQ->where('code', 'like', '%' . $this->search . '%');
+                })->orWhere('id', 'like', '%' . $this->search . '%');
             });
         }
 

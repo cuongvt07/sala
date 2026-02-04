@@ -423,9 +423,9 @@
                     {{-- Check-in Info (Conditional) --}}
                     <div class="bg-green-50 p-4 rounded border-2 border-green-300" x-show="$wire.status === 'checked_in'" x-transition>
                         <h4 class="font-semibold text-green-800 mb-3 text-sm">✓ Thông tin nhận phòng (Bắt buộc)</h4>
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-3 gap-3">
                             <div>
-                                <label class="block text-xs font-medium text-gray-700 mb-1.5">CMT/CCCD/Passport *</label>
+                                <label class="block text-xs font-medium text-gray-700 mb-1.5">CMT/CCCD/Passport/Visa *</label>
                                 <input type="text" wire:model.blur="customer_identity" class="w-full px-3 py-2 text-sm rounded border-gray-300 border bg-white focus:border-green-500 focus:ring-1 focus:ring-green-500">
                                 @error('customer_identity') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
                             </div>
@@ -438,10 +438,6 @@
                                     placeholder="Chọn quốc tịch"
                                     class="text-sm"
                                 />
-                            </div>
-                            <div>
-                                <label class="block text-xs font-medium text-gray-700 mb-1.5">Số Visa</label>
-                                <input type="text" wire:model.blur="customer_visa_number" class="w-full px-3 py-2 text-sm rounded border-gray-300 border bg-white focus:border-green-500 focus:ring-1 focus:ring-green-500">
                             </div>
                             <div>
                                 <label class="block text-xs font-medium text-gray-700 mb-1.5">Hạn Visa</label>

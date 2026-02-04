@@ -235,8 +235,8 @@ class BookingCalendar extends Component
         $this->reset(['customer_id', 'new_customer_name', 'new_customer_phone', 'new_customer_email', 'new_customer_identity', 'new_customer_nationality', 'new_customer_visa_number', 'new_customer_visa_expiry', 'new_customer_notes', 'new_customer_image', 'customer_identity', 'customer_nationality', 'customer_visa_number', 'customer_visa_expiry', 'room_id', 'price_type', 'unit_price', 'check_in', 'check_out', 'price', 'deposit', 'deposit_2', 'deposit_3', 'status', 'notes', 'editingBookingId', 'selected_services', 'usage_logs']);
 
         $this->room_id = $roomId;
-        $this->check_in = $date . 'T14:00';
-        $this->check_out = \Carbon\Carbon::parse($date)->addDay()->format('Y-m-d\T12:00');
+        $this->check_in = $date . 'T00:00';
+        $this->check_out = \Carbon\Carbon::parse($date)->addDay()->format('Y-m-d\T00:00');
         $this->price_type = 'day';
         $this->activeTab = 'existing';
         $this->manual_fee_date = date('Y-m-d');
@@ -469,28 +469,42 @@ class BookingCalendar extends Component
         $this->validate();
 
         $customerId = $this->customer_id;
-        $customerDataToUpdate = [
-            'identity_id' => $this->customer_identity,
-            'nationality' => $this->customer_nationality,
-            'visa_number' => $this->customer_visa_number,
-            'visa_expiry' => $this->customer_visa_expiry,
-        ];
 
         if ($this->activeTab === 'new') {
-            $customer = \App\Models\Customer::create(array_merge([
+            // Tạo khách hàng mới - chỉ lưu thông tin cơ bản
+            $newCustomerData = [
                 'name' => $this->new_customer_name,
                 'phone' => $this->new_customer_phone,
                 'email' => $this->new_customer_email,
                 'identity_id' => $this->new_customer_identity,
-            ], $customerDataToUpdate));
+            ];
+
+            // Chỉ thêm thông tin check-in nếu trạng thái là 'checked_in'
+            if ($this->status === 'checked_in') {
+                $identityValue = $this->customer_identity ?: $this->new_customer_identity;
+                $newCustomerData['identity_id'] = $identityValue;
+                $newCustomerData['nationality'] = $this->customer_nationality;
+                $newCustomerData['visa_number'] = $identityValue; // Lưu cùng giá trị với identity_id
+                $newCustomerData['visa_expiry'] = $this->customer_visa_expiry;
+            }
+
+            $customer = \App\Models\Customer::create($newCustomerData);
             $customerId = $customer->id;
-        } elseif ($customerId) {
-            // Update existing customer check-in info
+        } elseif ($customerId && $this->status === 'checked_in') {
+            // Chỉ cập nhật thông tin check-in khi trạng thái là 'checked_in'
             $customer = \App\Models\Customer::find($customerId);
             if ($customer) {
-                // Filter out nulls if you only want to update detailed info when provided
-                // But for check-in requirement, we want to save what's in the form.
-                $customer->update($customerDataToUpdate);
+                $customerDataToUpdate = [
+                    'identity_id' => $this->customer_identity,
+                    'nationality' => $this->customer_nationality,
+                    'visa_number' => $this->customer_identity, // Lưu cùng giá trị với identity_id
+                    'visa_expiry' => $this->customer_visa_expiry,
+                ];
+                // Filter out nulls to avoid overwriting existing values with null
+                $filteredData = array_filter($customerDataToUpdate, fn($value) => !is_null($value) && $value !== '');
+                if (!empty($filteredData)) {
+                    $customer->update($filteredData);
+                }
             }
         }
 
