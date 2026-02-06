@@ -390,19 +390,19 @@
                                                 @endif
                                             </td>
                                             <td class="px-2 py-2 text-center">
-                                                <input type="text" wire:model.blur="service_inputs.{{ $service->id }}.unit_price" class="w-full text-xs border-gray-200 rounded p-1 text-center font-semibold" x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')">
+                                                <input type="text" wire:model.blur="service_inputs.{{ $service->id }}.unit_price" class="w-full text-xs border-2 border-gray-400 bg-gray-50 rounded p-1 text-center font-semibold focus:border-blue-500 focus:ring-1 focus:ring-blue-500" x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')">
                                             </td>
                                             <td class="px-2 py-2 text-center">
                                                 @if($service->type === 'meter')
                                                     <div class="flex items-center gap-1 justify-center">
                                                         <div class="relative">
-                                                            <input type="number" wire:model.live="service_inputs.{{ $service->id }}.start_index" class="w-16 text-xs border-gray-200 bg-white rounded p-1 text-center font-semibold" placeholder="Đầu" title="Số đầu kỳ">
+                                                            <input type="number" wire:model.live="service_inputs.{{ $service->id }}.start_index" class="w-16 text-xs border-2 border-gray-400 bg-gray-50 rounded p-1 text-center font-semibold focus:border-blue-500 focus:ring-1 focus:ring-blue-500" placeholder="Đầu" title="Số đầu kỳ">
                                                         </div>
                                                         <span class="text-gray-400 text-xs">→</span>
-                                                        <input type="number" wire:model.live="service_inputs.{{ $service->id }}.end_index" class="w-16 text-xs border-blue-300 bg-blue-50 rounded p-1 text-center font-bold" placeholder="Cuối" title="Số cuối kỳ">
+                                                        <input type="number" wire:model.live="service_inputs.{{ $service->id }}.end_index" class="w-16 text-xs border-2 border-blue-500 bg-blue-100 rounded p-1 text-center font-bold focus:border-blue-600 focus:ring-2 focus:ring-blue-300" placeholder="Cuối" title="Số cuối kỳ">
                                                     </div>
                                                 @else
-                                                    <input type="number" wire:model.live="service_inputs.{{ $service->id }}.quantity" class="w-14 text-xs border-gray-200 rounded p-1 text-center font-semibold mx-auto">
+                                                    <input type="number" wire:model.live="service_inputs.{{ $service->id }}.quantity" class="w-14 text-xs border-2 border-gray-400 bg-gray-50 rounded p-1 text-center font-semibold mx-auto focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
                                                 @endif
                                             </td>
                                             <td class="px-3 py-2 text-right font-bold text-indigo-600">{{ number_format($amount, 0, ',', '.') }}đ</td>
