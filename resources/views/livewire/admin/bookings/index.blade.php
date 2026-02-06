@@ -394,7 +394,7 @@
                                                 @if($service->type === 'meter')
                                                     <div class="flex items-center gap-1 justify-center">
                                                         <div class="relative">
-                                                            <input type="number" wire:model.live="service_inputs.{{ $service->id }}.start_index" class="w-16 text-xs border-2 border-gray-400 bg-gray-50 rounded p-1 text-center font-semibold focus:border-blue-500 focus:ring-1 focus:ring-blue-500" placeholder="Đầu" title="Số đầu kỳ">
+                                                            <input type="number" wire:model.live="service_inputs.{{ $service->id }}.start_index" class="w-16 text-xs border-2 border-gray-400 bg-gray-50 rounded p-1 text-center font-semibold focus:border-blue-500 focus:ring-1 focus:ring-blue-500" placeholder="{{ $suggestIndex > 0 ? $suggestIndex : 'Đầu' }}" title="Số đầu kỳ">
                                                         </div>
                                                         <span class="text-gray-400 text-xs">→</span>
                                                         <input type="number" wire:model.live="service_inputs.{{ $service->id }}.end_index" class="w-16 text-xs border-2 border-blue-500 bg-blue-100 rounded p-1 text-center font-bold focus:border-blue-600 focus:ring-2 focus:ring-blue-300" placeholder="Cuối" title="Số cuối kỳ">
