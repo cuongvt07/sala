@@ -1,8 +1,8 @@
 @props(['searchPlaceholder' => 'Tìm kiếm...', 'searchModel' => 'search', 'filters' => []])
 
-<div class="mb-6 grid grid-cols-1 md:grid-cols-{{ count($filters) + 1 }} gap-4">
-    {{-- Search Input --}}
-    <div class="{{ count($filters) == 1 ? 'md:col-span-1' : 'md:col-span-2' }}">
+<div class="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+    {{-- Search Input - Always takes 2 columns --}}
+    <div class="md:col-span-2">
         <div class="relative">
             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <x-icon name="heroicon-o-magnifying-glass" class="h-5 w-5 text-gray-400" />
@@ -14,7 +14,7 @@
         </div>
     </div>
     
-    {{-- Filter Dropdowns --}}
+    {{-- Filter Dropdowns - Each takes 1 column --}}
     @foreach($filters as $filter)
         <div>
             <select wire:model.live="{{ $filter['model'] }}" 
