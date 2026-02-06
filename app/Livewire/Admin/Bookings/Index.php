@@ -360,15 +360,11 @@ class Index extends Component
         if (!$service)
             return;
 
-        // Find last index from usage logs if it exists
-        $startIndex = 0;
-        $logs = collect($this->usage_logs)->where('service_id', $serviceId)->sortByDesc('billing_date');
-        if ($logs->isNotEmpty()) {
-            $startIndex = $logs->first()['end_index'] ?? 0;
-        }
+        // Always set start_index to null to show placeholder (hint)
+        // The View will handle showing the suggested index in the placeholder
 
         $this->service_inputs[$serviceId] = [
-            'start_index' => $startIndex,
+            'start_index' => null, // Explicitly null to show placeholder
             'end_index' => '',
             'quantity' => 1,
             'unit_price' => number_format($service->unit_price, 0, ',', '.'),
