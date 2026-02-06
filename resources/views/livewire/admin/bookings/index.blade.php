@@ -390,7 +390,7 @@
                                                 @endif
                                             </td>
                                             <td class="px-2 py-2 text-center">
-                                                <input type="text" wire:model.blur="service_inputs.{{ $service->id }}.unit_price" class="w-full text-xs border-2 border-gray-400 bg-gray-50 rounded p-1 text-center font-semibold focus:border-blue-500 focus:ring-1 focus:ring-blue-500" x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')">
+                                                <input type="text" wire:model.blur="service_inputs.{{ $service->id }}.unit_price" class="w-full text-xs border-gray-200 bg-white rounded p-1 text-center font-semibold" x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')">
                                             </td>
                                             <td class="px-2 py-2 text-center">
                                                 @if($service->type === 'meter')
