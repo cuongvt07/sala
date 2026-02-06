@@ -326,8 +326,8 @@ class Index extends Component
         $this->invoice_data = [
             'period' => $period,
             'logs' => $periodLogs->values()->toArray(),
-            'room_price' => $this->basePrice,
-            'total' => $periodLogs->sum('total_amount') + $this->basePrice,
+            'room_price' => $this->price ?? 0,
+            'total' => $periodLogs->sum('total_amount') + ($this->price ?? 0),
             'booking' => [
                 'customer_name' => $this->customer_name,
                 'customer_phone' => $this->customer_phone,
