@@ -765,107 +765,179 @@
         </div>
     </div>
 
-    {{-- INVOICE MODAL --}}
+    {{-- INVOICE MODAL - Matching Bill Preview Format --}}
     @if($showInvoiceModal && !empty($invoice_data))
-        <div class="fixed inset-0 z-50 overflow-y-auto" x-data="{ show: @entangle('showInvoiceModal') }">
-            <!-- Backdrop -->
-            <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" wire:click="closeInvoiceModal"></div>
-            
-            <!-- Modal Container -->
-            <div class="flex min-h-screen items-center justify-center p-4">
-                <div class="relative bg-white rounded-lg shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto" @click.away="$wire.closeInvoiceModal()">
-                    <!-- Header -->
-                    <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
-                        <h3 class="text-lg font-bold text-gray-900">📄 Hóa đơn kỳ {{ $invoice_data['period'] }}</h3>
-                        <div class="flex items-center gap-2">
-                            <button onclick="window.print()" class="px-3 py-1.5 text-xs font-semibold text-white bg-blue-600 rounded hover:bg-blue-700">
-                                🖨️ In
-                            </button>
-                            <button wire:click="closeInvoiceModal" class="text-gray-400 hover:text-gray-600">
-                                <x-icon name="heroicon-o-x-mark" class="h-6 w-6"/>
-                            </button>
-                        </div>
-                    </div>
+        <div x-data="{ showInvoice: @entangle('showInvoiceModal') }"
+             x-show="showInvoice"
+             x-cloak
+             class="fixed inset-0 z-[60] overflow-y-auto">
+            <div class="flex items-center justify-center min-h-screen p-4">
+                <!-- Backdrop -->
+                <div x-show="showInvoice" x-on:click="$wire.closeInvoiceModal()" class="fixed inset-0 bg-black/50"></div>
+                
+                <!-- Modal Content -->
+                <div x-show="showInvoice"
+                     x-transition
+                     class="relative bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                    
+                    <!-- Close Button -->
+                    <button x-on:click="$wire.closeInvoiceModal()" class="absolute top-4 right-4 z-10 bg-gray-100 hover:bg-gray-200 rounded-full p-2">
+                        <x-icon name="heroicon-o-x-mark" class="h-5 w-5" />
+                    </button>
 
-                    <!-- Invoice Content -->
-                    <div class="p-6 space-y-4" id="invoice-content">
-                        <!-- Booking Info -->
-                        <div class="grid grid-cols-2 gap-4 pb-4 border-b">
-                            <div>
-                                <p class="text-xs text-gray-500">Khách hàng</p>
-                                <p class="font-bold">{{ $invoice_data['booking']['customer_name'] }}</p>
-                                <p class="text-sm text-gray-600">{{ $invoice_data['booking']['customer_phone'] }}</p>
+                    <!-- Print Button -->
+                    <button onclick="window.print()" class="absolute top-4 right-16 z-10 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-2">
+                        <x-icon name="heroicon-o-printer" class="h-5 w-5" />
+                    </button>
+
+                    @php
+                        $roomCode = $invoice_data['booking']['room_code'] ?? 'N/A';
+                        $customerName = $invoice_data['booking']['customer_name'] ?? 'N/A';
+                        $checkIn = $invoice_data['booking']['check_in'] ?? 'N/A';
+                        $period = $invoice_data['period'] ?? '';
+                        
+                        // Organize services by type
+                        $electricLog = collect($invoice_data['logs'])->first(fn($l) => str_contains(mb_strtolower($l['service_name'] ?? '', 'UTF-8'), 'điện'));
+                        $waterLog = collect($invoice_data['logs'])->first(fn($l) => str_contains(mb_strtolower($l['service_name'] ?? '', 'UTF-8'), 'nước'));
+                        $otherLogs = collect($invoice_data['logs'])->reject(function($l) {
+                            $name = mb_strtolower($l['service_name'] ?? '', 'UTF-8');
+                            return str_contains($name, 'điện') || str_contains($name, 'nước');
+                        });
+                        
+                        $electricTotal = $electricLog['total_amount'] ?? 0;
+                        $waterTotal = $waterLog['total_amount'] ?? 0;
+                        $otherTotal = $otherLogs->sum('total_amount');
+                        $roomPrice = $invoice_data['room_price'] ?? 0;
+                        $grandTotal = $invoice_data['total'] ?? 0;
+                    @endphp
+
+                    <!-- Bill Content - Matching main bill preview format -->
+                    <div class="p-10" style="font-family: 'Times New Roman', Times, serif;">
+                        <!-- Header -->
+                        <div class="flex justify-between items-start mb-6 pb-4 border-b-2 border-gray-800">
+                            <div class="flex items-center gap-4">
+                                <div class="w-16 h-16 border-2 border-gray-800 rounded-full flex items-center justify-center text-2xl font-bold">S</div>
+                                <div class="text-sm italic">Sala Apartment</div>
                             </div>
-                            <div class="text-right">
-                                <p class="text-xs text-gray-500">Phòng</p>
-                                <p class="font-bold text-lg">{{ $invoice_data['booking']['room_code'] }}</p>
-                                <p class="text-xs text-gray-500">Check-in: {{ \Carbon\Carbon::parse($invoice_data['booking']['check_in'])->format('d/m/Y') }}</p>
+                            <div class="text-center flex-1 px-4">
+                                <h1 class="text-sm font-bold uppercase">SALA APARTMENT AND HOTEL ĐÀ NẴNG</h1>
+                                <p class="text-[11px] mt-1">Số điện thoại: 084 424 4567</p>
+                                <p class="text-[11px]">Địa chỉ: 22 Lý Nhật Quang, Nại Hiên Đông, Sơn Trà, Đà Nẵng</p>
+                            </div>
+                            <div class="w-16 h-16 border border-gray-800 flex items-center justify-center text-[10px]">QR Code</div>
+                        </div>
+
+                        <!-- Title -->
+                        <div class="text-center my-6">
+                            <h2 class="text-lg font-bold">HÓA ĐƠN TIỀN PHÒNG - KỲ {{ $period }}/</h2>
+                            <div class="text-base font-bold">ROOM BILL - PERIOD {{ $period }}</div>
+                        </div>
+
+                        <!-- Info Box -->
+                        <div class="flex justify-end mb-4">
+                            <div class="border border-gray-800 px-4 py-2 text-right text-sm">
+                                <p><em>Phòng/Room:</em> <strong>{{ $roomCode }}</strong></p>
+                                <p><em>Check-in:</em> <strong>{{ $checkIn }}</strong></p>
+                                <p><em>Kỳ/Period:</em> <strong>{{ $period }}</strong></p>
                             </div>
                         </div>
 
-                        <!-- Services Table -->
-                        <table class="w-full text-sm border-collapse">
-                            <thead class="bg-gray-100">
-                                <tr>
-                                    <th class="border border-gray-300 px-3 py-2 text-left font-bold">Dịch vụ</th>
-                                    <th class="border border-gray-300 px-3 py-2 text-center font-bold w-24">Đơn giá</th>
-                                    <th class="border border-gray-300 px-3 py-2 text-center font-bold w-32">Số liệu</th>
-                                    <th class="border border-gray-300 px-3 py-2 text-right font-bold w-32">Thành tiền</th>
+                        <!-- Greeting -->
+                        <div class="mb-4 text-sm">
+                            <p>Kính gửi/ Dear <strong>{{ $customerName }}</strong></p>
+                        </div>
+
+                        <!-- Content -->
+                        <div class="text-xs leading-relaxed mb-4">
+                            <p>Xin chân thành cảm ơn quý khách đã chọn và sử dụng dịch vụ tại Sala Apartment and Hotel cho kỳ nghỉ của mình. Sala Apartment and Hotel kính gửi hóa đơn tiền phòng kỳ {{ $period }} của quý khách như sau:</p>
+                            <p class="mt-2">Thank you very much for choosing and using services at Sala Apartment and Hotel for your stay.</p>
+                        </div>
+
+                        <!-- Main Table -->
+                        <table class="w-full border-collapse mb-4">
+                            <thead>
+                                <tr class="bg-gray-200">
+                                    <th class="border border-gray-800 p-2 text-xs font-bold text-center">Tiền phòng/<br>Room rental</th>
+                                    @if($waterTotal > 0)
+                                        <th class="border border-gray-800 p-2 text-xs font-bold text-center">Nước/<br>Water</th>
+                                    @endif
+                                    @if($electricTotal > 0)
+                                        <th class="border border-gray-800 p-2 text-xs font-bold text-center">Điện/<br>Electric</th>
+                                    @endif
+                                    @foreach($otherLogs as $otherLog)
+                                        <th class="border border-gray-800 p-2 text-xs font-bold text-center">{{ $otherLog['service_name'] }}</th>
+                                    @endforeach
+                                    <th class="border border-gray-800 p-2 text-xs font-bold text-center">TỔNG/<br>TOTAL</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($invoice_data['logs'] as $log)
-                                    <tr>
-                                        <td class="border border-gray-300 px-3 py-2">
-                                            <span class="font-semibold">{{ $log['service_name'] }}</span>
-                                            @if(!empty($log['notes']))
-                                                <span class="text-xs text-gray-500 italic block">{{ $log['notes'] }}</span>
-                                            @endif
-                                        </td>
-                                        <td class="border border-gray-300 px-3 py-2 text-center">
-                                            {{ number_format($log['unit_price'], 0, ',', '.') }}đ
-                                        </td>
-                                        <td class="border border-gray-300 px-3 py-2 text-center">
-                                            @if($log['type'] === 'meter')
-                                                <span class="text-xs">{{ $log['start_index'] }} → {{ $log['end_index'] }}</span><br>
-                                                <span class="font-semibold">({{ $log['end_index'] - $log['start_index'] }} {{ $log['billing_unit'] }})</span>
-                                            @else
-                                                <span class="font-semibold">{{ $log['quantity'] }} {{ $log['billing_unit'] }}</span>
-                                            @endif
-                                        </td>
-                                        <td class="border border-gray-300 px-3 py-2 text-right font-bold {{ $log['type'] === 'manual' ? 'text-indigo-600' : 'text-green-600' }}">
-                                            {{ number_format($log['total_amount'], 0, ',', '.') }}đ
-                                        </td>
-                                    </tr>
-                                @endforeach
-                                
-                                <!-- Room Price -->
-                                <tr class="bg-blue-50">
-                                    <td class="border border-gray-300 px-3 py-2 font-bold text-blue-800">💰 Tiền phòng</td>
-                                    <td class="border border-gray-300 px-3 py-2 text-center">-</td>
-                                    <td class="border border-gray-300 px-3 py-2 text-center">1 tháng</td>
-                                    <td class="border border-gray-300 px-3 py-2 text-right font-black text-blue-600">
-                                        {{ number_format($invoice_data['room_price'], 0, ',', '.') }}đ
-                                    </td>
-                                </tr>
-                                
-                                <!-- Total -->
-                                <tr class="bg-yellow-100">
-                                    <td colspan="3" class="border border-gray-300 px-3 py-3 text-right font-black text-lg">
-                                        TỔNG CỘNG:
-                                    </td>
-                                    <td class="border border-gray-300 px-3 py-3 text-right font-black text-xl text-red-600">
-                                        {{ number_format($invoice_data['total'], 0, ',', '.') }}đ
-                                    </td>
+                                <tr>
+                                    <td class="border border-gray-800 p-2 text-xs text-right">{{ number_format($roomPrice, 0, ',', '.') }}</td>
+                                    @if($waterTotal > 0)
+                                        <td class="border border-gray-800 p-2 text-xs text-right">{{ number_format($waterTotal, 0, ',', '.') }}</td>
+                                    @endif
+                                    @if($electricTotal > 0)
+                                        <td class="border border-gray-800 p-2 text-xs text-right">{{ number_format($electricTotal, 0, ',', '.') }}</td>
+                                    @endif
+                                    @foreach($otherLogs as $otherLog)
+                                        <td class="border border-gray-800 p-2 text-xs text-right">{{ number_format($otherLog['total_amount'], 0, ',', '.') }}</td>
+                                    @endforeach
+                                    <td class="border border-gray-800 p-2 text-sm text-right font-bold">{{ number_format($grandTotal, 0, ',', '.') }} VNĐ</td>
                                 </tr>
                             </tbody>
                         </table>
 
-                        <!-- Footer Note -->
-                        <div class="text-xs text-gray-500 pt-4 border-t">
-                            <p>• Hóa đơn này được tạo tự động từ hệ thống quản lý Sala Apartment</p>
-                            <p>• Kỳ thanh toán: Tháng {{ explode('/', $invoice_data['period'])[0] }}/{{ explode('/', $invoice_data['period'])[1] }}</p>
-                            <p>• Vui lòng kiểm tra kỹ và liên hệ nếu có thắc mắc</p>
+                        <!-- Electric Detail Table -->
+                        @if($electricLog && $electricLog['type'] === 'meter')
+                            <div class="text-[10px] italic mb-2">* Chỉ số công tơ điện/Note: electronic index</div>
+                            <table class="w-full border-collapse mb-4">
+                                <thead>
+                                    <tr class="bg-gray-200">
+                                        <th class="border border-gray-800 p-2 text-[11px] font-bold text-center">Số CTĐ đầu<br>Start Electronic index</th>
+                                        <th class="border border-gray-800 p-2 text-[11px] font-bold text-center">Số CTĐ cuối<br>End Electronic index</th>
+                                        <th class="border border-gray-800 p-2 text-[11px] font-bold text-center">Đơn giá/unit price<br>({{ number_format($electricLog['unit_price'], 0, ',', '.') }} vnđ)</th>
+                                        <th class="border border-gray-800 p-2 text-[11px] font-bold text-center">Tổng/Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="border border-gray-800 p-2 text-xs text-center">{{ number_format($electricLog['start_index'], 0, ',', '.') }}</td>
+                                        <td class="border border-gray-800 p-2 text-xs text-center">{{ number_format($electricLog['end_index'], 0, ',', '.') }}</td>
+                                        <td class="border border-gray-800 p-2 text-xs text-center">{{ $electricLog['end_index'] - $electricLog['start_index'] }} x {{ number_format($electricLog['unit_price'], 0, ',', '.') }}</td>
+                                        <td class="border border-gray-800 p-2 text-xs text-right font-semibold">{{ number_format($electricTotal, 0, ',', '.') }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        @endif
+
+                        <!-- Water Detail Table -->
+                        @if($waterLog && $waterLog['type'] === 'meter')
+                            <div class="text-[10px] italic mb-2">* Chỉ số công tơ nước/Note: water meter index</div>
+                            <table class="w-full border-collapse mb-4">
+                                <thead>
+                                    <tr class="bg-gray-200">
+                                        <th class="border border-gray-800 p-2 text-[11px] font-bold text-center">Số CTN đầu<br>Start Water index</th>
+                                        <th class="border border-gray-800 p-2 text-[11px] font-bold text-center">Số CTN cuối<br>End Water index</th>
+                                        <th class="border border-gray-800 p-2 text-[11px] font-bold text-center">Đơn giá/unit price<br>({{ number_format($waterLog['unit_price'], 0, ',', '.') }} vnđ)</th>
+                                        <th class="border border-gray-800 p-2 text-[11px] font-bold text-center">Tổng/Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="border border-gray-800 p-2 text-xs text-center">{{ number_format($waterLog['start_index'], 0, ',', '.') }}</td>
+                                        <td class="border border-gray-800 p-2 text-xs text-center">{{ number_format($waterLog['end_index'], 0, ',', '.') }}</td>
+                                        <td class="border border-gray-800 p-2 text-xs text-center">{{ $waterLog['end_index'] - $waterLog['start_index'] }} x {{ number_format($waterLog['unit_price'], 0, ',', '.') }}</td>
+                                        <td class="border border-gray-800 p-2 text-xs text-right font-semibold">{{ number_format($waterTotal, 0, ',', '.') }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        @endif
+
+                        <!-- Footer -->
+                        <div class="text-xs mt-6 space-y-2">
+                            <p class="italic">• Vui lòng thanh toán trước ngày 05 hàng tháng.</p>
+                            <p class="italic">• Nếu có bất kỳ thắc mắc nào, vui lòng liên hệ: 084 424 4567</p>
+                            <p class="italic">• Please pay before the 5th of each month.</p>
                         </div>
                     </div>
                 </div>
