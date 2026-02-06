@@ -75,8 +75,10 @@ class Index extends Component
 
     // Invoice Modal
     public $showInvoiceModal = false;
-    public $invoice_period;
+    public $invoice_year;
     public $invoice_data = [];
+
+    public $deposits = []; // Stores state of deposits (1, 2, 3)
 
     // Manual Fee Input
     public $manual_fee_amount;
@@ -230,7 +232,88 @@ class Index extends Component
 
         $this->manual_fee_date = date('Y-m-d');
         $this->activeModalTab = 'info';
+        $this->activeModalTab = 'info';
         $this->showModal = true;
+
+        // Initialize Deposit States
+        $this->loadDepositStates();
+    }
+
+    public function loadDepositStates()
+    {
+        $this->deposits = [];
+        $depositFields = ['deposit', 'deposit_2', 'deposit_3'];
+
+        foreach ($depositFields as $index => $field) {
+            $depositAmount = $booking->{$field} ?? 0;
+            if ($depositAmount > 0) {
+                // Check if already applied (log exists with specific note)
+                $noteKey = 'deposit_' . ($index + 1);
+                $log = collect($this->usage_logs)->first(function ($l) use ($noteKey) {
+                    return ($l['type'] === 'deduction' && $l['notes'] === $noteKey);
+                });
+
+                $this->deposits[$index + 1] = [
+                    'amount' => $depositAmount,
+                    'is_applied' => !!$log,
+                    'log_id' => $log['id'] ?? null,
+                    'applied_date' => $log['billing_date'] ?? null,
+                    'is_current_period' => $log ? ($log['billing_date'] == ($this->global_billing_date ?: date('Y-m-d'))) : false
+                ];
+            }
+        }
+    }
+
+    public function toggleDeposit($index)
+    {
+        if (!isset($this->deposits[$index]))
+            return;
+
+        $deposit = $this->deposits[$index];
+        $booking = Booking::find($this->editingBookingId);
+
+        if ($deposit['is_applied']) {
+            // Remove deduction (Only allow if created in this session/period or manual override allowed??)
+            // For now allow toggle off if applied
+            if ($deposit['log_id']) {
+                // Delete from DB
+                BookingUsageLog::destroy($deposit['log_id']);
+
+                // Update local logs
+                $this->usage_logs = array_values(array_filter($this->usage_logs, function ($l) use ($deposit) {
+                    return $l['id'] != $deposit['log_id'];
+                }));
+            }
+        } else {
+            // Apply deduction
+            $amount = $deposit['amount'];
+            $noteKey = 'deposit_' . $index;
+            $billingDate = $this->global_billing_date ?: date('Y-m-d');
+
+            $logData = [
+                'service_id' => null,
+                'type' => 'deduction',
+                'service_name' => "KHẤU TRỪ CỌC LẦN $index",
+                'billing_unit' => 'transaction',
+                'start_index' => null,
+                'end_index' => null,
+                'quantity' => 1,
+                'unit_price' => -1 * $amount,
+                'total_amount' => -1 * $amount,
+                'billing_date' => $billingDate,
+                'notes' => $noteKey,
+            ];
+
+            if ($booking) {
+                $newDbLog = $booking->usageLogs()->create($logData);
+                $logData['id'] = $newDbLog->id;
+                $logData['service_id'] = null; // Ensure consistency
+                $this->usage_logs[] = $logData;
+            }
+        }
+
+        // Refresh states
+        $this->loadDepositStates();
     }
 
     public function addUsageLog()

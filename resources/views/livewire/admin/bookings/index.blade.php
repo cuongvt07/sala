@@ -437,32 +437,43 @@
                                 $totalDeposit = $dep1 + $dep2 + $dep3;
                                 $grandTotalAfterDeposit = $grandTotal - $totalDeposit;
                             @endphp
-                            <tbody class="bg-green-50/30 border-t-2 border-green-300">
-                                @if($dep1 > 0)
+                            
+                            {{-- KHẤU TRỪ CỌC --}}
+                            @if(!empty($deposits))
+                                <tbody class="bg-amber-50/50 border-t-2 border-amber-200">
                                     <tr>
-                                        <td class="px-3 py-1.5 font-semibold text-green-700"><span class="text-[10px]">💵</span> Cọc lần 1</td>
-                                        <td class="px-2 py-1.5 text-center text-gray-400">-</td>
-                                        <td class="px-2 py-1.5 text-center text-gray-400">-</td>
-                                        <td class="px-3 py-1.5 text-right font-bold text-green-600">-{{ number_format($dep1, 0, ',', '.') }}đ</td>
+                                        <td colspan="4" class="px-3 py-1 text-[10px] font-bold text-amber-600 uppercase tracking-wider bg-amber-100/50">
+                                            Khấu trừ cọc
+                                        </td>
                                     </tr>
-                                @endif
-                                @if($dep2 > 0)
-                                    <tr>
-                                        <td class="px-3 py-1.5 font-semibold text-green-700"><span class="text-[10px]">💵</span> Cọc lần 2</td>
-                                        <td class="px-2 py-1.5 text-center text-gray-400">-</td>
-                                        <td class="px-2 py-1.5 text-center text-gray-400">-</td>
-                                        <td class="px-3 py-1.5 text-right font-bold text-green-600">-{{ number_format($dep2, 0, ',', '.') }}đ</td>
-                                    </tr>
-                                @endif
-                                @if($dep3 > 0)
-                                    <tr>
-                                        <td class="px-3 py-1.5 font-semibold text-green-700"><span class="text-[10px]">💵</span> Cọc lần 3</td>
-                                        <td class="px-2 py-1.5 text-center text-gray-400">-</td>
-                                        <td class="px-2 py-1.5 text-center text-gray-400">-</td>
-                                        <td class="px-3 py-1.5 text-right font-bold text-green-600">-{{ number_format($dep3, 0, ',', '.') }}đ</td>
-                                    </tr>
-                                @endif
-                            </tbody>
+                                    @foreach($deposits as $idx => $depState)
+                                        <tr>
+                                            <td class="px-3 py-2 font-semibold text-amber-800">
+                                                <div class="flex items-center gap-2">
+                                                    <input type="checkbox" 
+                                                           wire:click="toggleDeposit({{ $idx }})"
+                                                           class="rounded border-amber-400 text-amber-600 shadow-sm focus:ring-amber-500 cursor-pointer"
+                                                           {{ $depState['is_applied'] ? 'checked' : '' }}
+                                                           {{ ($depState['is_applied'] && !$depState['is_current_period']) ? 'disabled' : '' }}>
+                                                    <span>Cọc lần {{ $idx }}</span>
+                                                    @if($depState['is_applied'])
+                                                        @if($depState['is_current_period'])
+                                                            <span class="text-[9px] px-1 py-0.5 rounded bg-green-100 text-green-700 font-bold border border-green-200 ml-1">Đang áp dụng</span>
+                                                        @else
+                                                            <span class="text-[9px] px-1 py-0.5 rounded bg-gray-100 text-gray-500 font-normal border border-gray-200 ml-1">Đã khấu trừ {{ $depState['applied_date'] ? \Carbon\Carbon::parse($depState['applied_date'])->format('d/m/Y') : '' }}</span>
+                                                        @endif
+                                                    @endif
+                                                </div>
+                                            </td>
+                                            <td colspan="2"></td>
+                                            <td class="px-3 py-2 text-right font-bold {{ $depState['is_applied'] ? 'text-red-500' : 'text-gray-400' }}">
+                                                {{ $depState['is_applied'] ? '-' : '' }}{{ number_format($depState['amount'], 0, ',', '.') }}đ
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            @endif
+
                             <tfoot class="bg-slate-800 text-white">
                                 <tr>
                                     <td colspan="3" class="px-3 py-2 text-right font-bold uppercase text-[11px]">CÒN LẠI:</td>
