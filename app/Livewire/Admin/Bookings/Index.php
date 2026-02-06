@@ -193,6 +193,24 @@ class Index extends Component
         $this->status = $booking->status;
         $this->notes = $booking->notes;
 
+        // Load Usage Logs first so we can use them for suggestions
+        $this->usage_logs = $booking->usageLogs->map(function ($log) {
+            return [
+                'id' => $log->id,
+                'service_id' => $log->service_id,
+                'service_name' => $log->service->name ?? 'Phí phòng/Khác',
+                'type' => $log->type,
+                'billing_unit' => $log->billing_unit,
+                'start_index' => $log->start_index,
+                'end_index' => $log->end_index,
+                'quantity' => $log->quantity,
+                'unit_price' => $log->unit_price,
+                'total_amount' => $log->total_amount,
+                'billing_date' => $log->billing_date ? $log->billing_date->format('Y-m-d') : null,
+                'notes' => $log->notes,
+            ];
+        })->toArray();
+
         // Load selected services
         $this->selected_services = [];
         foreach ($booking->services as $service) {
@@ -208,22 +226,7 @@ class Index extends Component
             $this->initServiceInput($service->id);
         }
 
-        // Load Usage Logs
-        $this->usage_logs = $booking->usageLogs->map(function ($log) {
-            return [
-                'id' => $log->id,
-                'service_name' => $log->service->name ?? 'Phí phòng/Khác',
-                'type' => $log->type,
-                'billing_unit' => $log->billing_unit,
-                'start_index' => $log->start_index,
-                'end_index' => $log->end_index,
-                'quantity' => $log->quantity,
-                'unit_price' => $log->unit_price,
-                'total_amount' => $log->total_amount,
-                'billing_date' => $log->billing_date ? $log->billing_date->format('Y-m-d') : null,
-                'notes' => $log->notes,
-            ];
-        })->toArray();
+
 
         $this->manual_fee_date = date('Y-m-d');
         $this->activeModalTab = 'info';
