@@ -765,8 +765,6 @@
         </div>
     </div>
 
-    </div>
-
     {{-- INVOICE MODAL --}}
     @if($showInvoiceModal && !empty($invoice_data))
         <div class="fixed inset-0 z-50 overflow-y-auto" x-data="{ show: @entangle('showInvoiceModal') }">
