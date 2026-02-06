@@ -70,9 +70,13 @@ class Index extends Component
     public $status = 'pending';
     public $notes;
 
+    // Global billing date for all services in this period
+    public $global_billing_date;
+
     // Manual Fee Input
     public $manual_fee_amount;
     public $manual_fee_notes;
+    public $manual_fee_billing_date;
     public $manual_fee_date;
 
     protected $listeners = ['area-selected' => '$refresh'];
@@ -284,6 +288,27 @@ class Index extends Component
         $this->usage_logs = array_values($this->usage_logs);
     }
 
+    public function removePeriodLogs($period)
+    {
+        // Remove all logs for a specific period (e.g., "01/2026")
+        $toRemove = [];
+        foreach ($this->usage_logs as $index => $log) {
+            if (\Carbon\Carbon::parse($log['billing_date'])->format('m/Y') === $period) {
+                // Remove from DB if it has an ID
+                if (isset($log['id'])) {
+                    BookingUsageLog::find($log['id'])?->delete();
+                }
+                $toRemove[] = $index;
+            }
+        }
+
+        // Remove from array
+        foreach (array_reverse($toRemove) as $index) {
+            unset($this->usage_logs[$index]);
+        }
+        $this->usage_logs = array_values($this->usage_logs);
+    }
+
     public function initServiceInput($serviceId)
     {
         $service = Service::find($serviceId);
@@ -343,7 +368,7 @@ class Index extends Component
             'quantity' => $input['quantity'] ?: 1,
             'unit_price' => $price,
             'total_amount' => $total,
-            'billing_date' => $input['billing_date'] ?: date('Y-m-d'),
+            'billing_date' => $this->global_billing_date ?: date('Y-m-d'),
             'notes' => $input['notes'] ?? '',
         ];
 
@@ -402,7 +427,7 @@ class Index extends Component
             'quantity' => 1,
             'unit_price' => $amount,
             'total_amount' => $amount,
-            'billing_date' => $this->manual_fee_date ?: date('Y-m-d'),
+            'billing_date' => $this->global_billing_date ?: date('Y-m-d'),
             'notes' => $this->manual_fee_notes,
         ];
 

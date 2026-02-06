@@ -208,6 +208,102 @@
                     </div>
                 @endif
 
+                {{-- ===== LỊCH SỬ CÁC KỲ ĐÃ CHỐT ===== --}}
+                @if(count($usage_logs) > 0)
+                    @php
+                        $logsByPeriod = collect($usage_logs)->groupBy(function($log) {
+                            return \Carbon\Carbon::parse($log['billing_date'])->format('m/Y');
+                        });
+                        // Get all unique service names
+                        $allServiceNames = collect($usage_logs)->pluck('service_name')->unique()->values();
+                    @endphp
+                    <div class="bg-white rounded-lg border border-blue-200 p-3 mb-3">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="text-xs font-black text-blue-700 flex items-center gap-2">
+                                <x-icon name="heroicon-o-clock" class="h-4 w-4"/>
+                                📊 Lịch sử các kỳ đã chốt ({{ $logsByPeriod->count() }} kỳ)
+                            </h4>
+                        </div>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-xs border-collapse">
+                                <thead class="bg-slate-700 text-white">
+                                    <tr>
+                                        <th class="border border-slate-600 px-3 py-2 text-left font-bold whitespace-nowrap">📅 Kỳ</th>
+                                        @foreach($allServiceNames as $serviceName)
+                                            <th class="border border-slate-600 px-2 py-2 text-center font-bold whitespace-nowrap">{{ $serviceName }}</th>
+                                        @endforeach
+                                        <th class="border border-slate-600 px-2 py-2 text-center font-bold whitespace-nowrap bg-blue-900">💰 Phòng</th>
+                                        <th class="border border-slate-600 px-3 py-2 text-center font-bold whitespace-nowrap bg-yellow-600">🧾 TỔNG</th>
+                                        <th class="border border-slate-600 px-2 py-2 text-center font-bold whitespace-nowrap">Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($logsByPeriod as $period => $logs)
+                                        <tr class="hover:bg-gray-50">
+                                            <!-- Kỳ -->
+                                            <td class="border border-gray-200 px-3 py-2 font-bold text-blue-700 whitespace-nowrap">
+                                                Tháng {{ explode('/', $period)[0] }}/{{ explode('/', $period)[1] }}
+                                            </td>
+                                            
+                                            <!-- Các dịch vụ -->
+                                            @foreach($allServiceNames as $serviceName)
+                                                @php
+                                                    $serviceLog = $logs->firstWhere('service_name', $serviceName);
+                                                @endphp
+                                                <td class="border border-gray-200 px-2 py-2 text-center {{ $serviceLog ? 'bg-green-50' : 'bg-gray-50' }}">
+                                                    @if($serviceLog)
+                                                        <div class="space-y-0.5">
+                                                            @if($serviceLog['type'] === 'meter')
+                                                                <div class="text-[9px] text-gray-500">
+                                                                    {{ $serviceLog['start_index'] }}→{{ $serviceLog['end_index'] }}
+                                                                </div>
+                                                            @elseif($serviceLog['type'] !== 'manual')
+                                                                <div class="text-[9px] text-gray-500">×{{ $serviceLog['quantity'] }}</div>
+                                                            @endif
+                                                            <div class="font-bold {{ $serviceLog['type'] === 'manual' ? 'text-indigo-600' : 'text-green-600' }}">
+                                                                {{ number_format($serviceLog['total_amount'], 0, ',', '.') }}đ
+                                                            </div>
+                                                        </div>
+                                                    @else
+                                                        <span class="text-gray-300 text-xs">-</span>
+                                                    @endif
+                                                </td>
+                                            @endforeach
+                                            
+                                            <!-- Tiền phòng -->
+                                            <td class="border border-gray-200 px-2 py-2 text-center bg-blue-50">
+                                                <div class="font-black text-blue-600">
+                                                    {{ number_format($basePrice, 0, ',', '.') }}đ
+                                                </div>
+                                            </td>
+                                            
+                                            <!-- Tổng kỳ -->
+                                            @php
+                                                $periodTotal = $logs->sum('total_amount') + $basePrice;
+                                            @endphp
+                                            <td class="border border-gray-200 px-3 py-2 text-center bg-yellow-50">
+                                                <div class="font-black text-yellow-700 text-sm">
+                                                    {{ number_format($periodTotal, 0, ',', '.') }}đ
+                                                </div>
+                                            </td>
+                                            
+                                            <!-- Xóa kỳ -->
+                                            <td class="border border-gray-200 px-2 py-2 text-center">
+                                                <button type="button" wire:click="removePeriodLogs('{{ $period }}')" 
+                                                        class="text-red-400 hover:text-red-600 transition-colors" 
+                                                        title="Xóa toàn bộ kỳ {{ $period }}">
+                                                    <x-icon name="heroicon-o-trash" class="h-4 w-4 inline"/>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                @endif
+
                 {{-- ===== 2 CỘT: DỊCH VỤ | BẢNG TỔNG CHI PHÍ ===== --}}
                 <div class="grid grid-cols-5 gap-3">
                     <!-- CỘT TRÁI: Chọn dịch vụ (1/5) -->
@@ -232,7 +328,13 @@
                     <!-- CỘT PHẢI: Bảng Tổng chi phí (4/5) -->
                     <div class="col-span-3 bg-white rounded-lg border border-gray-200 overflow-hidden">
                         <div class="bg-slate-100 px-3 py-2 border-b border-gray-200">
-                            <h4 class="text-[10px] font-black text-slate-600 uppercase">Bảng Tổng Chi Phí</h4>
+                            <div class="flex items-center justify-between">
+                                <h4 class="text-[10px] font-black text-slate-600 uppercase">Bảng Tổng Chi Phí</h4>
+                                <div class="flex items-center gap-2">
+                                    <label class="text-[10px] font-bold text-slate-600">📅 NGÀY CHỐT KỲ NÀY:</label>
+                                    <input type="date" wire:model.live="global_billing_date" class="text-[11px] border-slate-300 rounded px-2 py-1 font-semibold bg-white" placeholder="Chọn ngày">
+                                </div>
+                            </div>
                         </div>
                         <table class="w-full text-xs">
                             <thead class="bg-gray-50 text-gray-500">
@@ -301,24 +403,7 @@
                                     @endif
                                 @endforeach
 
-                                <!-- Lịch sử đã chốt -->
-                                @foreach($usage_logs as $idx => $log)
-                                    <tr class="bg-green-50/30">
-                                        <td class="px-3 py-1.5 text-gray-600 flex items-center gap-1">
-                                            <span class="text-[9px] {{ $log['type'] === 'manual' ? 'bg-indigo-100 text-indigo-600' : 'bg-green-100 text-green-600' }} px-1 rounded">{{ $log['type'] === 'manual' ? '💵' : '✓' }}</span>
-                                            {{ $log['service_name'] }}
-                                            <span class="text-[9px] text-gray-400">({{ \Carbon\Carbon::parse($log['billing_date'])->format('d/m') }})</span>
-                                        </td>
-                                        <td class="px-2 py-1.5 text-center text-gray-400 text-[10px]">{{ number_format($log['unit_price'] ?? 0, 0, ',', '.') }}</td>
-                                        <td class="px-2 py-1.5 text-center text-gray-400 text-[10px]">
-                                            @if($log['type'] === 'meter') {{ $log['start_index'] }}→{{ $log['end_index'] }} @elseif($log['type'] === 'manual') - @else SL: {{ $log['quantity'] }} @endif
-                                        </td>
-                                        <td class="px-3 py-1.5 text-right font-semibold {{ $log['type'] === 'manual' ? 'text-indigo-600' : 'text-green-600' }} text-[11px]">
-                                            {{ number_format($log['total_amount'], 0, ',', '.') }}đ
-                                            <button type="button" wire:click="removeUsageLog({{ $idx }})" class="ml-1 text-red-300 hover:text-red-500"><x-icon name="heroicon-o-x-mark" class="h-3 w-3 inline" /></button>
-                                        </td>
-                                    </tr>
-                                @endforeach
+                                <!-- Lịch sử đã chốt được tách ra khối riêng ở trên -->
 
                                 <!-- Phụ thu nhập mới (luôn ở cuối) -->
                                 <tr class="bg-indigo-50/50 border-t-2 border-indigo-200">
@@ -328,12 +413,10 @@
                                     <td class="px-2 py-2 text-center">
                                         <span class="text-[9px] text-gray-400">-</span>
                                     </td>
-                                    <td class="px-2 py-2">
-                                        <input type="text" wire:model="manual_fee_notes" class="w-full rounded border-indigo-200 p-1 text-xs bg-white" placeholder="Lý do...">
-                                    </td>
-                                    <td class="px-3 py-2">
-                                        <div class="flex items-center gap-1 justify-end">
-                                            <input type="text" wire:model.blur="manual_fee_amount" class="w-20 rounded border-indigo-200 p-1 text-xs font-bold bg-white text-right" placeholder="Số tiền" x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')">
+                                    <td class="px-2 py-2" colspan="2">
+                                        <div class="flex items-center gap-2">
+                                            <input type="text" wire:model="manual_fee_notes" class="flex-1 rounded border-indigo-200 p-1 text-xs bg-white" placeholder="Lý do...">
+                                            <input type="text" wire:model.blur="manual_fee_amount" class="w-24 rounded border-indigo-200 p-1 text-xs font-bold bg-white text-right" placeholder="Số tiền" x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')">
                                             <button type="button" wire:click="addManualSurcharge" class="bg-indigo-600 text-white rounded text-[9px] font-bold px-2 py-1 hover:bg-indigo-700">+</button>
                                         </div>
                                     </td>
