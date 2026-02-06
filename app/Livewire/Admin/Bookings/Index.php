@@ -318,6 +318,12 @@ class Index extends Component
     {
         $this->invoice_period = $period;
 
+        // Get booking data from database
+        $booking = null;
+        if ($this->editingBookingId) {
+            $booking = Booking::with('customer', 'room')->find($this->editingBookingId);
+        }
+
         // Gather all logs for this period
         $periodLogs = collect($this->usage_logs)->filter(function ($log) use ($period) {
             return \Carbon\Carbon::parse($log['billing_date'])->format('m/Y') === $period;
@@ -332,10 +338,10 @@ class Index extends Component
             'room_price' => $roomPrice,
             'total' => $periodLogs->sum('total_amount') + $roomPrice,
             'booking' => [
-                'customer_name' => $this->customer_name,
-                'customer_phone' => $this->customer_phone,
-                'room_code' => $this->selectedRoom?->code ?? '',
-                'check_in' => $this->check_in,
+                'customer_name' => $booking?->customer?->name ?? 'N/A',
+                'customer_phone' => $booking?->customer?->phone ?? 'N/A',
+                'room_code' => $booking?->room?->code ?? 'N/A',
+                'check_in' => $booking?->check_in?->format('d/m/Y') ?? 'N/A',
             ]
         ];
 
