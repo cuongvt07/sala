@@ -323,11 +323,14 @@ class Index extends Component
             return \Carbon\Carbon::parse($log['billing_date'])->format('m/Y') === $period;
         });
 
+        // Convert price to numeric (remove dots and đ)
+        $roomPrice = (float) str_replace(['.', 'đ', ','], '', $this->price ?? '0');
+
         $this->invoice_data = [
             'period' => $period,
             'logs' => $periodLogs->values()->toArray(),
-            'room_price' => $this->price ?? 0,
-            'total' => $periodLogs->sum('total_amount') + ($this->price ?? 0),
+            'room_price' => $roomPrice,
+            'total' => $periodLogs->sum('total_amount') + $roomPrice,
             'booking' => [
                 'customer_name' => $this->customer_name,
                 'customer_phone' => $this->customer_phone,
