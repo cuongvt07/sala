@@ -13,33 +13,31 @@
         </div>
     @endif
 
-    <!-- Filter Bar -->
-    <div class="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div class="md:col-span-2">
-            <div class="relative">
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <x-icon name="heroicon-o-magnifying-glass" class="h-5 w-5 text-gray-400" />
-                </div>
-                <input wire:model.live.debounce.300ms="search" type="text" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="Tìm kiếm theo tên khách, phòng, SĐT...">
-            </div>
-        </div>
-        <div>
-            <select wire:model.live="filterStatus" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
-                <option value="">-- Tất cả trạng thái --</option>
-                <option value="pending">Chờ lấy phòng</option>
-                <option value="checked_in">Đang ở</option>
-                <option value="checked_out">Đã trả</option>
-                <option value="cancelled">Đã hủy</option>
-            </select>
-        </div>
-         <div>
-            <select wire:model.live="filterType" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
-                <option value="">-- Tất cả loại hình --</option>
-                <option value="day">Ngắn ngày</option>
-                <option value="month">Dài hạn</option>
-            </select>
-        </div>
-    </div>
+    {{-- Filter Bar --}}
+    <x-ui.filters 
+        search-placeholder="Tìm kiếm theo tên khách, phòng, SĐT..."
+        search-model="search"
+        :filters="[
+            [
+                'label' => 'Tất cả trạng thái',
+                'model' => 'filterStatus',
+                'options' => [
+                    'pending' => 'Chờ lấy phòng',
+                    'checked_in' => 'Đang ở',
+                    'checked_out' => 'Đã trả',
+                    'cancelled' => 'Đã hủy'
+                ]
+            ],
+            [
+                'label' => 'Tất cả loại hình',
+                'model' => 'filterType',
+                'options' => [
+                    'day' => 'Ngắn ngày',
+                    'month' => 'Dài hạn'
+                ]
+            ]
+        ]"
+    />
 
     <x-ui.card class="p-0 overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
