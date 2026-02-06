@@ -288,13 +288,20 @@
                                                 </div>
                                             </td>
                                             
-                                            <!-- Xóa kỳ -->
+                                            <!-- Thao tác -->
                                             <td class="border border-gray-200 px-2 py-2 text-center">
-                                                <button type="button" wire:click="removePeriodLogs('{{ $period }}')" 
-                                                        class="text-red-400 hover:text-red-600 transition-colors" 
-                                                        title="Xóa toàn bộ kỳ {{ $period }}">
-                                                    <x-icon name="heroicon-o-trash" class="h-4 w-4 inline"/>
-                                                </button>
+                                                <div class="flex items-center justify-center gap-2">
+                                                    <button type="button" wire:click="viewPeriodInvoice('{{ $period }}')" 
+                                                            class="text-blue-500 hover:text-blue-700 transition-colors" 
+                                                            title="Xem hóa đơn kỳ {{ $period }}">
+                                                        <x-icon name="heroicon-o-document-text" class="h-4 w-4 inline"/>
+                                                    </button>
+                                                    <button type="button" wire:click="removePeriodLogs('{{ $period }}')" 
+                                                            class="text-red-400 hover:text-red-600 transition-colors" 
+                                                            title="Xóa toàn bộ kỳ {{ $period }}">
+                                                        <x-icon name="heroicon-o-trash" class="h-4 w-4 inline"/>
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     @endforeach
@@ -757,6 +764,116 @@
             </div>
         </div>
     </div>
+
+    </div>
+
+    {{-- INVOICE MODAL --}}
+    @if($showInvoiceModal && !empty($invoice_data))
+        <div class="fixed inset-0 z-50 overflow-y-auto" x-data="{ show: @entangle('showInvoiceModal') }">
+            <!-- Backdrop -->
+            <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" wire:click="closeInvoiceModal"></div>
+            
+            <!-- Modal Container -->
+            <div class="flex min-h-screen items-center justify-center p-4">
+                <div class="relative bg-white rounded-lg shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto" @click.away="$wire.closeInvoiceModal()">
+                    <!-- Header -->
+                    <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
+                        <h3 class="text-lg font-bold text-gray-900">📄 Hóa đơn kỳ {{ $invoice_data['period'] }}</h3>
+                        <div class="flex items-center gap-2">
+                            <button onclick="window.print()" class="px-3 py-1.5 text-xs font-semibold text-white bg-blue-600 rounded hover:bg-blue-700">
+                                🖨️ In
+                            </button>
+                            <button wire:click="closeInvoiceModal" class="text-gray-400 hover:text-gray-600">
+                                <x-icon name="heroicon-o-x-mark" class="h-6 w-6"/>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Invoice Content -->
+                    <div class="p-6 space-y-4" id="invoice-content">
+                        <!-- Booking Info -->
+                        <div class="grid grid-cols-2 gap-4 pb-4 border-b">
+                            <div>
+                                <p class="text-xs text-gray-500">Khách hàng</p>
+                                <p class="font-bold">{{ $invoice_data['booking']['customer_name'] }}</p>
+                                <p class="text-sm text-gray-600">{{ $invoice_data['booking']['customer_phone'] }}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-xs text-gray-500">Phòng</p>
+                                <p class="font-bold text-lg">{{ $invoice_data['booking']['room_code'] }}</p>
+                                <p class="text-xs text-gray-500">Check-in: {{ \Carbon\Carbon::parse($invoice_data['booking']['check_in'])->format('d/m/Y') }}</p>
+                            </div>
+                        </div>
+
+                        <!-- Services Table -->
+                        <table class="w-full text-sm border-collapse">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="border border-gray-300 px-3 py-2 text-left font-bold">Dịch vụ</th>
+                                    <th class="border border-gray-300 px-3 py-2 text-center font-bold w-24">Đơn giá</th>
+                                    <th class="border border-gray-300 px-3 py-2 text-center font-bold w-32">Số liệu</th>
+                                    <th class="border border-gray-300 px-3 py-2 text-right font-bold w-32">Thành tiền</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($invoice_data['logs'] as $log)
+                                    <tr>
+                                        <td class="border border-gray-300 px-3 py-2">
+                                            <span class="font-semibold">{{ $log['service_name'] }}</span>
+                                            @if(!empty($log['notes']))
+                                                <span class="text-xs text-gray-500 italic block">{{ $log['notes'] }}</span>
+                                            @endif
+                                        </td>
+                                        <td class="border border-gray-300 px-3 py-2 text-center">
+                                            {{ number_format($log['unit_price'], 0, ',', '.') }}đ
+                                        </td>
+                                        <td class="border border-gray-300 px-3 py-2 text-center">
+                                            @if($log['type'] === 'meter')
+                                                <span class="text-xs">{{ $log['start_index'] }} → {{ $log['end_index'] }}</span><br>
+                                                <span class="font-semibold">({{ $log['end_index'] - $log['start_index'] }} {{ $log['billing_unit'] }})</span>
+                                            @else
+                                                <span class="font-semibold">{{ $log['quantity'] }} {{ $log['billing_unit'] }}</span>
+                                            @endif
+                                        </td>
+                                        <td class="border border-gray-300 px-3 py-2 text-right font-bold {{ $log['type'] === 'manual' ? 'text-indigo-600' : 'text-green-600' }}">
+                                            {{ number_format($log['total_amount'], 0, ',', '.') }}đ
+                                        </td>
+                                    </tr>
+                                @endforeach
+                                
+                                <!-- Room Price -->
+                                <tr class="bg-blue-50">
+                                    <td class="border border-gray-300 px-3 py-2 font-bold text-blue-800">💰 Tiền phòng</td>
+                                    <td class="border border-gray-300 px-3 py-2 text-center">-</td>
+                                    <td class="border border-gray-300 px-3 py-2 text-center">1 tháng</td>
+                                    <td class="border border-gray-300 px-3 py-2 text-right font-black text-blue-600">
+                                        {{ number_format($invoice_data['room_price'], 0, ',', '.') }}đ
+                                    </td>
+                                </tr>
+                                
+                                <!-- Total -->
+                                <tr class="bg-yellow-100">
+                                    <td colspan="3" class="border border-gray-300 px-3 py-3 text-right font-black text-lg">
+                                        TỔNG CỘNG:
+                                    </td>
+                                    <td class="border border-gray-300 px-3 py-3 text-right font-black text-xl text-red-600">
+                                        {{ number_format($invoice_data['total'], 0, ',', '.') }}đ
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <!-- Footer Note -->
+                        <div class="text-xs text-gray-500 pt-4 border-t">
+                            <p>• Hóa đơn này được tạo tự động từ hệ thống quản lý Sala Apartment</p>
+                            <p>• Kỳ thanh toán: Tháng {{ explode('/', $invoice_data['period'])[0] }}/{{ explode('/', $invoice_data['period'])[1] }}</p>
+                            <p>• Vui lòng kiểm tra kỹ và liên hệ nếu có thắc mắc</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
 
     <style>[x-cloak] { display: none !important; }</style>
 </div>

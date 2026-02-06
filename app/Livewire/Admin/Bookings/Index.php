@@ -73,6 +73,11 @@ class Index extends Component
     // Global billing date for all services in this period
     public $global_billing_date;
 
+    // Invoice Modal
+    public $showInvoiceModal = false;
+    public $invoice_period;
+    public $invoice_data = [];
+
     // Manual Fee Input
     public $manual_fee_amount;
     public $manual_fee_notes;
@@ -307,6 +312,37 @@ class Index extends Component
             unset($this->usage_logs[$index]);
         }
         $this->usage_logs = array_values($this->usage_logs);
+    }
+
+    public function viewPeriodInvoice($period)
+    {
+        $this->invoice_period = $period;
+
+        // Gather all logs for this period
+        $periodLogs = collect($this->usage_logs)->filter(function ($log) use ($period) {
+            return \Carbon\Carbon::parse($log['billing_date'])->format('m/Y') === $period;
+        });
+
+        $this->invoice_data = [
+            'period' => $period,
+            'logs' => $periodLogs->values()->toArray(),
+            'room_price' => $this->basePrice,
+            'total' => $periodLogs->sum('total_amount') + $this->basePrice,
+            'booking' => [
+                'customer_name' => $this->customer_name,
+                'customer_phone' => $this->customer_phone,
+                'room_code' => $this->selectedRoom?->code ?? '',
+                'check_in' => $this->check_in,
+            ]
+        ];
+
+        $this->showInvoiceModal = true;
+    }
+
+    public function closeInvoiceModal()
+    {
+        $this->showInvoiceModal = false;
+        $this->invoice_data = [];
     }
 
     public function initServiceInput($serviceId)
