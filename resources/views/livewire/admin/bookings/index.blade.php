@@ -75,10 +75,22 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             <div class="flex flex-col gap-1">
-                                @if($booking->deposit > 0) <span class="text-xs">L1: {{ number_format($booking->deposit, 0, ',', '.') }}đ</span> @endif
-                                @if($booking->deposit_2 > 0) <span class="text-xs">L2: {{ number_format($booking->deposit_2, 0, ',', '.') }}đ</span> @endif
-                                @if($booking->deposit_3 > 0) <span class="text-xs">L3: {{ number_format($booking->deposit_3, 0, ',', '.') }}đ</span> @endif
+                                @if($booking->deposit > 0) <span class="text-xs font-semibold">L1: {{ number_format($booking->deposit, 0, ',', '.') }}đ</span> @endif
+                                @if($booking->deposit_2 > 0) <span class="text-xs font-semibold">L2: {{ number_format($booking->deposit_2, 0, ',', '.') }}đ</span> @endif
+                                @if($booking->deposit_3 > 0) <span class="text-xs font-semibold">L3: {{ number_format($booking->deposit_3, 0, ',', '.') }}đ</span> @endif
                                 @if($booking->deposit == 0 && $booking->deposit_2 == 0 && $booking->deposit_3 == 0) - @endif
+                                
+                                @php
+                                    $totalCoc = $booking->deposit + $booking->deposit_2 + $booking->deposit_3;
+                                    $totalPrice = $booking->price ?? 0;
+                                @endphp
+                                @if($totalCoc > 0)
+                                    @if($totalCoc >= $totalPrice)
+                                        <div class="mt-1 text-[10px] font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded inline-block text-center w-max border border-green-200">Đã thanh toán</div>
+                                    @else
+                                        <div class="mt-1 text-[10px] font-bold text-orange-700 bg-orange-100 px-1.5 py-0.5 rounded inline-block text-center w-max border border-orange-200">Sắp đến hạn / Thiếu</div>
+                                    @endif
+                                @endif
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm">

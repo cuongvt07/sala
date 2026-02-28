@@ -1,8 +1,8 @@
 <div>
     <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold text-gray-800 tracking-tight">Quản lý Khu vực</h1>
+        <h1 class="text-2xl font-bold text-gray-800 tracking-tight">Quản lý Tòa nhà</h1>
         <x-ui.button wire:click="create" variant="primary" size="md">
-            + Thêm Khu vực
+            + Thêm Tòa nhà
         </x-ui.button>
     </div>
 
@@ -17,7 +17,7 @@
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50/50">
                 <tr>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Tên Khu vực</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Tên Tòa nhà</th>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Mô tả</th>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Số phòng</th>
                     <th class="px-6 py-4 text-right text-xs font-semibold text-gray-900 uppercase tracking-wider">Hành động</th>
@@ -57,12 +57,12 @@
     </x-ui.card>
 
     <!-- Create/Edit Modal -->
-    <x-ui.modal name="showModal" :title="$editingAreaId ? 'Chỉnh sửa Khu vực' : 'Thêm Khu vực mới'">
+    <x-ui.modal name="showModal" :title="$editingAreaId ? 'Chỉnh sửa Tòa nhà' : 'Thêm Tòa nhà mới'">
         <form wire:submit="save" class="space-y-4 p-4 sm:p-0">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="space-y-4">
                     <div class="space-y-1">
-                        <label for="name" class="block font-semibold text-gray-700 text-[11px] uppercase">Tên Khu vực <span class="text-red-500">*</span></label>
+                        <label for="name" class="block font-semibold text-gray-700 text-[11px] uppercase">Tên Tòa nhà <span class="text-red-500">*</span></label>
                         <input type="text" id="name" wire:model="name" required class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm font-bold focus:ring-blue-500 focus:border-blue-500">
                         @error('name') <p class="text-[10px] text-red-500">{{ $message }}</p> @enderror
                     </div>

@@ -16,8 +16,7 @@ class BookingCalendar extends Component
 {
     use \Livewire\WithFileUploads;
 
-    public $month;
-    public $year;
+    public $startDate;
     public $selectedArea = '';
 
     // Modal & Form State
@@ -94,8 +93,7 @@ class BookingCalendar extends Component
 
     public function mount()
     {
-        $this->month = now()->month;
-        $this->year = now()->year;
+        $this->startDate = now()->format('Y-m-d');
 
         // Load countries list
         $this->countries = Cache::remember('countries_list', 86400, function () {
@@ -113,16 +111,17 @@ class BookingCalendar extends Component
 
     public function nextMonth()
     {
-        $date = \Carbon\Carbon::createFromDate($this->year, $this->month, 1)->addMonth();
-        $this->month = $date->month;
-        $this->year = $date->year;
+        $this->startDate = \Carbon\Carbon::parse($this->startDate ?? now()->format('Y-m-d'))->addDays(30)->format('Y-m-d');
     }
 
     public function prevMonth()
     {
-        $date = \Carbon\Carbon::createFromDate($this->year, $this->month, 1)->subMonth();
-        $this->month = $date->month;
-        $this->year = $date->year;
+        $this->startDate = \Carbon\Carbon::parse($this->startDate ?? now()->format('Y-m-d'))->subDays(30)->format('Y-m-d');
+    }
+
+    public function goToToday()
+    {
+        $this->startDate = now()->format('Y-m-d');
     }
 
     public function rules()
@@ -580,12 +579,11 @@ class BookingCalendar extends Component
 
     public function getDaysInMonthProperty()
     {
-        $start = \Carbon\Carbon::createFromDate($this->year, $this->month, 1);
-        $daysInMonth = $start->daysInMonth;
-
+        $start = \Carbon\Carbon::parse($this->startDate ?? now()->format('Y-m-d'));
+        
         $days = [];
-        for ($i = 1; $i <= $daysInMonth; $i++) {
-            $days[] = $start->copy()->day($i);
+        for ($i = 0; $i < 30; $i++) {
+            $days[] = $start->copy()->addDays($i);
         }
 
         return $days;
@@ -597,14 +595,14 @@ class BookingCalendar extends Component
             ->with([
                 'area',
                 'bookings' => function ($q) {
-                    $startOfMonth = \Carbon\Carbon::create($this->year, $this->month, 1)->startOfDay();
-                    $endOfMonth = $startOfMonth->copy()->endOfMonth()->endOfDay();
-                    // Eager load bookings for the displayed month
+                    $startOfWindow = \Carbon\Carbon::parse($this->startDate ?? now()->format('Y-m-d'))->startOfDay();
+                    $endOfWindow = $startOfWindow->copy()->addDays(29)->endOfDay();
+                    // Eager load bookings for the displayed window
                     $q->where('status', '!=', 'checked_out')
-                        ->where(function ($query) use ($startOfMonth, $endOfMonth) {
-                        $query->where('check_in', '<=', $endOfMonth)
-                            ->where(function ($sub) use ($startOfMonth) {
-                                $sub->where('check_out', '>=', $startOfMonth)
+                        ->where(function ($query) use ($startOfWindow, $endOfWindow) {
+                        $query->where('check_in', '<=', $endOfWindow)
+                            ->where(function ($sub) use ($startOfWindow) {
+                                $sub->where('check_out', '>=', $startOfWindow)
                                     ->orWhereNull('check_out');
                             });
                     });
@@ -634,14 +632,14 @@ class BookingCalendar extends Component
 
         foreach ($bookings as $booking) {
             // Determine Visual Start Day (relative to month start)
-            $monthStart = \Carbon\Carbon::create($this->year, $this->month, 1)->startOfDay();
+            $windowStart = \Carbon\Carbon::parse($this->startDate ?? now()->format('Y-m-d'))->startOfDay();
 
             // "lúc này k quan tâm thười gain nữa" -> Normalize to StartOfDay
             $checkInDate = (is_a($booking->check_in, 'Carbon\Carbon') ? $booking->check_in : \Carbon\Carbon::parse($booking->check_in))->startOfDay();
             $checkOutDate = ($booking->check_out ? (is_a($booking->check_out, 'Carbon\Carbon') ? $booking->check_out : \Carbon\Carbon::parse($booking->check_out)) : $checkInDate->copy()->addDay())->startOfDay();
 
             // Raw start index based on Date only
-            $diffStartDays = $monthStart->diffInDays($checkInDate, false); // Int
+            $diffStartDays = $windowStart->diffInDays($checkInDate, false); // Int
 
             if ($booking->price_type === 'month') {
                 // Keep existing Month logic but mapped to new base?
@@ -651,7 +649,7 @@ class BookingCalendar extends Component
                 // Cross-month handling specific for Month Type
                 if ($visualStart < 0) {
                     $visualStart = 0;
-                    $diffM1vcCheckout = $monthStart->diffInDays($checkOutDate, false);
+                    $diffM1vcCheckout = $windowStart->diffInDays($checkOutDate, false);
                     $remainingDays = max(1, $diffM1vcCheckout);
                     if ($remainingDays <= 10) {
                         $visualDays = $remainingDays;
@@ -673,7 +671,7 @@ class BookingCalendar extends Component
                 // Visual End = Date + 0.5
 
                 $rawStartPos = $diffStartDays + 0.5;
-                $diffEndDays = $monthStart->diffInDays($checkOutDate, false);
+                $diffEndDays = $windowStart->diffInDays($checkOutDate, false);
                 $rawEndPos = $diffEndDays + 0.5;
 
                 $visualStart = $rawStartPos;

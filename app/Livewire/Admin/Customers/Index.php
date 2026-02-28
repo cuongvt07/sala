@@ -78,11 +78,11 @@ class Index extends Component
         $this->phone = $customer->phone;
         $this->email = $customer->email;
         $this->identity_id = $customer->identity_id;
-        $this->birthday = $customer->birthday;
+        $this->birthday = $customer->birthday ? \Carbon\Carbon::parse($customer->birthday)->format('Y-m-d') : null;
 
         $this->nationality = $customer->nationality;
         $this->visa_number = $customer->visa_number;
-        $this->visa_expiry = $customer->visa_expiry;
+        $this->visa_expiry = $customer->visa_expiry ? \Carbon\Carbon::parse($customer->visa_expiry)->format('Y-m-d') : null;
 
         $this->showModal = true;
     }

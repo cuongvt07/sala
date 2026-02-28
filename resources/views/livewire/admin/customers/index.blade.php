@@ -34,8 +34,17 @@
                 @foreach ($customers as $customer)
                     <tr class="hover:bg-gray-50/50 transition-colors">
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-[13px] font-bold text-gray-900">{{ $customer->name }}</div>
-                            <div class="text-[11px] text-gray-500">SN: {{ $customer->birthday }}</div>
+                            <div class="flex items-center gap-2">
+                                <div class="text-[13px] font-bold text-gray-900">{{ $customer->name }}</div>
+                                @if($customer->birthday && \Carbon\Carbon::parse($customer->birthday)->isBirthday())
+                                    <span class="inline-flex items-center gap-1 bg-pink-100 text-pink-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-pink-200">
+                                        🎂 Sinh nhật
+                                    </span>
+                                @endif
+                            </div>
+                            <div class="text-[11px] text-gray-500">
+                                SN: {{ $customer->birthday ? \Carbon\Carbon::parse($customer->birthday)->format('d/m/Y') : '-' }}
+                            </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-[13px] text-gray-900">{{ $customer->phone }}</div>

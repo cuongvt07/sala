@@ -20,6 +20,12 @@ class AreaResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
+    protected static ?string $modelLabel = 'Tòa nhà';
+
+    protected static ?string $pluralModelLabel = 'Tòa nhà';
+
+    protected static ?string $navigationLabel = 'Tòa nhà';
+
     protected static ?string $recordTitleAttribute = 'name';
 
     public static function form(Schema $schema): Schema

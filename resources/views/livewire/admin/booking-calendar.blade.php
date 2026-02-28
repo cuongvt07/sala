@@ -139,18 +139,18 @@
     <!-- Header & Controls -->
     <div class="flex flex-wrap justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100 gap-4">
                 <h2 class="text-2xl font-bold text-gray-800">
-                {{ \Carbon\Carbon::create($year, $month, 1)->locale('vi')->isoFormat('MMMM YYYY') }}
+                Từ {{ \Carbon\Carbon::parse($startDate ?? now())->format('d/m/Y') }} đến {{ \Carbon\Carbon::parse($startDate ?? now())->addDays(29)->format('d/m/Y') }}
             </h2>
 
         <div class="flex gap-2">
             <button wire:click="prevMonth" class="px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors">
-                ‹ Tháng trước
+                ‹ 30 ngày trước
             </button>
             <button wire:click="goToToday" class="px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">
                 Hôm nay
             </button>
             <button wire:click="nextMonth" class="px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors">
-                Tháng sau ›
+                30 ngày sau ›
             </button>
         </div>
     </div>

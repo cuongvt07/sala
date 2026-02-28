@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $title ?? 'Sala Admin' }}</title>
+    <title>{{ $title ?? 'Hệ thống vận hành Sala Apartment' }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
     <style>
@@ -18,9 +18,9 @@
         <!-- Logo -->
         <div class="flex h-16 items-center justify-center bg-slate-950 px-4 shadow-sm space-x-2">
             <img src="{{ asset('sala.png') }}" alt="Sala Logo" class="h-8 w-8 transition-all duration-300" :class="sidebarOpen ? '' : 'mx-auto'">
-            <span class="text-xl font-bold text-white transition-opacity duration-200"
+            <span class="text-sm tracking-wide font-black text-white transition-opacity duration-200 leading-tight uppercase text-center"
                   x-show="sidebarOpen">
-                SALA ADMIN
+                Hệ thống vận hành<br>SALA APARTMENT
             </span>
         </div>
 
@@ -31,14 +31,15 @@
                     ['route' => 'admin.dashboard', 'label' => 'Dashboard', 'icon' => 'home'],
                     ['route' => 'admin.booking-calendar', 'label' => 'Lịch đặt phòng', 'icon' => 'calendar-days'],
                     ['route' => 'admin.bookings.index', 'label' => 'Danh sách Booking', 'icon' => 'list-bullet'],
+                    ['route' => 'admin.customers.index', 'label' => 'Quản lý khách hàng', 'icon' => 'users'],
                     [
                         'label' => 'Cấu hình quản trị',
                         'icon' => 'cog-6-tooth',
                         'children' => [
                             ['route' => 'admin.services.index', 'label' => 'Dịch vụ', 'icon' => 'wrench-screwdriver'],
-                            ['route' => 'admin.customers.index', 'label' => 'Khách hàng', 'icon' => 'users'],
-                            ['route' => 'admin.areas.index', 'label' => 'Khu vực', 'icon' => 'map'],
+                            ['route' => 'admin.areas.index', 'label' => 'Tòa nhà', 'icon' => 'map'],
                             ['route' => 'admin.rooms.index', 'label' => 'Phòng', 'icon' => 'building-office'],
+                            ['route' => 'admin.room-maintenances.index', 'label' => 'Bảo dưỡng phòng', 'icon' => 'clipboard-document-check'],
                         ]
                     ],
                 ];
