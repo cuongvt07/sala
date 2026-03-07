@@ -13,6 +13,50 @@
         </div>
     @endif
 
+    <!-- Advanced Filters -->
+    <x-ui.filter-group title="Bộ lọc" icon="heroicon-o-funnel" :show="true">
+        <x-ui.filter-item label="Mã phòng / Tìm kiếm">
+            <div class="relative">
+                <x-icon name="heroicon-o-magnifying-glass" class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                <input wire:model.live.debounce.300ms="search" 
+                       type="text" 
+                       placeholder="Nhập mã phòng..." 
+                       class="w-full pl-9 pr-3 py-2 bg-gray-50/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-xs font-medium">
+            </div>
+        </x-ui.filter-item>
+
+        <x-ui.filter-item label="Loại phòng">
+            <select wire:model.live="filterType" 
+                    class="w-full px-3 py-2 bg-gray-50/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-xs font-medium appearance-none">
+                <option value="">Tất cả</option>
+                <option value="Studio">Studio</option>
+                <option value="1PN">1PN</option>
+                <option value="2PN">2PN</option>
+                <option value="3PN">3PN</option>
+                <option value="Penthouse">Penthouse</option>
+            </select>
+        </x-ui.filter-item>
+
+        <x-ui.filter-item label="Trạng thái">
+            <select wire:model.live="filterStatus" 
+                    class="w-full px-3 py-2 bg-gray-50/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-xs font-medium appearance-none">
+                <option value="">Tất cả</option>
+                <option value="active">Hoạt động</option>
+                <option value="maintenance">Bảo trì</option>
+            </select>
+        </x-ui.filter-item>
+
+        <x-ui.filter-item label="Khu vực / Toà nhà">
+            <select wire:model.live="filterArea" 
+                    class="w-full px-3 py-2 bg-gray-50/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-xs font-medium appearance-none">
+                <option value="">Tất cả</option>
+                @foreach($areas as $area)
+                    <option value="{{ $area->id }}">{{ $area->name }}</option>
+                @endforeach
+            </select>
+        </x-ui.filter-item>
+    </x-ui.filter-group>
+
     <x-ui.card class="p-0 overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50/50">

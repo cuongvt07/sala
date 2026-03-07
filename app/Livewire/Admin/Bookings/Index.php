@@ -751,13 +751,18 @@ class Index extends Component
     // Filters
     public $filterStatus = '';
     public $filterType = '';
+    public $filterArea = '';
     public $search = '';
 
     public function render()
     {
         $query = Booking::with(['customer', 'room.area'])->latest();
 
-        if (session('admin_selected_area_id')) {
+        if ($this->filterArea) {
+            $query->whereHas('room', function ($q) {
+                $q->where('area_id', $this->filterArea);
+            });
+        } elseif (session('admin_selected_area_id')) {
             $query->whereHas('room', function ($q) {
                 $q->where('area_id', session('admin_selected_area_id'));
             });

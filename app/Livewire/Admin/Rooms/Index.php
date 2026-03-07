@@ -15,13 +15,19 @@ class Index extends Component
     public $showModal = false;
     public $editingRoomId = null;
 
+    // Filters
+    public $search = '';
+    public $filterType = '';
+    public $filterStatus = '';
+    public $filterArea = '';
+
     // Form inputs
     public $area_id;
     public $code;
     public $type = 'Studio';
     public $price_day;
     public $price_hour;
-    public $status = 'available';
+    public $status = 'active';
     public $description;
 
     protected $listeners = ['area-selected' => '$refresh'];
@@ -111,7 +117,21 @@ class Index extends Component
     {
         $query = Room::with('area')->latest();
 
-        if (session('admin_selected_area_id')) {
+        if ($this->search) {
+            $query->where('code', 'like', '%' . $this->search . '%');
+        }
+
+        if ($this->filterType) {
+            $query->where('type', $this->filterType);
+        }
+
+        if ($this->filterStatus) {
+            $query->where('status', $this->filterStatus);
+        }
+
+        if ($this->filterArea) {
+            $query->where('area_id', $this->filterArea);
+        } elseif (session('admin_selected_area_id')) {
             $query->where('area_id', session('admin_selected_area_id'));
         }
 

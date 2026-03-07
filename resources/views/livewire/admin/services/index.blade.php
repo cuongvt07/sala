@@ -13,6 +13,19 @@
         </div>
     @endif
 
+    <!-- Advanced Filters -->
+    <x-ui.filter-group title="Bộ lọc" icon="heroicon-o-funnel" :show="true">
+        <x-ui.filter-item label="Tìm kiếm dịch vụ">
+            <div class="relative">
+                <x-icon name="heroicon-o-magnifying-glass" class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                <input wire:model.live.debounce.300ms="search" 
+                       type="text" 
+                       placeholder="Tên dịch vụ, đơn vị..." 
+                       class="w-full pl-9 pr-3 py-2 bg-gray-50/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-xs font-medium">
+            </div>
+        </x-ui.filter-item>
+    </x-ui.filter-group>
+
     <x-ui.card class="p-0 overflow-hidden">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50/50">

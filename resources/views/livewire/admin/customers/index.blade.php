@@ -1,14 +1,9 @@
 <div>
-    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+    <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold text-gray-800 tracking-tight">Quản lý Khách hàng</h1>
-        <div class="flex flex-col md:flex-row gap-4 items-center w-full md:w-auto">
-             <div class="w-full md:w-64">
-                <x-ui.input wire:model.live="search" placeholder="Tìm kiếm tên, SĐT, CCCD..." />
-             </div>
-            <x-ui.button wire:click="create" variant="primary" size="md" class="w-full md:w-auto">
-                + Thêm mới
-            </x-ui.button>
-        </div>
+        <x-ui.button wire:click="create" variant="primary" size="md">
+            + Thêm khách hàng mới
+        </x-ui.button>
     </div>
 
     @if (session()->has('success'))
@@ -17,6 +12,29 @@
             <span class="font-medium text-sm">{{ session('success') }}</span>
         </div>
     @endif
+
+    <!-- Advanced Filters -->
+    <x-ui.filter-group title="Bộ lọc" icon="heroicon-o-funnel" :show="true">
+        <x-ui.filter-item label="Tìm kiếm khách hàng">
+            <div class="relative">
+                <x-icon name="heroicon-o-magnifying-glass" class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                <input wire:model.live.debounce.300ms="search" 
+                       type="text" 
+                       placeholder="Họ tên, SĐT, CCCD..." 
+                       class="w-full pl-9 pr-3 py-2 bg-gray-50/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-xs font-medium">
+            </div>
+        </x-ui.filter-item>
+
+        <x-ui.filter-item label="Quốc tịch">
+            <select wire:model.live="filterNationality" 
+                    class="w-full px-3 py-2 bg-gray-50/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-xs font-medium appearance-none">
+                <option value="">Tất cả</option>
+                @foreach($countries as $country)
+                    <option value="{{ $country }}">{{ $country }}</option>
+                @endforeach
+            </select>
+        </x-ui.filter-item>
+    </x-ui.filter-group>
 
     <x-ui.card class="p-0 overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">

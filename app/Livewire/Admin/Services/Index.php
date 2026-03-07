@@ -85,10 +85,20 @@ class Index extends Component
         session()->flash('success', 'Xóa dịch vụ thành công.');
     }
 
+    public $search = '';
+
     public function render()
     {
+        $services = Service::query()
+            ->when($this->search, function($query) {
+                $query->where('name', 'like', '%' . $this->search . '%')
+                      ->orWhere('unit_name', 'like', '%' . $this->search . '%');
+            })
+            ->latest()
+            ->paginate(10);
+
         return view('livewire.admin.services.index', [
-            'services' => Service::latest()->paginate(10),
+            'services' => $services,
         ])->layout('components.layouts.admin');
     }
 }

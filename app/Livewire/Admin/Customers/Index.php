@@ -131,14 +131,21 @@ class Index extends Component
         session()->flash('success', 'Xóa khách hàng thành công.');
     }
 
+    public $filterNationality = '';
+
     public function render()
     {
         $customers = Customer::query()
             ->when($this->search, function ($query) {
-                $query->where('name', 'like', '%' . $this->search . '%')
-                    ->orWhere('phone', 'like', '%' . $this->search . '%')
-                    ->orWhere('identity_id', 'like', '%' . $this->search . '%')
-                    ->orWhere('email', 'like', '%' . $this->search . '%');
+                $query->where(function($q) {
+                    $q->where('name', 'like', '%' . $this->search . '%')
+                        ->orWhere('phone', 'like', '%' . $this->search . '%')
+                        ->orWhere('identity_id', 'like', '%' . $this->search . '%')
+                        ->orWhere('email', 'like', '%' . $this->search . '%');
+                });
+            })
+            ->when($this->filterNationality, function ($query) {
+                $query->where('nationality', $this->filterNationality);
             })
             ->latest()
             ->paginate(10);
