@@ -6,8 +6,8 @@ use App\Models\Setting;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Form;
+use Filament\Forms\Components\Placeholder;
+use Illuminate\Support\HtmlString;
 use Filament\Pages\Page;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
@@ -83,10 +83,42 @@ class ManageSettings extends Page
                                     ->schema([
                                         TextInput::make('mail_subject_prefix')
                                             ->label('Default Subject Prefix')
-                                            ->placeholder('[SALA] '),
+                                            ->placeholder('[SALA] ')
+                                            ->live(),
                                         TextInput::make('mail_footer_text')
                                             ->label('Email Footer Text')
-                                            ->placeholder('© 2026 SALA. All rights reserved.'),
+                                            ->placeholder('© 2026 SALA. All rights reserved.')
+                                            ->live(),
+                                        
+                                        Placeholder::make('preview')
+                                            ->label('Email Visual Preview')
+                                            ->content(function ($get) {
+                                                $prefix = $get('mail_subject_prefix') ?? '[SALA] ';
+                                                $name = $get('mail_from_name') ?? 'SALA System';
+                                                $siteName = $get('site_name') ?? 'SALA';
+                                                $footer = $get('mail_footer_text') ?? '© 2026 SALA. All rights reserved.';
+                                                
+                                                return new HtmlString("
+                                                    <div class='mt-2 p-4 border rounded-xl bg-gray-50 dark:bg-gray-900 font-sans'>
+                                                        <div class='flex items-center gap-3 mb-4'>
+                                                            <div class='w-9 h-9 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-md ring-2 ring-white'>
+                                                                " . substr($siteName, 0, 1) . "
+                                                            </div>
+                                                            <div>
+                                                                <div class='text-sm font-semibold'>$name</div>
+                                                                <div class='text-xs text-gray-500'>To: customer@example.com</div>
+                                                            </div>
+                                                        </div>
+                                                        <div class='mb-2 text-sm font-bold'>$prefix New Booking Confirmation #12345</div>
+                                                        <div class='text-sm text-gray-700 dark:text-gray-300 italic mb-4 p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700'>
+                                                            Hello! This is a sample email content to show how your configuration will look in a real mailbox.
+                                                        </div>
+                                                        <div class='text-xs text-center text-gray-400 mt-4 border-t pt-4'>
+                                                            $footer
+                                                        </div>
+                                                    </div>
+                                                ");
+                                            }),
                                     ])->columns(1),
                             ]),
                         
@@ -94,7 +126,8 @@ class ManageSettings extends Page
                             ->icon('heroicon-o-computer-desktop')
                             ->schema([
                                 TextInput::make('site_name')
-                                    ->label('Site Name'),
+                                    ->label('Site Name')
+                                    ->live(),
                             ]),
                     ]),
             ])
