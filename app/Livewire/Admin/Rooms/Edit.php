@@ -33,7 +33,21 @@ class Edit extends Component
         $this->price_hour = $roomModel->price_hour ? number_format($roomModel->price_hour, 0, '', '.') : '';
         $this->status = $roomModel->status;
         $this->description = $roomModel->description;
+
+        $this->maintenances = $roomModel->roomMaintenances()
+            ->orderBy('maintenance_date', 'desc')
+            ->get()
+            ->groupBy(function($item) {
+                $today = now()->startOfDay();
+                $mDate = $item->maintenance_date->startOfDay();
+                
+                if ($mDate->lt($today)) return 'old';
+                if ($mDate->eq($today)) return 'current';
+                return 'new';
+            });
     }
+
+    public $maintenances = [];
 
     public function rules()
     {
