@@ -162,6 +162,53 @@
                  @error('description') <p class="text-[10px] text-red-500">{{ $message }}</p> @enderror
             </div>
 
+            @if($editingRoomId && !empty($maintenances))
+                <div class="mt-6 border-t pt-4 space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                    <div class="flex items-center gap-2 mb-2">
+                        <x-icon name="heroicon-o-wrench-screwdriver" class="w-4 h-4 text-gray-400" />
+                        <h3 class="text-[11px] font-bold uppercase tracking-widest text-gray-500">Lịch sử bảo dưỡng</h3>
+                    </div>
+
+                    @foreach(['new' => 'Sắp tới', 'current' => 'Hôm nay', 'old' => 'Quá khứ'] as $key => $label)
+                        @if(isset($maintenances[$key]))
+                            <div class="space-y-2">
+                                <div class="text-[9px] font-black text-gray-400 uppercase tracking-tighter">{{ $label }}</div>
+                                @foreach($maintenances[$key] as $m)
+                                    <div class="p-3 bg-white border border-gray-100 rounded-xl shadow-sm flex items-center justify-between gap-3 relative overflow-hidden group">
+                                        @php
+                                            $borderClass = match($key) {
+                                                'new' => 'bg-blue-500',
+                                                'current' => 'bg-amber-500',
+                                                'old' => 'bg-gray-300',
+                                            };
+                                            $badgeClass = match($key) {
+                                                'new' => 'bg-blue-50 text-blue-600 border-blue-100',
+                                                'current' => 'bg-amber-50 text-amber-600 border-amber-100',
+                                                'old' => 'bg-gray-50 text-gray-500 border-gray-100',
+                                            };
+                                        @endphp
+                                        <div class="absolute left-0 top-0 bottom-0 w-1 {{ $borderClass }}"></div>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-[12px] font-bold text-gray-800 truncate">{{ $m->task_name }}</span>
+                                                <span class="px-1.5 py-0.5 rounded border text-[8px] font-black uppercase {{ $badgeClass }}">
+                                                    {{ $key == 'new' ? 'Plan' : ($key == 'current' ? 'Now' : 'Done') }}
+                                                </span>
+                                            </div>
+                                            <p class="text-[10px] text-gray-500 truncate mt-0.5">{{ $m->description ?: 'No detail.' }}</p>
+                                        </div>
+                                        <div class="text-right shrink-0">
+                                            <div class="text-[10px] font-black text-blue-600">{{ number_format($m->cost, 0, '', '.') }}đ</div>
+                                            <div class="text-[9px] text-gray-400">{{ $m->maintenance_date->format('d/m/Y') }}</div>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+                    @endforeach
+                </div>
+            @endif
+
             <div class="flex justify-end pt-4 gap-3">
                 <x-ui.button @click="show = false" variant="secondary" type="button">
                     Hủy bỏ

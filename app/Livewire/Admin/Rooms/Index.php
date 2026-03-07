@@ -23,6 +23,7 @@ class Index extends Component
     public $price_hour;
     public $status = 'available';
     public $description;
+    public $maintenances = [];
 
     protected $listeners = ['area-selected' => '$refresh'];
 
@@ -65,6 +66,18 @@ class Index extends Component
         $this->price_hour = $room->price_hour ? number_format($room->price_hour, 0, '', '.') : '';
         $this->status = $room->status;
         $this->description = $room->description;
+        
+        $this->maintenances = $room->roomMaintenances()
+            ->orderBy('maintenance_date', 'desc')
+            ->get()
+            ->groupBy(function($item) {
+                $today = now()->startOfDay();
+                $mDate = $item->maintenance_date->startOfDay();
+                
+                if ($mDate->lt($today)) return 'old';
+                if ($mDate->eq($today)) return 'current';
+                return 'new';
+            });
         
         $this->showModal = true;
     }
