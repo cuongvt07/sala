@@ -29,4 +29,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
     // Room Maintenances
     Route::get('/room-maintenances', \App\Livewire\Admin\RoomMaintenances\Index::class)->name('room-maintenances.index');
+
+    // Settings
+    Route::get('/settings', \App\Livewire\Admin\Settings\Index::class)->name('settings.index');
 });

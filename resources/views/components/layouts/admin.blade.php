@@ -40,6 +40,7 @@
                             ['route' => 'admin.areas.index', 'label' => 'Tòa nhà', 'icon' => 'map'],
                             ['route' => 'admin.rooms.index', 'label' => 'Phòng', 'icon' => 'building-office'],
                             ['route' => 'admin.room-maintenances.index', 'label' => 'Bảo dưỡng phòng', 'icon' => 'clipboard-document-check'],
+                            ['route' => 'admin.settings.index', 'label' => 'Cài đặt hệ thống', 'icon' => 'cog-8-tooth'],
                         ]
                     ],
                 ];
@@ -130,7 +131,7 @@
             <!-- Right Actions -->
             <div class="flex items-center gap-4">
                 <div class="text-sm font-medium text-gray-700">Admin User</div>
-                <div class="h-8 w-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">
+                <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-md ring-2 ring-white">
                     A
                 </div>
             </div>
