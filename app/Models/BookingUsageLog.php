@@ -21,6 +21,7 @@ class BookingUsageLog extends Model
         'total_amount',
         'billing_date',
         'notes',
+        'email_sent_at',
     ];
 
     protected $casts = [
@@ -30,6 +31,7 @@ class BookingUsageLog extends Model
         'quantity' => 'decimal:2',
         'unit_price' => 'decimal:2',
         'total_amount' => 'decimal:2',
+        'email_sent_at' => 'datetime',
     ];
 
     public function booking()

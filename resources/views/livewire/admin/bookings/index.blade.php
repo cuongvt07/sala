@@ -211,6 +211,7 @@
                                 </div>
                             @endif
                         </div>
+
                         <div class="bg-white p-3 rounded-lg border border-gray-200">
                             <h4 class="text-[10px] font-black text-gray-400 uppercase mb-2">Phòng & Trạng thái</h4>
                             <div class="grid grid-cols-2 gap-2">
@@ -227,11 +228,28 @@
                         <div class="grid grid-cols-6 gap-2">
                             <div><label class="text-[9px] text-gray-400 uppercase font-bold block mb-0.5">Check-in</label><input type="datetime-local" wire:model="check_in" class="w-full rounded border-gray-200 p-1.5 text-sm font-semibold">@error('check_in')<span class="text-red-500 text-[10px]">{{ $message }}</span>@enderror</div>
                             <div><label class="text-[9px] text-gray-400 uppercase font-bold block mb-0.5">Check-out</label><input type="datetime-local" wire:model="check_out" class="w-full rounded border-gray-200 p-1.5 text-sm font-semibold"></div>
-                            <div><label class="text-[9px] text-gray-400 uppercase font-bold block mb-0.5">Đơn giá</label><input type="text" wire:model.blur="unit_price" class="w-full rounded border-gray-200 p-1.5 text-sm font-bold" x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')"></div>
+                            <div><label class="text-[9px] text-blue-500 uppercase font-bold block mb-0.5">Đơn giá</label><input type="text" wire:model.blur="unit_price" class="w-full rounded border-gray-200 p-1.5 text-sm font-bold" x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')"></div>
                             <div><label class="text-[9px] text-blue-500 uppercase font-bold block mb-0.5">Tổng tiền</label><input type="text" wire:model.blur="price" class="w-full rounded border-blue-300 bg-blue-50 p-1.5 text-sm font-bold text-blue-600" x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')">@error('price')<span class="text-red-500 text-[10px]">{{ $message }}</span>@enderror</div>
                             <div><label class="text-[9px] text-gray-400 uppercase font-bold block mb-0.5">Cọc L1</label><input type="text" wire:model.blur="deposit" class="w-full rounded border-gray-200 p-1.5 text-sm font-semibold text-indigo-600" x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')"></div>
                             <div><label class="text-[9px] text-gray-400 uppercase font-bold block mb-0.5">Cọc L2/L3</label><div class="flex gap-1"><input type="text" wire:model.blur="deposit_2" class="w-1/2 rounded border-gray-200 p-1.5 text-sm font-semibold text-indigo-600" placeholder="L2" x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')"><input type="text" wire:model.blur="deposit_3" class="w-1/2 rounded border-gray-200 p-1.5 text-sm font-semibold text-indigo-600" placeholder="L3" x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')"></div></div>
                         </div>
+                    </div>
+                @endif
+
+                {{-- ===== FLASH MESSAGES FOR EMAIL ===== --}}
+                @if (session()->has('info'))
+                    <div class="bg-blue-50 border border-blue-200 text-blue-700 px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-2 mb-3">
+                        <x-icon name="heroicon-o-information-circle" class="h-4 w-4 flex-shrink-0" /> {{ session('info') }}
+                    </div>
+                @endif
+                @if (session()->has('warning'))
+                    <div class="bg-amber-50 border border-amber-200 text-amber-700 px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-2 mb-3">
+                        <x-icon name="heroicon-o-exclamation-triangle" class="h-4 w-4 flex-shrink-0" /> {{ session('warning') }}
+                    </div>
+                @endif
+                @if (session()->has('error'))
+                    <div class="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-2 mb-3">
+                        <x-icon name="heroicon-o-x-circle" class="h-4 w-4 flex-shrink-0" /> {{ session('error') }}
                     </div>
                 @endif
 
@@ -250,6 +268,30 @@
                                 <x-icon name="heroicon-o-clock" class="h-4 w-4"/>
                                 📊 Lịch sử các kỳ đã chốt ({{ $logsByPeriod->count() }} kỳ)
                             </h4>
+                            {{-- Export Invoice Button --}}
+                            @if($editingBookingId)
+                                <div class="flex items-center gap-2">
+                                    @php
+                                        $unsentCount = collect($usage_logs)->whereNull('email_sent_at')->count();
+                                        $invoiceCustomer = $customers->find($customer_id);
+                                    @endphp
+                                    @if($invoiceCustomer && $invoiceCustomer->email)
+                                        <span class="text-[10px] text-gray-500">→ {{ $invoiceCustomer->email }} · {{ $unsentCount }} chưa gửi</span>
+                                    @else
+                                        <span class="text-[10px] text-amber-600">⚠ Không có email</span>
+                                    @endif
+                                    <button type="button" wire:click="exportInvoice" wire:loading.attr="disabled" wire:target="exportInvoice"
+                                        class="px-3 py-1.5 bg-indigo-600 text-white text-[10px] font-black uppercase rounded-lg hover:bg-indigo-700 hover:shadow-[0_0_15px_rgba(79,70,229,0.4)] shadow-sm active:scale-95 transition-all flex items-center gap-1.5 disabled:opacity-50">
+                                        <span wire:loading.remove wire:target="exportInvoice">
+                                            <x-icon name="heroicon-o-paper-airplane" class="h-3 w-3" />
+                                        </span>
+                                        <span wire:loading wire:target="exportInvoice">
+                                            <svg class="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                                        </span>
+                                        Xuất & Gửi HĐ
+                                    </button>
+                                </div>
+                            @endif
                         </div>
                         
                         <div class="overflow-x-auto">
@@ -281,6 +323,13 @@
                                                 <td class="border border-gray-200 px-2 py-2 text-center {{ $serviceLog ? 'bg-green-50' : 'bg-gray-50' }}">
                                                     @if($serviceLog)
                                                         <div class="space-y-0.5">
+                                                            @if(!empty($serviceLog['email_sent_at']))
+                                                                <div class="flex justify-center mb-0.5">
+                                                                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-green-50 text-green-600 rounded text-[9px] font-bold border border-green-100" title="Đã gửi lúc {{ $serviceLog['email_sent_at'] }}">
+                                                                        <x-icon name="heroicon-s-check-circle" class="h-2.5 w-2.5" /> Đã gửi
+                                                                    </span>
+                                                                </div>
+                                                            @endif
                                                             @if($serviceLog['type'] === 'meter')
                                                                 <div class="text-[9px] text-gray-500">
                                                                     {{ $serviceLog['start_index'] }}→{{ $serviceLog['end_index'] }}

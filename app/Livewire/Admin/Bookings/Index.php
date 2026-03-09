@@ -11,6 +11,8 @@ use App\Models\Customer;
 use App\Models\Room;
 use App\Models\Service;
 use App\Models\BookingUsageLog;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\InvoiceMail;
 
 class Index extends Component
 {
@@ -210,6 +212,7 @@ class Index extends Component
                 'total_amount' => $log->total_amount,
                 'billing_date' => $log->billing_date ? $log->billing_date->format('Y-m-d') : null,
                 'notes' => $log->notes,
+                'email_sent_at' => $log->email_sent_at ? $log->email_sent_at->format('d/m/Y H:i') : null,
             ];
         })->toArray();
 
@@ -599,6 +602,47 @@ class Index extends Component
         } else {
             unset($this->service_inputs[$serviceId]);
         }
+    }
+
+    public function exportInvoice()
+    {
+        if (!$this->editingBookingId) {
+            session()->flash('error', 'Vui lòng lưu booking trước khi xuất hoá đơn.');
+            return;
+        }
+
+        $booking = Booking::with(['customer', 'room', 'usageLogs.service'])->find($this->editingBookingId);
+        if (!$booking) return;
+
+        // Get all usage logs that haven't been emailed yet
+        $unsentLogs = $booking->usageLogs()->whereNull('email_sent_at')->get();
+
+        if ($unsentLogs->isEmpty()) {
+            session()->flash('info', 'Tất cả các khoản phí đã được gửi email trước đó.');
+            return;
+        }
+
+        $customerEmail = $booking->customer->email ?? null;
+
+        if ($customerEmail) {
+            try {
+                Mail::to($customerEmail)->send(new InvoiceMail($booking, $unsentLogs));
+
+                // Mark logs as email sent
+                $unsentLogs->each(function ($log) {
+                    $log->update(['email_sent_at' => now()]);
+                });
+
+                session()->flash('success', 'Đã gửi hoá đơn đến ' . $customerEmail . ' thành công! (' . $unsentLogs->count() . ' khoản phí)');
+            } catch (\Exception $e) {
+                session()->flash('error', 'Gửi email thất bại: ' . $e->getMessage());
+            }
+        } else {
+            session()->flash('warning', 'Khách hàng không có email. Không thể gửi hoá đơn.');
+        }
+
+        // Reload booking data to refresh email_sent_at badges
+        $this->edit($this->editingBookingId);
     }
 
     public function save()
