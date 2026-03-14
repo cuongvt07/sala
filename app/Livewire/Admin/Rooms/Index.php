@@ -81,6 +81,10 @@ class Index extends Component
         $this->price_day = str_replace(['.', ','], '', $this->price_day);
         $this->price_hour = str_replace(['.', ','], '', $this->price_hour);
 
+        // Convert empty strings to null for decimal columns
+        $this->price_day = $this->price_day === '' ? null : $this->price_day;
+        $this->price_hour = $this->price_hour === '' ? null : $this->price_hour;
+
         $this->validate();
 
         $data = [

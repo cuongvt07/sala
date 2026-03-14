@@ -40,8 +40,8 @@ class Edit extends Component
             'area_id' => 'required|exists:areas,id',
             'code' => ['required', 'string', 'max:255', Rule::unique('rooms', 'code')->ignore($this->roomId)],
             'type' => 'required|string',
-            'price_day' => 'required', // numeric check happens after sanitization if needed, but handled loosely here or strict? Let's just require.
-            'price_hour' => 'nullable',
+            'price_day' => 'required|numeric|min:0',
+            'price_hour' => 'nullable|numeric|min:0',
             'status' => 'required|in:active,maintenance',
             'description' => 'nullable|string',
         ];
@@ -51,6 +51,10 @@ class Edit extends Component
     {
         $this->price_day = str_replace(['.', ','], '', $this->price_day);
         $this->price_hour = str_replace(['.', ','], '', $this->price_hour);
+        
+        // Convert empty strings to null for decimal columns
+        $this->price_day = $this->price_day === '' ? null : $this->price_day;
+        $this->price_hour = $this->price_hour === '' ? null : $this->price_hour;
         
         $this->validate();
 
