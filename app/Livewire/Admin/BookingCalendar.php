@@ -458,6 +458,13 @@ class BookingCalendar extends Component
         $cleanDeposit3 = str_replace('.', '', $this->deposit_3);
         $cleanUnitPrice = str_replace('.', '', $this->unit_price);
 
+        // Convert empty strings to null for decimal columns
+        $cleanPrice = $cleanPrice === '' ? null : $cleanPrice;
+        $cleanDeposit = $cleanDeposit === '' ? null : $cleanDeposit;
+        $cleanDeposit2 = $cleanDeposit2 === '' ? null : $cleanDeposit2;
+        $cleanDeposit3 = $cleanDeposit3 === '' ? null : $cleanDeposit3;
+        $cleanUnitPrice = $cleanUnitPrice === '' ? null : $cleanUnitPrice;
+
         // Check-in Requirement Validation
         if ($this->status === 'checked_in') {
             $this->validate([

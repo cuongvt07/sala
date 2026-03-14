@@ -654,6 +654,13 @@ class Index extends Component
         $this->deposit_3 = str_replace('.', '', $this->deposit_3);
         $this->unit_price = str_replace('.', '', $this->unit_price);
 
+        // Convert empty strings to null for decimal columns
+        $this->price = $this->price === '' ? null : $this->price;
+        $this->deposit = $this->deposit === '' ? null : $this->deposit;
+        $this->deposit_2 = $this->deposit_2 === '' ? null : $this->deposit_2;
+        $this->deposit_3 = $this->deposit_3 === '' ? null : $this->deposit_3;
+        $this->unit_price = $this->unit_price === '' ? null : $this->unit_price;
+
         $this->validate();
 
         $customerId = $this->customer_id;
