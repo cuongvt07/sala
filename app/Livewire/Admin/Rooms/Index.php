@@ -40,7 +40,7 @@ class Index extends Component
             'type' => 'required|string',
             'price_day' => 'required|numeric|min:0',
             'price_hour' => 'nullable|numeric|min:0',
-            'status' => 'required|in:available,occupied,maintenance,reserved',
+            'status' => 'required|in:active,maintenance',
             'description' => 'nullable|string',
         ];
     }
