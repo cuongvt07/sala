@@ -108,7 +108,7 @@ class Index extends Component
 
         $this->showModal = false;
         session()->flash('success', $message);
-        $this->reset(['area_id', 'code', 'type', 'price_day', 'price_hour', 'status', 'description', 'editingRoomId', 'maintenances']);
+        $this->reset(['area_id', 'code', 'type', 'price_day', 'price_hour', 'status', 'description', 'editingRoomId']);
     }
 
     public function delete($id)
