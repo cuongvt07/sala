@@ -2,6 +2,11 @@
 
 use Illuminate\Support\Facades\Route;
 
+// Alias route [login] → chuyển về Filament login. Phải khai báo ngoài group admin để KHÔNG bị prefix tên 'admin.'.
+Route::get('/login', function () {
+    return redirect('/filament/login');
+})->name('login');
+
 Route::get('/', function () {
     return view('welcome');
 });
@@ -32,8 +37,4 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
 
     // Settings
     Route::get('/settings', \App\Livewire\Admin\Settings\Index::class)->name('settings.index');
-
-    Route::get('/login', function() {
-        return redirect('/filament/login');
-    })->name('login');
 });
