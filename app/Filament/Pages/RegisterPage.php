@@ -2,13 +2,5 @@
 
 namespace App\Filament\Pages;
 
-use Filament\Pages\Auth\Register as BaseRegister;
-
-class RegisterPage extends BaseRegister
-{
-    protected function getRedirectUrl(): string
-    {
-        // Sau khi đăng ký thành công chuyển về dashboard hoặc login
-        return '/admin/dashboard';
-    }
-}
+// Tạm thời ẩn page đăng ký Filament do thiếu class gốc phù hợp với bản Filament hiện tại.
+// Muốn phục hồi chức năng đăng ký, hãy kiểm tra lại docs hoặc cập nhật Filament cho phù hợp.
