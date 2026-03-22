@@ -32,4 +32,8 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
 
     // Settings
     Route::get('/settings', \App\Livewire\Admin\Settings\Index::class)->name('settings.index');
+
+    Route::get('/login', function() {
+        return redirect('/filament/login');
+    })->name('login');
 });
