@@ -8,7 +8,7 @@ Route::get('/', function () {
 
 Route::redirect('/admin', '/admin/dashboard'); // Redirect /admin to new Dashboard
 
-Route::prefix('admin')->name('admin.')->group(function () {
+Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     Route::get('/dashboard', \App\Livewire\Admin\Dashboard::class)->name('dashboard');
     Route::get('/booking-calendar', \App\Livewire\Admin\BookingCalendar::class)->name('booking-calendar');
     
