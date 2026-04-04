@@ -27,6 +27,7 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('filament') // Changed from 'admin' to 'filament' to avoid conflict
+            ->homeUrl('/admin/dashboard')
             ->login()
             ->sidebarCollapsibleOnDesktop() // Enable collapse/expand sidebar
             ->colors([

@@ -11,7 +11,7 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::redirect('/admin', '/admin/dashboard'); // Redirect /admin to new Dashboard
+Route::redirect('/admin', '/admin/dashboard'); // Redirect /admin to Dashboard
 
 Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     Route::get('/dashboard', \App\Livewire\Admin\Dashboard::class)->name('dashboard');
