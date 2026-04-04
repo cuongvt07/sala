@@ -6,7 +6,7 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Filament\Pages\Dashboard;
+use App\Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
@@ -29,6 +29,7 @@ class AdminPanelProvider extends PanelProvider
             ->path('filament') // Changed from 'admin' to 'filament' to avoid conflict
             ->homeUrl('/admin/dashboard')
             ->login()
+            ->navigation(false)
             ->sidebarCollapsibleOnDesktop() // Enable collapse/expand sidebar
             ->colors([
                 'primary' => Color::Amber,

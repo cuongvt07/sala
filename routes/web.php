@@ -12,6 +12,7 @@ Route::get('/', function () {
 });
 
 Route::redirect('/admin', '/admin/dashboard'); // Redirect /admin to Dashboard
+Route::redirect('/filament', '/admin/dashboard'); // Redirect /filament to Dashboard
 
 Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     Route::get('/dashboard', \App\Livewire\Admin\Dashboard::class)->name('dashboard');

@@ -129,10 +129,24 @@
             </div>
 
             <!-- Right Actions -->
-            <div class="flex items-center gap-4">
-                <div class="text-sm font-medium text-gray-700">Admin User</div>
-                <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-md ring-2 ring-white">
-                    A
+            <div class="flex items-center gap-2">
+                <form method="POST" action="{{ route('filament.admin.auth.logout') }}">
+                    @csrf
+                    <button type="submit" 
+                            class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition-all hover:bg-red-50 hover:text-red-600 group"
+                            title="Đăng xuất">
+                        <x-icon name="heroicon-o-arrow-right-on-rectangle" class="h-5 w-5 text-gray-400 group-hover:text-red-500" />
+                        <span class="hidden md:inline">Đăng xuất</span>
+                    </button>
+                </form>
+
+                <div class="h-6 w-px bg-gray-200 mx-2"></div>
+
+                <div class="flex items-center gap-3">
+                    <div class="text-sm font-semibold text-gray-700 hidden sm:block">Admin User</div>
+                    <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-md ring-2 ring-white ring-offset-2">
+                        A
+                    </div>
                 </div>
             </div>
         </header>
