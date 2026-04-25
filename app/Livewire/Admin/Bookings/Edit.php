@@ -30,8 +30,8 @@ class Edit extends Component
         $this->bookingId = $bookingModel->id;
         $this->customer_id = $bookingModel->customer_id;
         $this->room_id = $bookingModel->room_id;
-        $this->check_in = $bookingModel->check_in;
-        $this->check_out = $bookingModel->check_out;
+        $this->check_in = $bookingModel->check_in ? $bookingModel->check_in->format('Y-m-d') : null;
+        $this->check_out = $bookingModel->check_out ? $bookingModel->check_out->format('Y-m-d') : null;
         $this->price = $bookingModel->price;
         $this->deposit = $bookingModel->deposit;
         $this->deposit_2 = $bookingModel->deposit_2;

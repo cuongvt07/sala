@@ -185,8 +185,8 @@ class Index extends Component
         $this->room_id = $booking->room_id;
         $this->price_type = ($booking->price_type === 'month') ? 'month' : 'day'; // Default to day, map legacy 'hour' to day
         $this->unit_price = $booking->unit_price ?? 0;
-        $this->check_in = $booking->check_in ? $booking->check_in->format('Y-m-d\TH:i') : null; // Ensure Y-m-d\TH:i for datetime-local
-        $this->check_out = $booking->check_out ? $booking->check_out->format('Y-m-d\TH:i') : null;
+        $this->check_in = $booking->check_in ? $booking->check_in->format('Y-m-d') : null; // Ensure Y-m-d for date input
+        $this->check_out = $booking->check_out ? $booking->check_out->format('Y-m-d') : null;
 
         // Format money fields for display
         $this->price = number_format($booking->price, 0, ',', '.');
