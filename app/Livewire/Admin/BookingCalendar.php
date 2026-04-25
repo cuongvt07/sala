@@ -240,8 +240,8 @@ class BookingCalendar extends Component
         $this->reset(['customer_id', 'new_customer_name', 'new_customer_phone', 'new_customer_email', 'new_customer_identity', 'new_customer_nationality', 'new_customer_visa_number', 'new_customer_visa_expiry', 'new_customer_notes', 'new_customer_image', 'customer_identity', 'customer_nationality', 'customer_visa_number', 'customer_visa_expiry', 'room_id', 'price_type', 'unit_price', 'check_in', 'check_out', 'price', 'deposit', 'deposit_2', 'deposit_3', 'status', 'source', 'notes', 'editingBookingId', 'selected_services', 'usage_logs']);
 
         $this->room_id = $roomId;
-        $this->check_in = $date . 'T00:00';
-        $this->check_out = \Carbon\Carbon::parse($date)->addDay()->format('Y-m-d\T00:00');
+        $this->check_in = $date;
+        $this->check_out = \Carbon\Carbon::parse($date)->addDay()->format('Y-m-d');
         $this->price_type = 'day';
         $this->activeTab = 'existing';
         $this->manual_fee_date = date('Y-m-d');
@@ -263,8 +263,8 @@ class BookingCalendar extends Component
         $this->room_id = $booking->room_id;
         $this->price_type = ($booking->price_type === 'month') ? 'month' : 'day';
         $this->unit_price = number_format($booking->unit_price ?? 0, 0, ',', '.');
-        $this->check_in = $booking->check_in ? $booking->check_in->format('Y-m-d\TH:i') : null;
-        $this->check_out = $booking->check_out ? $booking->check_out->format('Y-m-d\TH:i') : null;
+        $this->check_in = $booking->check_in ? $booking->check_in->format('Y-m-d') : null;
+        $this->check_out = $booking->check_out ? $booking->check_out->format('Y-m-d') : null;
         $this->price = number_format($booking->price, 0, ',', '.');
         $this->deposit = $booking->deposit ? number_format($booking->deposit, 0, ',', '.') : 0;
         $this->deposit_2 = $booking->deposit_2 ? number_format($booking->deposit_2, 0, ',', '.') : 0;
