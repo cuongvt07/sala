@@ -496,7 +496,7 @@ class BookingCalendar extends Component
             if ($this->status === 'checked_in') {
                 $identityValue = $this->customer_identity ?: $this->new_customer_identity;
                 $newCustomerData['identity_id'] = $identityValue;
-                $newCustomerData['nationality'] = $this->customer_nationality;
+                $newCustomerData['nationality'] = $this->customer_nationality ?: 'Vietnam';
                 $newCustomerData['visa_number'] = $identityValue; // Lưu cùng giá trị với identity_id
                 $newCustomerData['visa_expiry'] = $this->customer_visa_expiry;
             }

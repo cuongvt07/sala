@@ -113,7 +113,7 @@ class Index extends Component
                 'identity_id' => $this->identity_id,
                 'birthday' => $this->birthday,
 
-                'nationality' => $this->nationality,
+                'nationality' => $this->nationality ?: 'Vietnam',
                 'visa_number' => $this->visa_number,
                 'visa_expiry' => $this->visa_expiry,
             ]);

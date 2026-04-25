@@ -705,7 +705,7 @@ class Index extends Component
                 'phone' => $this->new_customer_phone,
                 'email' => $this->new_customer_email,
                 'identity_id' => $this->new_customer_identity,
-                'nationality' => $this->new_customer_nationality,
+                'nationality' => $this->new_customer_nationality ?: 'Vietnam',
                 'visa_number' => $this->new_customer_visa_number,
                 'visa_expiry' => $this->new_customer_visa_expiry,
                 'notes' => $this->new_customer_notes,
