@@ -13,12 +13,12 @@ class BookingsTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->defaultSort('created_at', 'desc')
+            ->defaultSort('check_in', 'asc')
             ->columns([
                 TextColumn::make('customer.name')->searchable(),
                 TextColumn::make('room.code')->searchable(),
-                TextColumn::make('check_in')->dateTime()->sortable(),
-                TextColumn::make('check_out')->dateTime()->sortable(),
+                TextColumn::make('check_in')->date('d/m/Y')->sortable(),
+                TextColumn::make('check_out')->date('d/m/Y')->sortable(),
                 TextColumn::make('deposits')
                     ->label('Tình trạng cọc & thanh toán')
                     ->html()

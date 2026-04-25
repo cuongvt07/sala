@@ -20,9 +20,9 @@ class BookingResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    protected static ?string $modelLabel = 'Lịch đặt phòng';
+    protected static ?string $modelLabel = 'Quản lý đặt phòng';
 
-    protected static ?string $pluralModelLabel = 'Lịch đặt phòng';
+    protected static ?string $pluralModelLabel = 'Quản lý đặt phòng';
 
     protected static ?string $recordTitleAttribute = 'id';
 

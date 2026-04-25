@@ -30,7 +30,7 @@
                 $navItems = [
                     ['route' => 'admin.dashboard', 'label' => 'Dashboard', 'icon' => 'home'],
                     ['route' => 'admin.booking-calendar', 'label' => 'Lịch đặt phòng', 'icon' => 'calendar-days'],
-                    ['route' => 'admin.bookings.index', 'label' => 'Danh sách Booking', 'icon' => 'list-bullet'],
+                    ['route' => 'admin.bookings.index', 'label' => 'Quản lý đặt phòng', 'icon' => 'list-bullet'],
                     ['route' => 'admin.customers.index', 'label' => 'Quản lý khách hàng', 'icon' => 'users'],
                     [
                         'label' => 'Cấu hình quản trị',

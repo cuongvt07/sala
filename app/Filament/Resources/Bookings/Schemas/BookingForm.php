@@ -5,7 +5,7 @@ namespace App\Filament\Resources\Bookings\Schemas;
 use Filament\Schemas\Schema;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Grid;
-use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 
@@ -23,8 +23,12 @@ class BookingForm
                     ->relationship('room', 'code')
                     ->searchable()
                     ->required(),
-                DateTimePicker::make('check_in')->required(),
-                DateTimePicker::make('check_out')->required(),
+                DatePicker::make('check_in')
+                    ->displayFormat('d/m/Y')
+                    ->required(),
+                DatePicker::make('check_out')
+                    ->displayFormat('d/m/Y')
+                    ->required(),
                 TextInput::make('price')->numeric()->required()->prefix('$'),
                 \Filament\Forms\Components\Grid::make(3)
                     ->schema([
@@ -32,6 +36,16 @@ class BookingForm
                         TextInput::make('deposit_2')->label('Cọc Lần 2')->numeric()->prefix('$'),
                         TextInput::make('deposit_3')->label('Cọc Lần 3')->numeric()->prefix('$'),
                     ]),
+                Select::make('source')
+                    ->label('Hình thức đặt')
+                    ->options([
+                        'Airbnb' => 'Airbnb',
+                        'OTA' => 'OTA',
+                        'Facebook' => 'Facebook',
+                        'IG' => 'IG',
+                        'Hotline' => 'Hotline',
+                    ])
+                    ->required(),
                 Select::make('status')
                     ->options([
                         'pending' => 'Chờ lấy phòng',

@@ -267,7 +267,12 @@
                                  title="{{ $booking->customer->name }} - {{ \Carbon\Carbon::parse($booking->check_in)->format('d/m H:i') }} bis {{ \Carbon\Carbon::parse($booking->check_out)->format('d/m H:i') }}">
                                 <div class="px-2 w-full flex flex-col leading-tight h-full justify-center text-white relative select-none">
                                     {{-- Name: Visible if space permits --}}
-                                    <span class="font-bold uppercase text-[10px] truncate">{{ $booking->customer->name }}</span>
+                                    <span class="font-bold uppercase text-[10px] truncate">
+                                        {{ $booking->customer->name }}
+                                        @if($booking->source)
+                                            ({{ $booking->source }})
+                                        @endif
+                                    </span>
                                     
                                     {{-- Dates: Only if width > 60px --}}
                                     @if($width > 60)
@@ -413,7 +418,20 @@
                                 </select>
                             </div>
 
-                            <div class="col-span-3">
+                            <div class="col-span-1">
+                                <label class="block text-xs font-medium text-gray-700 mb-1.5">Hình thức đặt</label>
+                                <select wire:model.live="source" class="w-full px-3 py-2 text-sm rounded border-gray-300 border focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                                    <option value="">-- Chọn --</option>
+                                    <option value="Airbnb">Airbnb</option>
+                                    <option value="OTA">OTA</option>
+                                    <option value="Facebook">Facebook</option>
+                                    <option value="IG">IG</option>
+                                    <option value="Hotline">Hotline</option>
+                                </select>
+                                @error('source') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div class="col-span-2">
                                 <label class="block text-xs font-medium text-gray-700 mb-1.5">Ghi chú</label>
                                 <input type="text" wire:model.blur="notes" class="w-full px-3 py-2 text-sm rounded border-gray-300 border focus:border-blue-500 focus:ring-1 focus:ring-blue-500" placeholder="Ghi chú...">
                             </div>

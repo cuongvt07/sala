@@ -67,6 +67,7 @@ class BookingCalendar extends Component
     public $deposit_3 = 0;
     public $status = 'pending';
     public $notes;
+    public $source;
 
     public $manual_fee_amount;
     public $manual_fee_notes;
@@ -140,6 +141,7 @@ class BookingCalendar extends Component
             'deposit_2' => 'nullable',
             'deposit_3' => 'nullable',
             'status' => 'required|in:pending,checked_in,checked_out,cancelled',
+            'source' => 'required|string',
             'notes' => 'nullable|string',
             'customer_id' => $this->activeTab === 'existing' ? 'required' : 'nullable',
             'new_customer_name' => $this->activeTab === 'new' ? 'required|string|max:255' : 'nullable',
@@ -235,7 +237,7 @@ class BookingCalendar extends Component
     public function createBooking($roomId, $date)
     {
         $this->resetValidation();
-        $this->reset(['customer_id', 'new_customer_name', 'new_customer_phone', 'new_customer_email', 'new_customer_identity', 'new_customer_nationality', 'new_customer_visa_number', 'new_customer_visa_expiry', 'new_customer_notes', 'new_customer_image', 'customer_identity', 'customer_nationality', 'customer_visa_number', 'customer_visa_expiry', 'room_id', 'price_type', 'unit_price', 'check_in', 'check_out', 'price', 'deposit', 'deposit_2', 'deposit_3', 'status', 'notes', 'editingBookingId', 'selected_services', 'usage_logs']);
+        $this->reset(['customer_id', 'new_customer_name', 'new_customer_phone', 'new_customer_email', 'new_customer_identity', 'new_customer_nationality', 'new_customer_visa_number', 'new_customer_visa_expiry', 'new_customer_notes', 'new_customer_image', 'customer_identity', 'customer_nationality', 'customer_visa_number', 'customer_visa_expiry', 'room_id', 'price_type', 'unit_price', 'check_in', 'check_out', 'price', 'deposit', 'deposit_2', 'deposit_3', 'status', 'source', 'notes', 'editingBookingId', 'selected_services', 'usage_logs']);
 
         $this->room_id = $roomId;
         $this->check_in = $date . 'T00:00';
@@ -268,6 +270,7 @@ class BookingCalendar extends Component
         $this->deposit_2 = $booking->deposit_2 ? number_format($booking->deposit_2, 0, ',', '.') : 0;
         $this->deposit_3 = $booking->deposit_3 ? number_format($booking->deposit_3, 0, ',', '.') : 0;
         $this->status = $booking->status;
+        $this->source = $booking->source;
         $this->notes = $booking->notes;
 
         // Load Customer Check-in Info
@@ -530,6 +533,7 @@ class BookingCalendar extends Component
             'deposit_2' => $cleanDeposit2,
             'deposit_3' => $cleanDeposit3,
             'status' => $this->status,
+            'source' => $this->source,
             'notes' => $this->notes,
         ];
 
