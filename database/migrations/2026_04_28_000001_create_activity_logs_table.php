@@ -15,7 +15,7 @@ return new class extends Migration
             $blueprint->id();
             $blueprint->foreignId('user_id')->nullable()->constrained()->onDelete('set null');
             $blueprint->string('action'); // created, updated, deleted
-            $blueprint->string('model_type');
+            $blueprint->string('model_type', 191);
             $blueprint->unsignedBigInteger('model_id');
             $blueprint->json('old_values')->nullable();
             $blueprint->json('new_values')->nullable();
