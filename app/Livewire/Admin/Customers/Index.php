@@ -31,28 +31,20 @@ class Index extends Component
     public $visa_expiry;
     public $countries = [];
 
-    public function mount()
+    use \App\Traits\HasCountryData;
+
+    public function updatedNationality($value)
     {
-        $this->countries = Cache::remember('countries_list', 86400, function () {
-            try {
-                $response = Http::get('https://open.oapi.vn/location/countries');
-                if ($response->successful()) {
-                    return collect($response->json()['data'])->pluck('niceName')->toArray();
-                }
-            } catch (\Exception $e) {
-                // Fallback or log error
-            }
-            return [];
-        });
+        $this->nationality = $this->handleNationalityUpdate($value);
     }
 
     public function rules()
     {
         return [
             'name' => 'required|string|max:255',
-            'phone' => ['required', 'string', 'max:20', Rule::unique('customers', 'phone')->ignore($this->editingCustomerId)],
+            'phone' => ['nullable', 'string', 'max:20', Rule::unique('customers', 'phone')->ignore($this->editingCustomerId)],
             'email' => 'nullable|email|max:255',
-            'identity_id' => ['required', 'string', 'max:20', Rule::unique('customers', 'identity_id')->ignore($this->editingCustomerId)],
+            'identity_id' => ['nullable', 'string', 'max:20', Rule::unique('customers', 'identity_id')->ignore($this->editingCustomerId)],
             'birthday' => 'nullable|date',
 
             'nationality' => 'nullable|string',
@@ -121,14 +113,14 @@ class Index extends Component
         }
 
         $this->showModal = false;
-        session()->flash('success', $message);
+        $this->dispatch('toast', message: $message, type: 'success');
         $this->reset(['name', 'phone', 'email', 'identity_id', 'birthday', 'nationality', 'visa_number', 'visa_expiry', 'editingCustomerId']);
     }
 
     public function delete($id)
     {
         Customer::find($id)->delete();
-        session()->flash('success', 'Xóa khách hàng thành công.');
+        $this->dispatch('toast', message: 'Xóa khách hàng thành công.', type: 'success');
     }
 
     public $filterNationality = '';
@@ -136,6 +128,9 @@ class Index extends Component
     public function render()
     {
         $customers = Customer::query()
+            ->with(['bookings' => function($q) {
+                $q->latest()->whereIn('status', ['checked_in', 'pending'])->with('room');
+            }])
             ->when($this->search, function ($query) {
                 $query->where(function($q) {
                     $q->where('name', 'like', '%' . $this->search . '%')

@@ -80,6 +80,9 @@ class Index extends Component
     public $invoice_year;
     public $invoice_data = [];
 
+    public $showConfirmationModal = false;
+    public $confirmation_data = [];
+
     public $deposits = []; // Stores state of deposits (1, 2, 3)
 
     // Manual Fee Input
@@ -87,8 +90,20 @@ class Index extends Component
     public $manual_fee_notes;
     public $manual_fee_billing_date;
     public $manual_fee_date;
+    public $manual_fee_date_input;
+
+    public $extra_nights = 0;
+    public $extra_night_price = 0;
+    public $showExtraNights = false;
 
     protected $listeners = ['area-selected' => '$refresh'];
+
+    use \App\Traits\HasCountryData;
+
+    public function updatedNewCustomerNationality($value)
+    {
+        $this->new_customer_nationality = $this->handleNationalityUpdate($value);
+    }
 
     public function rules()
     {
@@ -117,6 +132,7 @@ class Index extends Component
             $rules['new_customer_phone'] = 'nullable|string|max:20';
             $rules['new_customer_email'] = 'nullable|email|max:255';
             $rules['new_customer_identity'] = 'nullable|string|max:255';
+            $rules['new_customer_nationality'] = 'nullable|string|max:255';
             $rules['new_customer_visa_number'] = 'nullable|string|max:255';
             $rules['new_customer_visa_expiry'] = 'nullable|date';
             $rules['new_customer_image'] = 'nullable|image|max:10240'; // 10MB
@@ -133,6 +149,66 @@ class Index extends Component
     public function updatedPriceType()
     {
         $this->updatePricing();
+        $this->calculateTotal();
+    }
+
+    public function updatedCheckIn()
+    {
+        $this->calculateTotal();
+    }
+
+    public function updatedCheckOut()
+    {
+        $this->calculateTotal();
+    }
+
+    public function updatedCustomerId($value)
+    {
+        if ($value) {
+            $customer = Customer::find($value);
+            if ($customer) {
+                $this->new_customer_nationality = $customer->nationality;
+            }
+        } else {
+            $this->new_customer_nationality = '';
+        }
+    }
+
+    public function updatedUnitPrice()
+    {
+        $this->calculateTotal();
+    }
+
+    public function calculateTotal()
+    {
+        if (!$this->check_in || !$this->check_out || !$this->unit_price || $this->price_type === 'hour') {
+            return;
+        }
+
+        try {
+            $start = \Carbon\Carbon::parse($this->check_in);
+            $end = \Carbon\Carbon::parse($this->check_out);
+
+            if ($end->lte($start)) {
+                return;
+            }
+
+            $unitPrice = (float) str_replace(['.', ','], '', $this->unit_price);
+            $nights = $start->diffInDays($end);
+            
+            if ($this->price_type === 'day') {
+                $nights = max(1, $nights);
+                $total = $nights * $unitPrice;
+            } else {
+                // Contract (Month) - Calculate daily rate (monthly / 30)
+                $total = ($unitPrice / 30) * $nights;
+            }
+
+            $this->price = number_format($total, 0, ',', '.');
+
+        } catch (\Exception $e) {
+            // Ignore parse errors
+        }
     }
 
     protected function updatePricing()
@@ -146,15 +222,13 @@ class Index extends Component
 
         if ($this->price_type === 'hour') {
             $this->unit_price = $room->price_hour ?? 0;
-            // $this->price = $this->unit_price; // Removed auto-calc per user request
         } elseif ($this->price_type === 'day') {
             $this->unit_price = $room->price_day ?? 0;
-            // $this->price = $this->unit_price; // Removed auto-calc per user request
         } elseif ($this->price_type === 'month') {
-            // For month, we default to day price as unit, but total is manual
             $this->unit_price = $room->price_day ?? 0;
-            // $this->price = $this->unit_price * 30; // Removed auto-calc per user request
         }
+
+        $this->extra_night_price = number_format((float)str_replace(['.', ','], '', $this->unit_price), 0, ',', '.');
     }
 
     public function setTab($tab)
@@ -180,9 +254,11 @@ class Index extends Component
         $this->editingBookingId = $id;
 
         $this->customer_id = $booking->customer_id;
-        $this->activeTab = 'existing'; // Always default to existing for edit
+        if ($booking->customer) {
+            $this->new_customer_nationality = $booking->customer->nationality;
+        }
+        $this->room_id = $booking->room_id; // Always default to existing for edit
 
-        $this->room_id = $booking->room_id;
         $this->price_type = ($booking->price_type === 'month') ? 'month' : 'day'; // Default to day, map legacy 'hour' to day
         $this->unit_price = $booking->unit_price ?? 0;
         $this->check_in = $booking->check_in ? $booking->check_in->format('Y-m-d') : null; // Ensure Y-m-d for date input
@@ -234,6 +310,7 @@ class Index extends Component
 
 
         $this->manual_fee_date = date('Y-m-d');
+        $this->extra_night_price = number_format($booking->unit_price, 0, ',', '.');
         $this->activeModalTab = 'info';
         $this->activeModalTab = 'info';
         $this->showModal = true;
@@ -242,81 +319,58 @@ class Index extends Component
         $this->loadDepositStates();
     }
 
+    public function updatedDeposit() { $this->loadDepositStates(); }
+    public function updatedDeposit2() { $this->loadDepositStates(); }
+    public function updatedDeposit3() { $this->loadDepositStates(); }
+
     public function loadDepositStates()
     {
         $this->deposits = [];
-        $depositFields = ['deposit', 'deposit_2', 'deposit_3'];
+        $depositFields = [1 => 'deposit', 2 => 'deposit_2', 3 => 'deposit_3'];
+        
+        $booking = $this->editingBookingId ? Booking::find($this->editingBookingId) : null;
 
         foreach ($depositFields as $index => $field) {
-            $depositAmount = $booking->{$field} ?? 0;
+            $amountStr = str_replace(['.', ','], '', (string)($this->{$field} ?? '0'));
+            $depositAmount = (float) $amountStr;
+
             if ($depositAmount > 0) {
                 // Check if already applied (log exists with specific note)
-                $noteKey = 'deposit_' . ($index + 1);
+                $noteKey = 'deposit_' . $index;
                 $log = collect($this->usage_logs)->first(function ($l) use ($noteKey) {
-                    return ($l['type'] === 'deduction' && $l['notes'] === $noteKey);
+                    return (($l['type'] ?? '') === 'deduction' && ($l['notes'] ?? '') === $noteKey);
                 });
 
-                $this->deposits[$index + 1] = [
+                if (!$log && $booking) {
+                    // Auto-apply if not already in logs
+                    $logData = [
+                        'service_id' => null,
+                        'type' => 'deduction',
+                        'service_name' => "KHẤU TRỪ CỌC LẦN $index",
+                        'billing_unit' => 'transaction',
+                        'start_index' => null,
+                        'end_index' => null,
+                        'quantity' => 1,
+                        'unit_price' => -1 * $depositAmount,
+                        'total_amount' => -1 * $depositAmount,
+                        'billing_date' => $this->global_billing_date ?: date('Y-m-d'),
+                        'notes' => $noteKey,
+                    ];
+                    $newDbLog = $booking->usageLogs()->create($logData);
+                    $logData['id'] = $newDbLog->id;
+                    $this->usage_logs[] = $logData;
+                    $log = $logData;
+                }
+
+                $this->deposits[$index] = [
                     'amount' => $depositAmount,
-                    'is_applied' => !!$log,
+                    'is_applied' => true, // Always true now
                     'log_id' => $log['id'] ?? null,
                     'applied_date' => $log['billing_date'] ?? null,
-                    'is_current_period' => $log ? ($log['billing_date'] == ($this->global_billing_date ?: date('Y-m-d'))) : false
+                    'is_current_period' => true
                 ];
             }
         }
-    }
-
-    public function toggleDeposit($index)
-    {
-        if (!isset($this->deposits[$index]))
-            return;
-
-        $deposit = $this->deposits[$index];
-        $booking = Booking::find($this->editingBookingId);
-
-        if ($deposit['is_applied']) {
-            // Remove deduction (Only allow if created in this session/period or manual override allowed??)
-            // For now allow toggle off if applied
-            if ($deposit['log_id']) {
-                // Delete from DB
-                BookingUsageLog::destroy($deposit['log_id']);
-
-                // Update local logs
-                $this->usage_logs = array_values(array_filter($this->usage_logs, function ($l) use ($deposit) {
-                    return $l['id'] != $deposit['log_id'];
-                }));
-            }
-        } else {
-            // Apply deduction
-            $amount = $deposit['amount'];
-            $noteKey = 'deposit_' . $index;
-            $billingDate = $this->global_billing_date ?: date('Y-m-d');
-
-            $logData = [
-                'service_id' => null,
-                'type' => 'deduction',
-                'service_name' => "KHẤU TRỪ CỌC LẦN $index",
-                'billing_unit' => 'transaction',
-                'start_index' => null,
-                'end_index' => null,
-                'quantity' => 1,
-                'unit_price' => -1 * $amount,
-                'total_amount' => -1 * $amount,
-                'billing_date' => $billingDate,
-                'notes' => $noteKey,
-            ];
-
-            if ($booking) {
-                $newDbLog = $booking->usageLogs()->create($logData);
-                $logData['id'] = $newDbLog->id;
-                $logData['service_id'] = null; // Ensure consistency
-                $this->usage_logs[] = $logData;
-            }
-        }
-
-        // Refresh states
-        $this->loadDepositStates();
     }
 
     public function addUsageLog()
@@ -441,6 +495,48 @@ class Index extends Component
     {
         $this->showInvoiceModal = false;
         $this->invoice_data = [];
+    }
+
+    public function viewConfirmation()
+    {
+        if (!$this->editingBookingId) {
+            $this->dispatch('toast', message: 'Vui lòng lưu booking trước khi in xác nhận.', type: 'error');
+            return;
+        }
+
+        $booking = Booking::with(['customer', 'room'])->find($this->editingBookingId);
+        if (!$booking) return;
+
+        $roomPrice = (float) str_replace(['.', 'đ', ','], '', $this->price ?? '0');
+        $dep1 = (float) str_replace(['.', 'đ', ','], '', $this->deposit ?? '0');
+        $dep2 = (float) str_replace(['.', 'đ', ','], '', $this->deposit_2 ?? '0');
+        $dep3 = (float) str_replace(['.', 'đ', ','], '', $this->deposit_3 ?? '0');
+        $totalDeposit = $dep1 + $dep2 + $dep3;
+
+        $this->confirmation_data = [
+            'booking_id' => $booking->id,
+            'customer_name' => $booking->customer->name ?? 'N/A',
+            'customer_phone' => $booking->customer->phone ?? 'N/A',
+            'room_code' => $booking->room->code ?? 'N/A',
+            'check_in' => $booking->check_in ? $booking->check_in->format('d / m / Y') : 'N/A',
+            'check_out' => $booking->check_out ? $booking->check_out->format('d / m / Y') : 'Hợp đồng',
+            'term_of_stay' => $booking->check_in && $booking->check_out ? $booking->check_in->diff($booking->check_out)->format('%a đêm') : 'Dài hạn',
+            'unit_price' => number_format((float)str_replace(['.',','],'',$this->unit_price ?: 0), 0, ',', '.'),
+            'price_type' => $this->price_type === 'month' ? 'tháng' : 'ngày',
+            'room_price' => $roomPrice,
+            'total_deposit' => $totalDeposit,
+            'remaining' => $roomPrice - $totalDeposit,
+            'notes' => $this->notes,
+            'created_at' => now()->format('d/m/Y H:i')
+        ];
+
+        $this->showConfirmationModal = true;
+    }
+
+    public function closeConfirmationModal()
+    {
+        $this->showConfirmationModal = false;
+        $this->confirmation_data = [];
     }
 
     public function initServiceInput($serviceId)
@@ -583,6 +679,50 @@ class Index extends Component
         $this->manual_fee_notes = '';
     }
 
+    public function addExtraNightsSurcharge()
+    {
+        if (!$this->extra_nights || !$this->extra_night_price)
+            return;
+
+        $price = (float) str_replace([',', '.'], '', $this->extra_night_price);
+        $nights = (float) $this->extra_nights;
+        $total = $nights * $price;
+
+        $logData = [
+            'service_id' => null,
+            'service_name' => "Tiền phòng thêm ($nights đêm)",
+            'type' => 'manual',
+            'billing_unit' => 'Đêm',
+            'start_index' => 0,
+            'end_index' => 0,
+            'quantity' => $nights,
+            'unit_price' => $price,
+            'total_amount' => $total,
+            'billing_date' => $this->global_billing_date ?: date('Y-m-d'),
+            'notes' => "Phụ thu $nights đêm phòng",
+        ];
+
+        if ($this->editingBookingId) {
+            $booking = Booking::find($this->editingBookingId);
+            if ($booking) {
+                $newDbLog = $booking->usageLogs()->create([
+                    'type' => 'manual',
+                    'billing_unit' => 'Đêm',
+                    'unit_price' => $price,
+                    'total_amount' => $total,
+                    'billing_date' => $logData['billing_date'],
+                    'notes' => $logData['notes'],
+                ]);
+                $logData['id'] = $newDbLog->id;
+            }
+        }
+
+        $this->usage_logs[] = $logData;
+
+        // Reset inputs
+        $this->extra_nights = 0;
+    }
+
     public function toggleService($serviceId)
     {
         if (!isset($this->selected_services[$serviceId])) {
@@ -607,38 +747,40 @@ class Index extends Component
     public function exportInvoice()
     {
         if (!$this->editingBookingId) {
-            session()->flash('error', 'Vui lòng lưu booking trước khi xuất hoá đơn.');
+            $this->dispatch('toast', message: 'Vui lòng lưu booking trước khi xuất hoá đơn.', type: 'error');
             return;
         }
 
         $booking = Booking::with(['customer', 'room', 'usageLogs.service'])->find($this->editingBookingId);
         if (!$booking) return;
 
-        // Get all usage logs that haven't been emailed yet
-        $unsentLogs = $booking->usageLogs()->whereNull('email_sent_at')->get();
+        // Get all logs that are not deductions (deposits)
+        $logs = $booking->usageLogs()
+            ->where('type', '!=', 'deduction')
+            ->orderBy('billing_date')
+            ->get();
 
-        if ($unsentLogs->isEmpty()) {
-            session()->flash('info', 'Tất cả các khoản phí đã được gửi email trước đó.');
-            return;
+        if ($logs->isEmpty()) {
+            $this->dispatch('toast', message: 'Không có khoản phí dịch vụ nào để xuất hoá đơn.', type: 'info');
         }
 
         $customerEmail = $booking->customer->email ?? null;
 
         if ($customerEmail) {
             try {
-                Mail::to($customerEmail)->send(new InvoiceMail($booking, $unsentLogs));
+                Mail::to($customerEmail)->send(new InvoiceMail($booking, $logs));
 
-                // Mark logs as email sent
-                $unsentLogs->each(function ($log) {
+                // Mark logs as email sent (optional, but keep for tracking)
+                $logs->each(function ($log) {
                     $log->update(['email_sent_at' => now()]);
                 });
 
-                session()->flash('success', 'Đã gửi hoá đơn đến ' . $customerEmail . ' thành công! (' . $unsentLogs->count() . ' khoản phí)');
+                $this->dispatch('toast', message: 'Đã gửi hoá đơn đến ' . $customerEmail . ' thành công!', type: 'success');
             } catch (\Exception $e) {
-                session()->flash('error', 'Gửi email thất bại: ' . $e->getMessage());
+                $this->dispatch('toast', message: 'Gửi email thất bại: ' . $e->getMessage(), type: 'error');
             }
         } else {
-            session()->flash('warning', 'Khách hàng không có email. Không thể gửi hoá đơn.');
+            $this->dispatch('toast', message: 'Khách hàng không có email. Không thể gửi hoá đơn.', type: 'warning');
         }
 
         // Reload booking data to refresh email_sent_at badges
@@ -712,6 +854,13 @@ class Index extends Component
                 'images' => $imagePath,
             ]);
             $customerId = $customer->id;
+        } else {
+            // Update existing customer nationality if changed
+            if ($this->customer_id && $this->new_customer_nationality) {
+                Customer::where('id', $this->customer_id)->update([
+                    'nationality' => $this->new_customer_nationality
+                ]);
+            }
         }
 
         $data = [
@@ -782,7 +931,7 @@ class Index extends Component
             }
         }
 
-        session()->flash('success', $message);
+        $this->dispatch('toast', message: $message, type: 'success');
 
         if (!$this->editingBookingId) {
             $this->showModal = false;
@@ -796,7 +945,7 @@ class Index extends Component
     public function delete($id)
     {
         Booking::find($id)->delete();
-        session()->flash('success', 'Xóa booking thành công.');
+        $this->dispatch('toast', message: 'Xóa booking thành công.', type: 'success');
     }
 
     // Filters

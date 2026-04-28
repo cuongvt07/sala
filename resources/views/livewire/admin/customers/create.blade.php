@@ -20,8 +20,8 @@
                     </div>
 
                     <div class="space-y-1">
-                        <label for="phone" class="block font-semibold text-gray-700 text-[11px] uppercase">Số điện thoại <span class="text-red-500">*</span></label>
-                        <input type="text" id="phone" wire:model="phone" required class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm font-bold focus:ring-blue-500 focus:border-blue-500">
+                        <label for="phone" class="block font-semibold text-gray-700 text-[11px] uppercase">Số điện thoại</label>
+                        <input type="text" id="phone" wire:model="phone" class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm font-bold focus:ring-blue-500 focus:border-blue-500" placeholder="Không bắt buộc">
                         @error('phone') <p class="text-[10px] text-red-500">{{ $message }}</p> @enderror
                     </div>
                     
@@ -35,19 +35,18 @@
                 {{-- Col 2 --}}
                 <div class="space-y-4">
                     <div class="space-y-1">
-                        <label for="identity_id" class="block font-semibold text-gray-700 text-[11px] uppercase">CCCD / Visa / Passport <span class="text-red-500">*</span></label>
-                        <input type="text" id="identity_id" wire:model="identity_id" required class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm font-bold focus:ring-blue-500 focus:border-blue-500">
+                        <label for="identity_id" class="block font-semibold text-gray-700 text-[11px] uppercase">CCCD / Visa / Passport</label>
+                        <input type="text" id="identity_id" wire:model="identity_id" class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm font-bold focus:ring-blue-500 focus:border-blue-500" placeholder="Không bắt buộc">
                         @error('identity_id') <p class="text-[10px] text-red-500">{{ $message }}</p> @enderror
                     </div>
 
                     <div class="space-y-1">
-                        <label for="nationality" class="block font-semibold text-gray-700 text-[11px] uppercase">Quốc tịch</label>
-                         <div class="relative">
-                             {{-- Using x-ui.select-search via slot or simple input if Select Search component is strict. Assuming Index uses it, we can use it here but styling might differ. Let's use standard for strict consistency or the component if flexible. Component is safer if used in Index. --}}
-                             {{-- WAIT: In Index.php, countries is public. Here in Create.php, is it? Need to check. --}}
-                             <input type="text" id="nationality" wire:model="nationality" class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm focus:ring-blue-500 focus:border-blue-500">
-                             {{-- If Create.php doesn't have $countries populated, select-search will fail. Let's stick to simple input for safety unless I check Create.php --}}
-                        </div>
+                        <label class="block font-semibold text-gray-700 text-[11px] uppercase mb-1">Quốc tịch</label>
+                        <x-ui.select-search 
+                            wire:model.live="nationality" 
+                            :options="$this->getFormattedCountries()"
+                            placeholder="Tìm quốc tịch (VNM, USA...)"
+                        />
                         @error('nationality') <p class="text-[10px] text-red-500">{{ $message }}</p> @enderror
                     </div>
 

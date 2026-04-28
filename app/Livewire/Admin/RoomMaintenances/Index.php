@@ -13,6 +13,21 @@ class Index extends Component
 
     public $showModal = false;
     public $editingId = null;
+    public $selectedAreaId = '';
+    public $search = '';
+
+    protected $listeners = ['area-selected' => 'handleAreaSelected'];
+
+    public function handleAreaSelected()
+    {
+        $this->selectedAreaId = session('admin_selected_area_id', '');
+        $this->selectedRoomId = null; // Reset khi đổi khu
+    }
+
+    public function mount()
+    {
+        $this->selectedAreaId = session('admin_selected_area_id', '');
+    }
 
     // Form inputs
     public $room_id;
@@ -29,11 +44,31 @@ class Index extends Component
         'cost' => 'nullable',
     ];
 
+    public $selectedRoomId = null;
+
+    public function selectRoom($roomId)
+    {
+        $this->selectedRoomId = $roomId;
+        $this->resetPage();
+    }
+
+    public function clearRoom()
+    {
+        $this->selectedRoomId = null;
+        $this->resetPage();
+    }
+
     public function create()
     {
         $this->resetValidation();
-        $this->reset(['room_id', 'maintenance_date', 'task_name', 'description', 'cost', 'editingId']);
+        $this->reset(['maintenance_date', 'task_name', 'description', 'cost', 'editingId']);
         
+        if (!$this->selectedRoomId) {
+            $this->reset('room_id');
+        } else {
+            $this->room_id = $this->selectedRoomId;
+        }
+
         $this->maintenance_date = date('Y-m-d');
         $this->showModal = true;
     }
@@ -69,26 +104,50 @@ class Index extends Component
 
         if ($this->editingId) {
             RoomMaintenance::find($this->editingId)->update($data);
-            session()->flash('message', 'Cập nhật lịch bảo dưỡng thành công!');
+            $message = 'Cập nhật lịch bảo dưỡng thành công!';
         } else {
             RoomMaintenance::create($data);
-            session()->flash('message', 'Thêm lịch bảo dưỡng thành công!');
+            $message = 'Thêm lịch bảo dưỡng thành công!';
         }
 
         $this->showModal = false;
+        $this->dispatch('toast', message: $message, type: 'success');
     }
 
     public function delete($id)
     {
         RoomMaintenance::find($id)?->delete();
-        session()->flash('message', 'Xóa lịch bảo dưỡng thành công!');
+        $this->dispatch('toast', message: 'Xóa lịch bảo dưỡng thành công.', type: 'success');
     }
 
     public function render()
     {
+        $query = Room::with('area');
+        
+        if ($this->selectedAreaId) {
+            $query->where('area_id', $this->selectedAreaId);
+        }
+
+        if ($this->search) {
+            $query->where('code', 'like', '%' . $this->search . '%');
+        }
+
+        $rooms = $query->withCount('roomMaintenances as maintenances_count')
+            ->withSum('roomMaintenances as maintenances_sum_cost', 'cost')
+            ->orderBy('code')
+            ->get();
+
+        $maintenances = [];
+        if ($this->selectedRoomId) {
+            $maintenances = RoomMaintenance::where('room_id', $this->selectedRoomId)
+                ->latest('maintenance_date')
+                ->paginate(10);
+        }
+
         return view('livewire.admin.room-maintenances.index', [
-            'maintenances' => RoomMaintenance::with('room.area')->latest('maintenance_date')->paginate(10),
-            'rooms' => Room::with('area')->orderBy('code')->get()
+            'rooms' => $rooms,
+            'maintenances' => $maintenances,
+            'selectedRoom' => $this->selectedRoomId ? Room::find($this->selectedRoomId) : null,
         ])->layout('components.layouts.admin');
     }
 }

@@ -48,9 +48,7 @@ class Index extends Component
             Setting::updateOrCreate(['key' => $key], ['value' => $value]);
         }
 
-        // Artisan::call('config:clear');
-
-        session()->flash('message', 'Cấu hình đã được lưu thành công!');
+        $this->dispatch('toast', message: 'Cấu hình đã được lưu thành công!', type: 'success');
     }
 
     public function render()

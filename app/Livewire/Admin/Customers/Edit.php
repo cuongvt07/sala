@@ -36,13 +36,20 @@ class Edit extends Component
         $this->visa_expiry = $customerModel->visa_expiry;
     }
 
+    use \App\Traits\HasCountryData;
+
+    public function updatedNationality($value)
+    {
+        $this->nationality = $this->handleNationalityUpdate($value);
+    }
+
     public function rules()
     {
         return [
             'name' => 'required|string|max:255',
-            'phone' => ['required', 'string', 'max:20', Rule::unique('customers', 'phone')->ignore($this->customerId)],
+            'phone' => ['nullable', 'string', 'max:20', Rule::unique('customers', 'phone')->ignore($this->customerId)],
             'email' => 'nullable|email|max:255',
-            'identity_id' => ['required', 'string', 'max:20', Rule::unique('customers', 'identity_id')->ignore($this->customerId)],
+            'identity_id' => ['nullable', 'string', 'max:20', Rule::unique('customers', 'identity_id')->ignore($this->customerId)],
             'birthday' => 'nullable|date',
             'nationality' => 'nullable|string',
             'visa_number' => 'nullable|string|max:50',

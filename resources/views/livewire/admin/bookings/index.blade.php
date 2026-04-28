@@ -1,4 +1,11 @@
-<div>
+<div class="relative">
+    {{-- Hiệu ứng Loading toàn trang khi đổi khu hoặc thao tác --}}
+    <div wire:loading wire:target="area-selected, search, statusFilter, dateFilter" class="absolute inset-0 z-50 flex items-center justify-center bg-white/40 backdrop-blur-[2px] transition-all duration-300 rounded-2xl">
+        <div class="flex flex-col items-center">
+            <div class="w-10 h-10 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin"></div>
+            <span class="mt-2 text-xs font-bold text-blue-600 uppercase tracking-widest animate-pulse">Đang tải dữ liệu...</span>
+        </div>
+    </div>
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold text-gray-800 tracking-tight">Quản lý Đặt phòng</h1>
         <x-ui.button wire:click="create" variant="primary" size="md">
@@ -6,12 +13,6 @@
         </x-ui.button>
     </div>
 
-    @if (session()->has('success'))
-        <div class="bg-green-100 border border-green-200 text-green-700 px-3 py-2 rounded-lg relative mb-6 shadow-sm flex items-center gap-2" role="alert">
-            <x-icon name="heroicon-o-check-circle" class="h-5 w-5" />
-            <span class="font-medium text-sm">{{ session('success') }}</span>
-        </div>
-    @endif
 
     <!-- Advanced Filters -->
     <x-ui.filter-group title="Bộ lọc" icon="heroicon-o-funnel" :show="true">
@@ -41,7 +42,7 @@
                     class="w-full px-3 py-2 bg-gray-50/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-xs font-medium appearance-none">
                 <option value="">Tất cả</option>
                 <option value="day">Ngắn ngày</option>
-                <option value="month">Dài hạn</option>
+                <option value="month">Thuê hợp đồng</option>
             </select>
         </x-ui.filter-item>
 
@@ -56,46 +57,57 @@
         </x-ui.filter-item>
     </x-ui.filter-group>
 
-    <x-ui.card class="p-0 overflow-x-auto">
+    <x-ui.card class="p-0 overflow-x-auto shadow-sm border border-gray-200 rounded-xl">
         <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50/50">
+            <thead class="bg-gray-50/80">
                 <tr>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Room</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider w-[150px]">Khách hàng</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Thời gian</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Tiền phòng</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Cọc</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Trạng thái</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Ghi chú</th>
-                    <th class="px-6 py-4 text-right text-xs font-semibold text-gray-900 uppercase tracking-wider">Hành động</th>
+                    <th class="px-3 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider w-10">ID</th>
+                    <th class="px-3 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider">Phòng & Check-in</th>
+                    <th class="px-3 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider w-[140px]">Khách hàng</th>
+                    <th class="px-3 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider">Thời gian</th>
+                    <th class="px-3 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider">Tiền phòng</th>
+                    <th class="px-3 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider">Cọc</th>
+                    <th class="px-3 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider">Trạng thái</th>
+                    <th class="px-3 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider">Ghi chú</th>
+                    <th class="px-3 py-3 text-right text-[10px] font-bold text-gray-500 uppercase tracking-wider">Thao tác</th>
                 </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
+            <tbody class="bg-white divide-y divide-gray-100">
                 @foreach ($bookings as $booking)
-                    <tr class="hover:bg-gray-50/50 transition-colors">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $booking->room->code ?? 'N/A' }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium max-w-[150px] truncate" title="{{ $booking->customer->name ?? '' }}">
-                            <span class="font-bold text-gray-900">{{ $booking->customer->name ?? 'N/A' }}</span>
+                    <tr class="hover:bg-blue-50/30 transition-colors">
+                        <td class="px-3 py-3 whitespace-nowrap bg-gray-50/50">
+                            <span class="text-[10px] font-black text-gray-400">#{{ $booking->id }}</span>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                            <div class="flex flex-col">
-                                <span class="text-[12px] text-gray-900">In: {{ $booking->check_in ? $booking->check_in->format('d/m/Y') : '-' }}</span>
-                                <span class="text-[12px] {{ $booking->price_type == 'month' && !$booking->check_out ? 'text-red-500' : 'text-gray-900' }}">Out: {{ $booking->check_out ? $booking->check_out->format('d/m/Y') : 'Dài hạn' }}</span>
-                                <span class="text-[10px] font-bold uppercase {{ $booking->price_type === 'month' ? 'text-blue-600' : 'text-gray-500' }}">{{ $booking->price_type === 'month' ? 'Dài hạn' : 'Ngắn ngày' }}</span>
+                        <td class="px-3 py-3 whitespace-nowrap bg-gray-50/50">
+                            <div class="text-xs font-black text-gray-900">{{ $booking->room->code ?? 'N/A' }}</div>
+                            <div class="text-[9px] text-blue-600 font-bold mt-0.5">In: {{ $booking->check_in ? $booking->check_in->format('d/m') : '-' }}</div>
+                        </td>
+                        <td class="px-3 py-3 text-xs text-gray-900 max-w-[140px]">
+                            <div class="font-bold text-gray-900 leading-tight">{{ $booking->customer->name ?? 'N/A' }}</div>
+                            <div class="text-[10px] text-gray-500">{{ $booking->customer->phone ?? '' }}</div>
+                            @if($booking->customer && $booking->customer->nationality)
+                                <div class="text-[9px] text-indigo-600 font-black uppercase mt-0.5 tracking-tighter">🌍 {{ $booking->customer->nationality }}</div>
+                            @endif
+                        </td>
+                        <td class="px-3 py-3 text-xs text-gray-900">
+                            <div class="flex flex-col leading-tight">
+                                <span class="text-[11px] font-medium"><span class="text-gray-400">In:</span> {{ $booking->check_in ? $booking->check_in->format('d/m/y') : '-' }}</span>
+                                <span class="text-[11px] font-medium {{ $booking->price_type == 'month' && !$booking->check_out ? 'text-red-500' : '' }}"><span class="text-gray-400">Out:</span> {{ $booking->check_out ? $booking->check_out->format('d/m/y') : 'Hợp đồng' }}</span>
+                                <span class="text-[9px] font-bold uppercase mt-0.5 {{ $booking->price_type === 'month' ? 'text-blue-600' : 'text-gray-400' }}">{{ $booking->price_type === 'month' ? 'Hợp đồng' : 'Ngày' }}</span>
                             </div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            <div class="flex flex-col">
-                                <span class="font-bold text-gray-900 text-base">{{ number_format($booking->price, 0, ',', '.') }}đ</span>
-                                @if($booking->unit_price > 0)<span class="text-[10px] text-gray-600 uppercase font-semibold">Đơn giá: {{ number_format($booking->unit_price, 0, ',', '.') }}đ</span>@endif
+                        <td class="px-3 py-3 whitespace-nowrap text-xs text-gray-900">
+                            <div class="flex flex-col leading-tight">
+                                <span class="font-bold text-gray-900 text-sm">{{ number_format($booking->price, 0, ',', '.') }}đ</span>
+                                @if($booking->unit_price > 0)<span class="text-[9px] text-gray-500 font-medium uppercase">Đơn giá: {{ number_format($booking->unit_price, 0, ',', '.') }}đ</span>@endif
                             </div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            <div class="flex flex-col gap-1">
-                                @if($booking->deposit > 0) <span class="text-xs font-semibold">L1: {{ number_format($booking->deposit, 0, ',', '.') }}đ</span> @endif
-                                @if($booking->deposit_2 > 0) <span class="text-xs font-semibold">L2: {{ number_format($booking->deposit_2, 0, ',', '.') }}đ</span> @endif
-                                @if($booking->deposit_3 > 0) <span class="text-xs font-semibold">L3: {{ number_format($booking->deposit_3, 0, ',', '.') }}đ</span> @endif
-                                @if($booking->deposit == 0 && $booking->deposit_2 == 0 && $booking->deposit_3 == 0) - @endif
+                        <td class="px-3 py-3 whitespace-nowrap text-xs text-gray-900">
+                            <div class="flex flex-col gap-0.5">
+                                @if($booking->deposit > 0) <span class="text-[10px] font-semibold text-indigo-600">L1: {{ number_format($booking->deposit, 0, ',', '.') }}đ</span> @endif
+                                @if($booking->deposit_2 > 0) <span class="text-[10px] font-semibold text-indigo-600">L2: {{ number_format($booking->deposit_2, 0, ',', '.') }}đ</span> @endif
+                                @if($booking->deposit_3 > 0) <span class="text-[10px] font-semibold text-indigo-600">L3: {{ number_format($booking->deposit_3, 0, ',', '.') }}đ</span> @endif
+                                @if($booking->deposit == 0 && $booking->deposit_2 == 0 && $booking->deposit_3 == 0) <span class="text-gray-300">-</span> @endif
                                 
                                 @php
                                     $totalCoc = $booking->deposit + $booking->deposit_2 + $booking->deposit_3;
@@ -103,24 +115,42 @@
                                 @endphp
                                 @if($totalCoc > 0)
                                     @if($totalCoc >= $totalPrice)
-                                        <div class="mt-1 text-[10px] font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded inline-block text-center w-max border border-green-200">Đã thanh toán</div>
+                                        <div class="mt-0.5 text-[8px] font-black uppercase text-green-600 bg-green-50 px-1 py-0.5 rounded border border-green-100 w-max">Full</div>
                                     @else
-                                        <div class="mt-1 text-[10px] font-bold text-orange-700 bg-orange-100 px-1.5 py-0.5 rounded inline-block text-center w-max border border-orange-200">Sắp đến hạn / Thiếu</div>
+                                        <div class="mt-0.5 text-[8px] font-black uppercase text-orange-600 bg-orange-50 px-1 py-0.5 rounded border border-orange-100 w-max">Thiếu</div>
                                     @endif
                                 @endif
                             </div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <td class="px-3 py-3 whitespace-nowrap">
                             @php
                                 $statusColors = ['pending' => 'yellow', 'checked_in' => 'green', 'checked_out' => 'gray', 'cancelled' => 'red'];
-                                $statusLabels = ['pending' => 'Chờ lấy phòng', 'checked_in' => 'Đang ở', 'checked_out' => 'Đã trả', 'cancelled' => 'Đã hủy'];
+                                $statusLabels = ['pending' => 'Chờ lấy', 'checked_in' => 'Đang ở', 'checked_out' => 'Đã trả', 'cancelled' => 'Hủy'];
                             @endphp
-                            <x-ui.badge :variant="$statusColors[$booking->status] ?? 'gray'">{{ $statusLabels[$booking->status] ?? $booking->status }}</x-ui.badge>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase {{ 
+                                match($booking->status) {
+                                    'pending' => 'bg-yellow-100 text-yellow-700 border border-yellow-200',
+                                    'checked_in' => 'bg-green-100 text-green-700 border border-green-200',
+                                    'checked_out' => 'bg-gray-100 text-gray-600 border border-gray-200',
+                                    'cancelled' => 'bg-red-100 text-red-700 border border-red-200',
+                                    default => 'bg-gray-100 text-gray-600'
+                                }
+                            }}">
+                                {{ $statusLabels[$booking->status] ?? $booking->status }}
+                            </span>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 truncate max-w-xs">{{ $booking->notes }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                            <x-ui.button wire:click="edit({{ $booking->id }})" variant="secondary" size="sm">Sửa</x-ui.button>
-                            <x-ui.button wire:click="delete({{ $booking->id }})" wire:confirm="Bạn có chắc chắn muốn xóa không?" variant="danger" size="sm">Xóa</x-ui.button>
+                        <td class="px-3 py-3 text-[11px] text-gray-500 max-w-[150px] line-clamp-2 truncate" title="{{ $booking->notes }}">
+                            {{ $booking->notes }}
+                        </td>
+                        <td class="px-3 py-3 whitespace-nowrap text-right text-xs font-medium">
+                            <div class="flex justify-end gap-1">
+                                <button wire:click="edit({{ $booking->id }})" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Sửa">
+                                    <x-icon name="heroicon-o-pencil-square" class="h-4 w-4" />
+                                </button>
+                                <button wire:click="delete({{ $booking->id }})" wire:confirm="Bạn có chắc chắn muốn xóa không?" class="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Xóa">
+                                    <x-icon name="heroicon-o-trash" class="h-4 w-4" />
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 @endforeach
@@ -170,12 +200,12 @@
                                         <option value="checked_out" class="bg-gray-400">Đã trả</option>
                                         <option value="cancelled" class="bg-red-500">Đã hủy</option>
                                     </select>
-                                    <span class="text-[10px] text-slate-400 uppercase">{{ $price_type === 'month' ? 'Dài hạn' : 'Ngắn ngày' }}</span>
+                                    <span class="text-[10px] text-slate-400 uppercase">{{ $price_type === 'month' ? 'Thuê hợp đồng' : 'Ngắn ngày' }}</span>
                                 </div>
                                 <div class="flex items-center gap-4 text-sm">
                                     <div><span class="text-slate-400 text-[10px] uppercase">Khách:</span> <span class="font-bold ml-1">{{ $customers->find($customer_id)?->name ?? $new_customer_name }}</span></div>
                                     <div class="border-l border-slate-600 pl-4"><span class="text-slate-400 text-[10px] uppercase">In:</span> <span class="font-semibold ml-1">{{ $check_in ? \Carbon\Carbon::parse($check_in)->format('d/m/Y') : '-' }}</span></div>
-                                    <div class="border-l border-slate-600 pl-4"><span class="text-slate-400 text-[10px] uppercase">Out:</span> <span class="font-semibold ml-1">{{ $check_out ? \Carbon\Carbon::parse($check_out)->format('d/m/Y') : 'Dài hạn' }}</span></div>
+                                    <div class="border-l border-slate-600 pl-4"><span class="text-slate-400 text-[10px] uppercase">Out:</span> <span class="font-semibold ml-1">{{ $check_out ? \Carbon\Carbon::parse($check_out)->format('d/m/Y') : 'Hợp đồng' }}</span></div>
                                 </div>
                             </div>
                             <div class="text-right">
@@ -198,15 +228,36 @@
                                 <button type="button" wire:click="$set('activeTab', '{{ $activeTab === 'existing' ? 'new' : 'existing' }}')" class="text-[9px] font-bold py-0.5 px-1.5 rounded bg-gray-100 text-gray-500 uppercase hover:bg-blue-600 hover:text-white">{{ $activeTab === 'existing' ? '+ Mới' : '← Chọn' }}</button>
                             </div>
                             @if($activeTab === 'existing')
-                                <select wire:model.live="customer_id" class="w-full rounded border-gray-200 p-2 text-sm font-semibold"><option value="">-- Chọn --</option>@foreach($customers as $c)<option value="{{ $c->id }}">{{ $c->name }} ({{ $c->phone }})</option>@endforeach</select>
-                                @error('customer_id')<span class="text-red-500 text-xs">{{ $message }}</span>@enderror
+                                <div class="space-y-1.5">
+                                    <select wire:model.live="customer_id" class="w-full rounded border-gray-200 p-2 text-sm font-semibold"><option value="">-- Chọn khách hàng --</option>@foreach($customers as $c)<option value="{{ $c->id }}">{{ $c->name }} ({{ $c->phone }})</option>@endforeach</select>
+                                    @error('customer_id')<span class="text-red-500 text-xs">{{ $message }}</span>@enderror
+                                    
+                                    @if($customer_id)
+                                        <div class="relative mt-2">
+                                            <label class="text-[9px] text-gray-400 uppercase font-bold mb-1 block">Quốc tịch</label>
+                                            <x-ui.select-search 
+                                                wire:model.live="new_customer_nationality" 
+                                                :options="$this->getFormattedCountries()"
+                                                placeholder="Tìm quốc tịch (VNM, USA...)"
+                                            />
+                                        </div>
+                                    @endif
+                                </div>
                             @else
                                 <div class="space-y-1.5">
                                     <input type="text" wire:model="new_customer_name" placeholder="Họ tên *" class="w-full rounded border-gray-200 p-2 text-sm font-semibold">
                                     @error('new_customer_name')<span class="text-red-500 text-xs">{{ $message }}</span>@enderror
                                     <div class="grid grid-cols-2 gap-1.5">
-                                        <input type="text" wire:model="new_customer_phone" placeholder="SĐT" class="rounded border-gray-200 p-2 text-sm">
-                                        <input type="text" wire:model="new_customer_identity" placeholder="CMND" class="rounded border-gray-200 p-2 text-sm">
+                                        <input type="text" wire:model="new_customer_phone" placeholder="SĐT (không bắt buộc)" class="rounded border-gray-200 p-2 text-sm">
+                                        <input type="text" wire:model="new_customer_identity" placeholder="CMND/Passport" class="rounded border-gray-200 p-2 text-sm">
+                                    </div>
+                                    <div class="relative mt-2">
+                                        <label class="text-[9px] text-gray-400 uppercase font-bold mb-1 block">Quốc tịch</label>
+                                        <x-ui.select-search 
+                                            wire:model.live="new_customer_nationality" 
+                                            :options="$this->getFormattedCountries()"
+                                            placeholder="Tìm quốc tịch (VNM, USA...)"
+                                        />
                                     </div>
                                 </div>
                             @endif
@@ -218,7 +269,7 @@
                                 <select wire:model.live="room_id" class="w-full rounded border-gray-200 p-2 text-sm font-bold"><option value="">-- Phòng --</option>@foreach($rooms as $r)<option value="{{ $r->id }}">{{ $r->code }}</option>@endforeach</select>
                                 @php $statusBg = ['pending' => 'bg-yellow-100 border-yellow-300', 'checked_in' => 'bg-green-100 border-green-300', 'checked_out' => 'bg-gray-100 border-gray-300', 'cancelled' => 'bg-red-100 border-red-300']; @endphp
                                 <select wire:model="status" class="w-full rounded border-2 p-2 text-sm font-bold {{ $statusBg[$status] ?? 'border-gray-200' }}"><option value="pending">Chờ lấy</option><option value="checked_in">Nhận phòng</option><option value="checked_out">Trả phòng</option><option value="cancelled">Hủy</option></select>
-                                <div class="col-span-2"><div class="flex p-0.5 bg-gray-100 rounded text-center"><button type="button" wire:click="$set('price_type', 'day')" class="flex-1 py-1.5 rounded text-xs font-bold {{ $price_type === 'day' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500' }}">Ngày</button><button type="button" wire:click="$set('price_type', 'month')" class="flex-1 py-1.5 rounded text-xs font-bold {{ $price_type === 'month' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500' }}">Tháng</button></div></div>
+                                <div class="col-span-2"><div class="flex p-0.5 bg-gray-100 rounded text-center"><button type="button" wire:click="$set('price_type', 'day')" class="flex-1 py-1.5 rounded text-xs font-bold {{ $price_type === 'day' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500' }}">Ngày</button><button type="button" wire:click="$set('price_type', 'month')" class="flex-1 py-1.5 rounded text-xs font-bold {{ $price_type === 'month' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500' }}">Hợp đồng</button></div></div>
                             </div>
                             @error('room_id')<span class="text-red-500 text-xs">{{ $message }}</span>@enderror
                         </div>
@@ -430,12 +481,41 @@
                             </thead>
                             <tbody class="divide-y divide-gray-100">
                                 <!-- Tiền phòng -->
+                                @php
+                                    $start = $check_in ? \Carbon\Carbon::parse($check_in) : null;
+                                    $end = $check_out ? \Carbon\Carbon::parse($check_out) : null;
+                                    $nightsCount = ($start && $end) ? $start->diffInDays($end) : 0;
+                                    if($price_type === 'day') $nightsCount = max(1, $nightsCount);
+                                    $uPrice = (float)str_replace(['.',','],'',$unit_price ?: 0);
+                                @endphp
                                 <tr class="bg-blue-50/50">
-                                    <td class="px-3 py-2 font-bold text-gray-900">💰 Tiền phòng</td>
+                                    <td class="px-3 py-2">
+                                        <div class="font-bold text-gray-900">💰 {{ $price_type === 'month' ? 'Tiền phòng (Hợp đồng)' : 'Tiền phòng (Ngày)' }}</div>
+                                        <div class="text-[10px] text-gray-500 font-medium italic">({{ $nightsCount }} đêm x {{ number_format($uPrice, 0, ',', '.') }}đ{{ $price_type === 'month' ? ' / 30' : '' }})</div>
+                                    </td>
                                     <td class="px-2 py-2 text-center text-gray-400">-</td>
                                     <td class="px-2 py-2 text-center text-gray-400">-</td>
                                     <td class="px-3 py-2 text-right font-black text-blue-600">{{ number_format($basePrice, 0, ',', '.') }}đ</td>
                                 </tr>
+
+                                <!-- Liệt kê chi tiết các dịch vụ đã chốt trong lịch sử -->
+                                @foreach(collect($usage_logs)->where('type', '!=', 'deduction') as $log)
+                                    <tr class="bg-green-50/30 border-y border-green-100/50">
+                                        <td class="px-3 py-2">
+                                            <div class="font-bold text-green-700">✅ {{ $log['service_name'] }} (Đã chốt)</div>
+                                            <div class="text-[9px] text-green-600 italic">Ngày chốt: {{ \Carbon\Carbon::parse($log['billing_date'])->format('d/m/Y') }}</div>
+                                        </td>
+                                        <td class="px-2 py-2 text-center text-gray-500">{{ number_format($log['unit_price'], 0, ',', '.') }}</td>
+                                        <td class="px-2 py-2 text-center text-gray-500">
+                                            @if($log['type'] === 'meter')
+                                                {{ $log['start_index'] }}→{{ $log['end_index'] }}
+                                            @else
+                                                x{{ $log['quantity'] }}
+                                            @endif
+                                        </td>
+                                        <td class="px-3 py-2 text-right font-black text-green-600">{{ number_format($log['total_amount'], 0, ',', '.') }}đ</td>
+                                    </tr>
+                                @endforeach
                                 
                                 <!-- Các dịch vụ đã chọn -->
                                 @foreach($all_services as $service)
@@ -486,17 +566,26 @@
                                     @endif
                                 @endforeach
 
-                                <!-- Lịch sử đã chốt được tách ra khối riêng ở trên -->
-
                                 <!-- Phụ thu nhập mới (luôn ở cuối) -->
                                 <tr class="bg-indigo-50/50 border-t-2 border-indigo-200">
                                     <td class="px-3 py-2 font-bold text-indigo-700">
-                                        <span class="text-sm">➕ Phụ thu</span>
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-sm">➕ Phụ thu</span>
+                                            <button type="button" wire:click="$toggle('showExtraNights')" class="text-[9px] bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded border border-orange-200 hover:bg-orange-200">+ Đêm phòng</button>
+                                        </div>
                                     </td>
                                     <td class="px-2 py-2 text-center">
                                         <span class="text-[9px] text-gray-400">-</span>
                                     </td>
                                     <td class="px-2 py-2" colspan="2">
+                                        @if($showExtraNights ?? false)
+                                            <div class="flex items-center gap-1 mb-2 bg-orange-50 p-1.5 rounded border border-orange-100">
+                                                <input type="number" wire:model.live="extra_nights" class="w-12 rounded border-orange-200 p-1 text-[10px] bg-white text-center" placeholder="Đêm">
+                                                <span class="text-[10px] text-orange-400">x</span>
+                                                <input type="text" wire:model.blur="extra_night_price" class="flex-1 rounded border-orange-200 p-1 text-[10px] bg-white" placeholder="Giá" x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')">
+                                                <button type="button" wire:click="addExtraNightsSurcharge" class="bg-orange-600 text-white rounded text-[10px] px-2 py-1">+</button>
+                                            </div>
+                                        @endif
                                         <div class="flex items-center gap-2">
                                             <input type="text" wire:model="manual_fee_notes" class="flex-1 rounded border-indigo-200 p-1 text-xs bg-white" placeholder="Lý do...">
                                             <input type="text" wire:model.blur="manual_fee_amount" class="w-24 rounded border-indigo-200 p-1 text-xs font-bold bg-white text-right" placeholder="Số tiền" x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')">
@@ -505,53 +594,38 @@
                                     </td>
                                 </tr>
                             </tbody>
-                            @php
-                                // Tính lại tổng bao gồm phụ thu đang nhập
-                                $manualFeeInput = (float)str_replace(['.',','],'', (string)($manual_fee_amount ?? '0'));
-                                // Tính tổng tiền cọc
-                                $dep1 = (float)str_replace(['.',','],'', (string)($deposit ?? '0'));
-                                $dep2 = (float)str_replace(['.',','],'', (string)($deposit_2 ?? '0'));
-                                $dep3 = (float)str_replace(['.',','],'', (string)($deposit_3 ?? '0'));
-                                $totalDeposit = $dep1 + $dep2 + $dep3;
-                                $grandTotalAfterDeposit = $grandTotal - $totalDeposit;
-                            @endphp
-                            
-                            {{-- KHẤU TRỪ CỌC --}}
-                            @if(!empty($deposits))
-                                <tbody class="bg-amber-50/50 border-t-2 border-amber-200">
-                                    <tr>
-                                        <td colspan="4" class="px-3 py-1 text-[10px] font-bold text-amber-600 uppercase tracking-wider bg-amber-100/50">
-                                            Khấu trừ cọc
+                                <!-- Khấu trừ cọc (Tự động) -->
+                                @if(!empty($deposits))
+                                    <tr class="bg-gray-50/50">
+                                        <td colspan="4" class="px-3 py-1 text-[9px] font-black text-gray-500 uppercase bg-gray-100/50 border-y border-gray-200">
+                                            KHẤU TRỪ TIỀN CỌC (TỰ ĐỘNG)
                                         </td>
                                     </tr>
                                     @foreach($deposits as $idx => $depState)
-                                        <tr>
-                                            <td class="px-3 py-2 font-semibold text-amber-800">
+                                        <tr class="bg-green-50/30 border-t border-gray-100">
+                                            <td class="px-3 py-2">
                                                 <div class="flex items-center gap-2">
-                                                    <input type="checkbox" 
-                                                           wire:click="toggleDeposit({{ $idx }})"
-                                                           class="rounded border-amber-400 text-amber-600 shadow-sm focus:ring-amber-500 cursor-pointer"
-                                                           {{ $depState['is_applied'] ? 'checked' : '' }}
-                                                           {{ ($depState['is_applied'] && !$depState['is_current_period']) ? 'disabled' : '' }}>
-                                                    <span>Cọc lần {{ $idx }}</span>
-                                                    @if($depState['is_applied'])
-                                                        @if($depState['is_current_period'])
-                                                            <span class="text-[9px] px-1 py-0.5 rounded bg-green-100 text-green-700 font-bold border border-green-200 ml-1">Đang áp dụng</span>
-                                                        @else
-                                                            <span class="text-[9px] px-1 py-0.5 rounded bg-gray-100 text-gray-500 font-normal border border-gray-200 ml-1">Đã khấu trừ {{ $depState['applied_date'] ? \Carbon\Carbon::parse($depState['applied_date'])->format('d/m/Y') : '' }}</span>
-                                                        @endif
-                                                    @endif
+                                                    <span class="text-xs font-bold text-green-700">
+                                                        ✅ Tiền cọc (Lần {{ $idx }})
+                                                    </span>
                                                 </div>
                                             </td>
-                                            <td colspan="2"></td>
-                                            <td class="px-3 py-2 text-right font-bold {{ $depState['is_applied'] ? 'text-red-500' : 'text-gray-400' }}">
-                                                {{ $depState['is_applied'] ? '-' : '' }}{{ number_format($depState['amount'], 0, ',', '.') }}đ
+                                            <td class="px-2 py-2 text-center text-gray-400">-</td>
+                                            <td class="px-2 py-2 text-center text-gray-400">-</td>
+                                            <td class="px-3 py-2 text-right font-bold text-green-600">
+                                                -{{ number_format($depState['amount'], 0, ',', '.') }}đ
                                             </td>
                                         </tr>
                                     @endforeach
-                                </tbody>
-                            @endif
+                                @endif
+                            </tbody>
 
+                            @php
+                                // Tính tổng tiền cọc đã áp dụng
+                                $appliedDepositTotal = collect($deposits)->where('is_applied', true)->sum('amount');
+                                $grandTotalAfterDeposit = $grandTotal - $appliedDepositTotal;
+                            @endphp
+                            
                             <tfoot class="bg-slate-800 text-white">
                                 <tr>
                                     <td colspan="3" class="px-3 py-2 text-right font-bold uppercase text-[11px]">CÒN LẠI:</td>
@@ -584,6 +658,11 @@
 
             <!-- FOOTER -->
             <div class="px-4 py-3 bg-white border-t border-gray-100 flex justify-end gap-2 items-center -mx-6 -mb-6 mt-4">
+                @if($editingBookingId)
+                    <button type="button" wire:click="viewConfirmation" class="px-4 py-2 bg-indigo-600 text-white rounded font-bold text-xs uppercase shadow-md hover:bg-indigo-700 flex items-center gap-1">
+                        <x-icon name="heroicon-o-printer" class="h-4 w-4" /> In xác nhận
+                    </button>
+                @endif
                 <button type="button" @click="show = false" class="px-4 py-2 text-sm font-bold text-gray-500 hover:bg-gray-100 rounded-lg">Huỷ</button>
                 <button type="submit" class="px-6 py-2 bg-blue-600 text-white text-sm font-bold uppercase rounded-lg shadow-lg hover:bg-blue-700 flex items-center gap-2">
                     <x-icon name="heroicon-o-check" class="h-4 w-4" />{{ $editingBookingId ? 'Cập nhật' : 'Tạo mới' }}
@@ -713,7 +792,7 @@
                     <!-- Header -->
                     <div class="flex justify-between items-start mb-6 pb-4 border-b-2 border-gray-800">
                         <div class="flex items-center gap-4">
-                            <div class="w-16 h-16 border-2 border-gray-800 rounded-full flex items-center justify-center text-2xl font-bold">S</div>
+                            <img src="{{ asset('logo.jpg') }}" alt="Logo" class="w-16 h-16 border-2 border-gray-800 rounded-full object-cover">
                             <div class="text-sm italic">Sala Apartment</div>
                         </div>
                         <div class="text-center flex-1 px-4">
@@ -721,7 +800,7 @@
                             <p class="text-[11px] mt-1">Số điện thoại: 084 424 4567</p>
                             <p class="text-[11px]">Địa chỉ: 22 Lý Nhật Quang, Nại Hiên Đông, Sơn Trà, Đà Nẵng</p>
                         </div>
-                        <div class="w-16 h-16 border border-gray-800 flex items-center justify-center text-[10px]">QR Code</div>
+                        <img src="{{ asset('qr.jpg') }}" alt="QR Code" class="w-16 h-16 border border-gray-800 object-contain">
                     </div>
 
                     <!-- Title -->
@@ -852,6 +931,342 @@
         </div>
     </div>
 
+    {{-- BOOKING CONFIRMATION PREVIEW MODAL --}}
+    @if($showConfirmationModal && !empty($confirmation_data))
+        <div class="fixed inset-0 z-[120] overflow-y-auto">
+            <div class="flex items-center justify-center min-h-screen p-4">
+                <div class="fixed inset-0 bg-black/60 backdrop-blur-sm print:hidden" wire:click="closeConfirmationModal"></div>
+                
+                <div class="relative bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[95vh] overflow-y-auto p-0" style="font-family: 'Source Serif 4', Georgia, serif;">
+                    <button wire:click="closeConfirmationModal" class="absolute top-4 right-4 z-10 bg-gray-100 hover:bg-gray-200 rounded-full p-2 print:hidden">
+                        <x-icon name="heroicon-o-x-mark" class="h-5 w-5" />
+                    </button>
+
+                    <button onclick="printBookingConfirmation('confirmationBillContentIndex')" class="absolute top-4 right-16 z-10 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-2">
+                        <x-icon name="heroicon-o-printer" class="h-5 w-5" />
+                    </button>
+
+                    <style>
+                        :root {
+                          --gold: #b8975a;
+                          --dark: #1a1a1a;
+                          --mid: #444;
+                          --light: #f8f5f0;
+                          --border: #d4c9b0;
+                          --accent: #8b7340;
+                        }
+
+                        .booking-confirmation-page {
+                          background: #fff;
+                          width: 100%;
+                          padding: 80px 100px;
+                          position: relative;
+                          overflow: hidden;
+                          color: var(--dark);
+                        }
+
+                        /* Watermark */
+                        .booking-confirmation-page::before {
+                          content: "S";
+                          position: absolute;
+                          font-family: 'Playfair Display', serif;
+                          font-size: 400px;
+                          color: rgba(184,151,90,0.04);
+                          top: 50%;
+                          left: 50%;
+                          transform: translate(-50%, -50%);
+                          pointer-events: none;
+                          line-height: 1;
+                        }
+
+
+
+                        .header-lux {
+                          display: flex;
+                          align-items: center;
+                          justify-content: space-between;
+                          margin-bottom: 32px;
+                          gap: 20px;
+                        }
+
+                        .logo-area {
+                          display: flex;
+                          align-items: center;
+                          gap: 14px;
+                          flex-shrink: 0;
+                        }
+
+                        .logo-img {
+                          width: 100px;
+                          height: auto;
+                          object-fit: contain;
+                        }
+
+                        .hotel-info {
+                          text-align: center;
+                          flex: 1;
+                        }
+
+                        .hotel-name {
+                          font-family: 'Playfair Display', serif;
+                          font-size: 20px;
+                          font-weight: 700;
+                          color: var(--dark);
+                          letter-spacing: 0.05em;
+                          text-transform: uppercase;
+                        }
+
+                        .hotel-contact {
+                          font-size: 12.5px;
+                          color: var(--mid);
+                          line-height: 2;
+                          margin-top: 4px;
+                        }
+
+                        .qr-box-lux {
+                          width: 64px;
+                          height: 64px;
+                          border: 1.5px solid var(--border);
+                          flex-shrink: 0;
+                          display: flex;
+                          align-items: center;
+                          justify-content: center;
+                          overflow: hidden;
+                        }
+
+                        .divider-lux {
+                          display: flex;
+                          align-items: center;
+                          gap: 12px;
+                          margin: 4px 0 28px;
+                        }
+                        .divider-line { flex: 1; height: 1px; background: var(--border); }
+                        .divider-diamond {
+                          width: 8px; height: 8px;
+                          background: var(--gold);
+                          transform: rotate(45deg);
+                          flex-shrink: 0;
+                        }
+
+                        .title-block {
+                          text-align: center;
+                          margin-bottom: 28px;
+                        }
+
+                        .title-label {
+                          font-family: 'Playfair Display', serif;
+                          font-size: 26px;
+                          font-weight: 700;
+                          letter-spacing: 0.15em;
+                          text-transform: uppercase;
+                          color: var(--dark);
+                        }
+
+                        .title-sub {
+                          font-size: 12.5px;
+                          color: var(--mid);
+                          letter-spacing: 0.08em;
+                          margin-top: 4px;
+                          font-style: italic;
+                        }
+
+                        .intro {
+                          font-size: 13.5px;
+                          line-height: 1.8;
+                          text-align: center;
+                          color: var(--mid);
+                          margin-bottom: 28px;
+                          font-style: italic;
+                        }
+
+                        .details-table {
+                          width: 100%;
+                          border-collapse: collapse;
+                          font-size: 13.5px;
+                          margin-bottom: 28px;
+                        }
+
+                        .details-table td {
+                          padding: 14px 18px;
+                          border: 1px solid var(--border);
+                          vertical-align: top;
+                          line-height: 1.6;
+                        }
+
+                        .details-table .label {
+                          color: var(--mid);
+                          font-weight: 300;
+                          white-space: nowrap;
+                          width: 25%;
+                        }
+
+                        .details-table .value {
+                          font-weight: 600;
+                          color: var(--dark);
+                          letter-spacing: 0.02em;
+                        }
+
+                        .price-note {
+                          font-size: 11.5px;
+                          color: var(--mid);
+                          font-weight: 300;
+                          font-style: italic;
+                          margin-top: 4px;
+                        }
+
+                        .paid-badge {
+                          display: inline-block;
+                          background: #e8f4ec;
+                          color: #2e7d4f;
+                          border: 1px solid #a8d5b5;
+                          padding: 1px 10px;
+                          border-radius: 20px;
+                          font-size: 11px;
+                          letter-spacing: 0.06em;
+                          text-transform: uppercase;
+                          font-weight: 600;
+                          margin-left: 8px;
+                          vertical-align: middle;
+                          font-style: normal;
+                        }
+
+                        .signature-lux {
+                          text-align: right;
+                          margin-top: 32px;
+                          padding-top: 20px;
+                        }
+
+                        .sig-title {
+                          font-size: 12px;
+                          letter-spacing: 0.12em;
+                          text-transform: uppercase;
+                          color: var(--mid);
+                          font-weight: 300;
+                        }
+
+                        .sig-name {
+                          font-family: 'Playfair Display', serif;
+                          font-size: 16px;
+                          color: var(--dark);
+                          margin-top: 4px;
+                          font-style: italic;
+                        }
+
+                        .sig-company {
+                          font-size: 12px;
+                          color: var(--gold);
+                          letter-spacing: 0.1em;
+                          text-transform: uppercase;
+                          margin-top: 2px;
+                        }
+
+                        .sig-line {
+                          width: 160px;
+                          height: 1px;
+                          background: var(--border);
+                          margin: 14px 0 8px auto;
+                        }
+
+                    </style>
+
+                    <div class="booking-confirmation-page" id="confirmationBillContentIndex">
+
+
+                        <!-- Header -->
+                        <div class="header-lux">
+                            <div class="logo-area">
+                                <img src="{{ asset('logo.jpg') }}" alt="Sala Logo" class="logo-img">
+                            </div>
+
+                            <div class="hotel-info">
+                                <div class="hotel-name">Sala Apartment and Hotel Da Nang</div>
+                                <div class="hotel-contact">
+                                    Hotline: +84 84 424 4567<br>
+                                    Address: 16 Ly Nhat Quang, Son Tra district, Da Nang city
+                                </div>
+                            </div>
+
+                            <div class="qr-box-lux">
+                                <img src="{{ asset('qr.jpg') }}" alt="QR" class="w-full h-full object-contain">
+                            </div>
+                        </div>
+
+                        <!-- Divider -->
+                        <div class="divider-lux">
+                            <div class="divider-line"></div>
+                            <div class="divider-diamond"></div>
+                            <div class="divider-line"></div>
+                        </div>
+
+                        <!-- Title -->
+                        <div class="title-block">
+                            <div class="title-label">Booking Confirmation</div>
+                        </div>
+
+                        <!-- Intro -->
+                        <p class="intro">
+                            Thank you for choosing and using services at Sala Apartment and Hotel for your trip.<br>
+                            Sala Apartment and Hotel would like to confirm your booking:
+                        </p>
+
+                        <!-- Details Table -->
+                        <table class="details-table">
+                            <tr>
+                                <td class="label">Names of the guest</td>
+                                <td class="value">{{ $confirmation_data['customer_name'] }}</td>
+                                <td class="label">Phone number</td>
+                                <td class="value">{{ $confirmation_data['customer_phone'] }}</td>
+                            </tr>
+                            <tr>
+                                <td class="label">Room</td>
+                                <td class="value">{{ $confirmation_data['room_code'] }}</td>
+                                <td class="label">Number of guests</td>
+                                <td class="value">01</td>
+                            </tr>
+                            <tr>
+                                <td class="label">Arrival date</td>
+                                <td class="value">{{ $confirmation_data['check_in'] }}</td>
+                                <td class="label">Term of stay</td>
+                                <td class="value">{{ $confirmation_data['term_of_stay'] }}</td>
+                            </tr>
+                            <tr class="full-row">
+                                <td class="label">Price of the room</td>
+                                <td colspan="3" class="value">
+                                    {{ $confirmation_data['unit_price'] }} VND / {{ $confirmation_data['price_type'] }}
+                                    <div class="price-note">(not included deposit fee, electric fee and water fee)</div>
+                                </td>
+                            </tr>
+                            <tr class="full-row">
+                                <td class="label">Deposit money</td>
+                                <td colspan="3" class="value">
+                                    {{ number_format($confirmation_data['total_deposit'], 0, ',', '.') }} VND
+                                    @if($confirmation_data['total_deposit'] > 0)
+                                        <span class="paid-badge">✓ Paid</span>
+                                    @endif
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- Divider -->
+                        <div class="divider-lux">
+                            <div class="divider-line"></div>
+                            <div class="divider-diamond"></div>
+                            <div class="divider-line"></div>
+                        </div>
+
+                        <!-- Signature -->
+                        <div class="signature-lux">
+                            <div class="sig-title">Apartment Confirmation</div>
+                            <div class="sig-line"></div>
+                            <div class="sig-name">Ngo Thi Phuong Thao</div>
+                            <div class="sig-company">Sala Apartment</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
     {{-- INVOICE MODAL - Matching Bill Preview Format --}}
     @if($showInvoiceModal && !empty($invoice_data))
         <div x-data="{ showInvoice: @entangle('showInvoiceModal') }"
@@ -903,7 +1318,7 @@
                         <!-- Header -->
                         <div class="flex justify-between items-start mb-6 pb-4 border-b-2 border-gray-800">
                             <div class="flex items-center gap-4">
-                                <div class="w-16 h-16 border-2 border-gray-800 rounded-full flex items-center justify-center text-2xl font-bold">S</div>
+                                <img src="{{ asset('logo.jpg') }}" alt="Logo" class="w-16 h-16 border-2 border-gray-800 rounded-full object-cover">
                                 <div class="text-sm italic">Sala Apartment</div>
                             </div>
                             <div class="text-center flex-1 px-4">
@@ -911,7 +1326,7 @@
                                 <p class="text-[11px] mt-1">Số điện thoại: 084 424 4567</p>
                                 <p class="text-[11px]">Địa chỉ: 22 Lý Nhật Quang, Nại Hiên Đông, Sơn Trà, Đà Nẵng</p>
                             </div>
-                            <div class="w-16 h-16 border border-gray-800 flex items-center justify-center text-[10px]">QR Code</div>
+                            <img src="{{ asset('qr.jpg') }}" alt="QR Code" class="w-16 h-16 border border-gray-800 object-contain">
                         </div>
 
                         <!-- Title -->
