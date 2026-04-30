@@ -113,22 +113,6 @@ class BookingCalendar extends Component
 
     protected $listeners = ['area-selected' => '$refresh', 'refreshView' => '$refresh'];
 
-    public function updatedCustomerId($value)
-    {
-        if ($value) {
-            $customer = Customer::find($value);
-            if ($customer) {
-                // Pre-fill check-in info from existing customer
-                $this->customer_identity = $customer->identity_id;
-                $this->customer_nationality = $customer->nationality;
-                $this->customer_visa_number = $customer->visa_number;
-                $this->customer_visa_expiry = $customer->visa_expiry ? $customer->visa_expiry->format('Y-m-d') : null;
-            }
-        } else {
-            $this->reset(['customer_identity', 'customer_nationality', 'customer_visa_number', 'customer_visa_expiry']);
-        }
-    }
-
     public function mount()
     {
         $this->startDate = now()->format('Y-m-d');
