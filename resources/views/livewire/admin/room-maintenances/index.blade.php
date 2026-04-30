@@ -190,24 +190,7 @@
                 @endif
 
                 <div class="grid grid-cols-2 gap-4">
-                    <div x-data="{ 
-                        fp: null,
-                        init() {
-                            this.fp = flatpickr($refs.maintenance_date, {
-                                altInput: true,
-                                altFormat: 'd/m/Y',
-                                dateFormat: 'Y-m-d',
-                                onChange: (selectedDates, dateStr) => {
-                                    $wire.set('maintenance_date', dateStr);
-                                }
-                            });
-                            $watch('$wire.maintenance_date', value => this.fp.setDate(value));
-                        }
-                    }">
-                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Ngày thực hiện</label>
-                        <input x-ref="maintenance_date" type="text" wire:model="maintenance_date" class="w-full rounded-xl border-gray-200 bg-gray-50 p-2.5 text-sm font-bold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
-                        @error('maintenance_date') <span class="text-red-500 text-[10px] font-bold mt-1">{{ $message }}</span> @enderror
-                    </div>
+                    <x-ui.select-date wire:model="maintenance_date" label="Ngày thực hiện" />
                     <div>
                         <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Chi phí (VNĐ)</label>
                         <input type="text" wire:model="cost" 

@@ -367,40 +367,8 @@
                                 </div>
 
                                 <div class="grid grid-cols-2 gap-4 pt-2">
-                                    <div x-data="{ 
-                                        fp: null,
-                                        init() {
-                                            this.fp = flatpickr($refs.checkin, {
-                                                altInput: true,
-                                                altFormat: 'd/m/Y',
-                                                dateFormat: 'Y-m-d',
-                                                onChange: (selectedDates, dateStr) => {
-                                                    $wire.set('check_in', dateStr);
-                                                }
-                                            });
-                                            $watch('$wire.check_in', value => this.fp.setDate(value));
-                                        }
-                                    }">
-                                        <label class="block text-xs font-medium text-gray-500 mb-1">Ngày nhận</label>
-                                        <input x-ref="checkin" type="text" wire:model.live="check_in" class="w-full rounded border-gray-300 py-2 text-sm focus:ring-blue-500 focus:border-blue-500 bg-white">
-                                    </div>
-                                    <div x-data="{ 
-                                        fp: null,
-                                        init() {
-                                            this.fp = flatpickr($refs.checkout, {
-                                                altInput: true,
-                                                altFormat: 'd/m/Y',
-                                                dateFormat: 'Y-m-d',
-                                                onChange: (selectedDates, dateStr) => {
-                                                    $wire.set('check_out', dateStr);
-                                                }
-                                            });
-                                            $watch('$wire.check_out', value => this.fp.setDate(value));
-                                        }
-                                    }">
-                                        <label class="block text-xs font-medium text-gray-500 mb-1">Ngày trả</label>
-                                        <input x-ref="checkout" type="text" wire:model.live="check_out" class="w-full rounded border-gray-300 py-2 text-sm focus:ring-blue-500 focus:border-blue-500 bg-white">
-                                    </div>
+                                    <x-ui.select-date wire:model="check_in" label="Ngày nhận" />
+                                    <x-ui.select-date wire:model="check_out" label="Ngày trả" />
                                 </div>
                             </div>
 
@@ -458,23 +426,7 @@
                                                 />
                                                 @error('customer_nationality') <span class="text-[10px] text-red-500">{{ $message }}</span> @enderror
                                             </div>
-                                            <div x-data="{ 
-                                                fp: null,
-                                                init() {
-                                                    this.fp = flatpickr($refs.visa_expiry, {
-                                                        altInput: true,
-                                                        altFormat: 'd/m/Y',
-                                                        dateFormat: 'Y-m-d',
-                                                        onChange: (selectedDates, dateStr) => {
-                                                            $wire.set('customer_visa_expiry', dateStr);
-                                                        }
-                                                    });
-                                                    $watch('$wire.customer_visa_expiry', value => this.fp.setDate(value));
-                                                }
-                                            }">
-                                                <label class="block text-[10px] font-bold text-blue-600 uppercase mb-1">Hạn Visa</label>
-                                                <input x-ref="visa_expiry" type="text" wire:model.blur="customer_visa_expiry" class="w-full rounded border-blue-200 py-1.5 text-xs bg-white">
-                                            </div>
+                                            <x-ui.select-date wire:model="customer_visa_expiry" label="Hạn Visa" />
                                         </div>
                                     @endif
                                 @else

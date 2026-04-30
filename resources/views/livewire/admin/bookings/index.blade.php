@@ -303,41 +303,8 @@
                     <div class="bg-white p-3 rounded-lg border border-gray-200">
                         <h4 class="text-[10px] font-black text-gray-400 uppercase mb-2">Thời gian & Giá</h4>
                         <div class="grid grid-cols-6 gap-2">
-                            <div x-data="{ 
-                                fp: null,
-                                init() {
-                                    this.fp = flatpickr($refs.checkin, {
-                                        altInput: true,
-                                        altFormat: 'd/m/Y',
-                                        dateFormat: 'Y-m-d',
-                                        onChange: (selectedDates, dateStr) => {
-                                            $wire.set('check_in', dateStr);
-                                        }
-                                    });
-                                    $watch('$wire.check_in', value => this.fp.setDate(value));
-                                }
-                            }">
-                                <label class="text-[9px] text-gray-400 uppercase font-bold block mb-0.5">Check-in</label>
-                                <input x-ref="checkin" type="text" wire:model="check_in" class="w-full rounded border-gray-200 p-1.5 text-sm font-semibold bg-white">
-                                @error('check_in')<span class="text-red-500 text-[10px]">{{ $message }}</span>@enderror
-                            </div>
-                            <div x-data="{ 
-                                fp: null,
-                                init() {
-                                    this.fp = flatpickr($refs.checkout, {
-                                        altInput: true,
-                                        altFormat: 'd/m/Y',
-                                        dateFormat: 'Y-m-d',
-                                        onChange: (selectedDates, dateStr) => {
-                                            $wire.set('check_out', dateStr);
-                                        }
-                                    });
-                                    $watch('$wire.check_out', value => this.fp.setDate(value));
-                                }
-                            }">
-                                <label class="text-[9px] text-gray-400 uppercase font-bold block mb-0.5">Check-out</label>
-                                <input x-ref="checkout" type="text" wire:model="check_out" class="w-full rounded border-gray-200 p-1.5 text-sm font-semibold bg-white">
-                            </div>
+                            <x-ui.select-date wire:model="check_in" label="Check-in" />
+                            <x-ui.select-date wire:model="check_out" label="Check-out" />
                             <div><label class="text-[9px] text-blue-500 uppercase font-bold block mb-0.5">Đơn giá</label><input type="text" wire:model.blur="unit_price" class="w-full rounded border-gray-200 p-1.5 text-sm font-bold" x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')"></div>
                             <div><label class="text-[9px] text-blue-500 uppercase font-bold block mb-0.5">Tổng tiền</label><input type="text" wire:model.blur="price" class="w-full rounded border-blue-300 bg-blue-50 p-1.5 text-sm font-bold text-blue-600" x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')">@error('price')<span class="text-red-500 text-[10px]">{{ $message }}</span>@enderror</div>
                             <div><label class="text-[9px] text-gray-400 uppercase font-bold block mb-0.5">Cọc L1</label><input type="text" wire:model.blur="deposit" class="w-full rounded border-gray-200 p-1.5 text-sm font-semibold text-indigo-600" x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')"></div>
@@ -523,22 +490,9 @@
                         <div class="bg-slate-100 px-3 py-2 border-b border-gray-200">
                             <div class="flex items-center justify-between">
                                 <h4 class="text-[10px] font-black text-slate-600 uppercase">Bảng Tổng Chi Phí</h4>
-                                <div class="flex items-center gap-2" x-data="{ 
-                                    fp: null,
-                                    init() {
-                                        this.fp = flatpickr($refs.billing_date, {
-                                            altInput: true,
-                                            altFormat: 'd/m/Y',
-                                            dateFormat: 'Y-m-d',
-                                            onChange: (selectedDates, dateStr) => {
-                                                $wire.set('global_billing_date', dateStr);
-                                            }
-                                        });
-                                        $watch('$wire.global_billing_date', value => this.fp.setDate(value));
-                                    }
-                                }">
+                                <div class="flex items-center gap-2">
                                     <label class="text-[10px] font-bold text-slate-600">📅 NGÀY CHỐT KỲ NÀY:</label>
-                                    <input x-ref="billing_date" type="text" wire:model.live="global_billing_date" class="text-[11px] border-slate-300 rounded px-2 py-1 font-semibold bg-white w-24" placeholder="Chọn ngày">
+                                    <x-ui.select-date wire:model="global_billing_date" />
                                 </div>
                             </div>
                         </div>
