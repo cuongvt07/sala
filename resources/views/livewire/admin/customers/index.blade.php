@@ -174,15 +174,41 @@
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
-                        <div class="space-y-1">
+                        <div x-data="{ 
+                            fp: null,
+                            init() {
+                                this.fp = flatpickr($refs.birthday, {
+                                    altInput: true,
+                                    altFormat: 'd/m/Y',
+                                    dateFormat: 'Y-m-d',
+                                    onChange: (selectedDates, dateStr) => {
+                                        $wire.set('birthday', dateStr);
+                                    }
+                                });
+                                $watch('birthday', value => this.fp.setDate(value));
+                            }
+                        }" class="space-y-1">
                             <label for="birthday" class="block font-semibold text-gray-700 text-[11px] uppercase">Ngày sinh</label>
-                            <input type="date" id="birthday" wire:model="birthday" class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm focus:ring-blue-500 focus:border-blue-500">
+                            <input x-ref="birthday" type="text" wire:model="birthday" class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm focus:ring-blue-500 focus:border-blue-500">
                             @error('birthday') <p class="text-[10px] text-red-500">{{ $message }}</p> @enderror
                         </div>
 
-                         <div class="space-y-1">
+                         <div x-data="{ 
+                            fp: null,
+                            init() {
+                                this.fp = flatpickr($refs.visa_expiry, {
+                                    altInput: true,
+                                    altFormat: 'd/m/Y',
+                                    dateFormat: 'Y-m-d',
+                                    onChange: (selectedDates, dateStr) => {
+                                        $wire.set('visa_expiry', dateStr);
+                                    }
+                                });
+                                $watch('visa_expiry', value => this.fp.setDate(value));
+                            }
+                        }" class="space-y-1">
                             <label for="visa_expiry" class="block font-semibold text-gray-700 text-[11px] uppercase">Hạn Visa</label>
-                            <input type="date" id="visa_expiry" wire:model="visa_expiry" class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm focus:ring-blue-500 focus:border-blue-500">
+                            <input x-ref="visa_expiry" type="text" wire:model="visa_expiry" class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm focus:ring-blue-500 focus:border-blue-500">
                              @error('visa_expiry') <p class="text-[10px] text-red-500">{{ $message }}</p> @enderror
                         </div>
                     </div>
