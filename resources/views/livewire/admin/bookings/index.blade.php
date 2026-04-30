@@ -314,7 +314,7 @@
                                             $wire.set('check_in', dateStr);
                                         }
                                     });
-                                    $watch('check_in', value => this.fp.setDate(value));
+                                    $watch('$wire.check_in', value => this.fp.setDate(value));
                                 }
                             }">
                                 <label class="text-[9px] text-gray-400 uppercase font-bold block mb-0.5">Check-in</label>
@@ -332,7 +332,7 @@
                                             $wire.set('check_out', dateStr);
                                         }
                                     });
-                                    $watch('check_out', value => this.fp.setDate(value));
+                                    $watch('$wire.check_out', value => this.fp.setDate(value));
                                 }
                             }">
                                 <label class="text-[9px] text-gray-400 uppercase font-bold block mb-0.5">Check-out</label>
@@ -534,7 +534,7 @@
                                                 $wire.set('global_billing_date', dateStr);
                                             }
                                         });
-                                        $watch('global_billing_date', value => this.fp.setDate(value));
+                                        $watch('$wire.global_billing_date', value => this.fp.setDate(value));
                                     }
                                 }">
                                     <label class="text-[10px] font-bold text-slate-600">📅 NGÀY CHỐT KỲ NÀY:</label>

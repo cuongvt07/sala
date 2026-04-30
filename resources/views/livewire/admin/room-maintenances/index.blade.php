@@ -201,7 +201,7 @@
                                     $wire.set('maintenance_date', dateStr);
                                 }
                             });
-                            $watch('maintenance_date', value => this.fp.setDate(value));
+                            $watch('$wire.maintenance_date', value => this.fp.setDate(value));
                         }
                     }">
                         <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Ngày thực hiện</label>

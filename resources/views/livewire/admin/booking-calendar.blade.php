@@ -378,7 +378,7 @@
                                                     $wire.set('check_in', dateStr);
                                                 }
                                             });
-                                            $watch('check_in', value => this.fp.setDate(value));
+                                            $watch('$wire.check_in', value => this.fp.setDate(value));
                                         }
                                     }">
                                         <label class="block text-xs font-medium text-gray-500 mb-1">Ngày nhận</label>
@@ -395,7 +395,7 @@
                                                     $wire.set('check_out', dateStr);
                                                 }
                                             });
-                                            $watch('check_out', value => this.fp.setDate(value));
+                                            $watch('$wire.check_out', value => this.fp.setDate(value));
                                         }
                                     }">
                                         <label class="block text-xs font-medium text-gray-500 mb-1">Ngày trả</label>
@@ -469,7 +469,7 @@
                                                             $wire.set('customer_visa_expiry', dateStr);
                                                         }
                                                     });
-                                                    $watch('customer_visa_expiry', value => this.fp.setDate(value));
+                                                    $watch('$wire.customer_visa_expiry', value => this.fp.setDate(value));
                                                 }
                                             }">
                                                 <label class="block text-[10px] font-bold text-blue-600 uppercase mb-1">Hạn Visa</label>

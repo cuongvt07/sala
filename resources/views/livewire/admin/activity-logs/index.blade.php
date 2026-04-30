@@ -43,7 +43,7 @@
                             $wire.set('dateFrom', dateStr);
                         }
                     });
-                    $watch('dateFrom', value => this.fp.setDate(value));
+                    $watch('$wire.dateFrom', value => this.fp.setDate(value));
                 }
             }">
                 <label class="block text-xs font-medium uppercase text-gray-500">Từ ngày</label>
@@ -60,7 +60,7 @@
                             $wire.set('dateTo', dateStr);
                         }
                     });
-                    $watch('dateTo', value => this.fp.setDate(value));
+                    $watch('$wire.dateTo', value => this.fp.setDate(value));
                 }
             }">
                 <label class="block text-xs font-medium uppercase text-gray-500">Đến ngày</label>

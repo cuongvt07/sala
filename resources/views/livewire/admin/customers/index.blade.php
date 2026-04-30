@@ -185,7 +185,7 @@
                                         $wire.set('birthday', dateStr);
                                     }
                                 });
-                                $watch('birthday', value => this.fp.setDate(value));
+                                $watch('$wire.birthday', value => this.fp.setDate(value));
                             }
                         }" class="space-y-1">
                             <label for="birthday" class="block font-semibold text-gray-700 text-[11px] uppercase">Ngày sinh</label>
@@ -204,7 +204,7 @@
                                         $wire.set('visa_expiry', dateStr);
                                     }
                                 });
-                                $watch('visa_expiry', value => this.fp.setDate(value));
+                                $watch('$wire.visa_expiry', value => this.fp.setDate(value));
                             }
                         }" class="space-y-1">
                             <label for="visa_expiry" class="block font-semibold text-gray-700 text-[11px] uppercase">Hạn Visa</label>
