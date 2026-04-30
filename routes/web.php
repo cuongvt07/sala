@@ -14,7 +14,7 @@ Route::get('/', function () {
 Route::redirect('/admin', '/admin/dashboard'); // Redirect /admin to Dashboard
 Route::redirect('/filament', '/admin/dashboard'); // Redirect /filament to Dashboard
 
-Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'permission'])->group(function () {
     Route::get('/dashboard', \App\Livewire\Admin\Dashboard::class)->name('dashboard');
     Route::get('/booking-calendar', \App\Livewire\Admin\BookingCalendar::class)->name('booking-calendar');
     
@@ -35,6 +35,10 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
 
     // Room Maintenances
     Route::get('/room-maintenances', \App\Livewire\Admin\RoomMaintenances\Index::class)->name('room-maintenances.index');
+
+    // Staff & Security
+    Route::get('/staff', \App\Livewire\Admin\Staff\Index::class)->name('staff.index');
+    Route::get('/activity-logs', \App\Livewire\Admin\ActivityLogs\Index::class)->name('activity-logs.index');
 
     // Settings
     Route::get('/settings', \App\Livewire\Admin\Settings\Index::class)->name('settings.index');

@@ -107,14 +107,14 @@ class Index extends Component
         }
 
         $this->showModal = false;
-        session()->flash('success', $message);
+        $this->dispatch('toast', message: $message, type: 'success');
         $this->reset(['area_id', 'code', 'type', 'price_day', 'price_hour', 'status', 'description', 'editingRoomId']);
     }
 
     public function delete($id)
     {
         Room::find($id)->delete();
-        session()->flash('success', 'Xóa phòng thành công.');
+        $this->dispatch('toast', message: 'Xóa phòng thành công.', type: 'success');
     }
 
     public function render()

@@ -29,8 +29,8 @@
             <select wire:model.live="filterNationality" 
                     class="w-full px-3 py-2 bg-gray-50/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-xs font-medium appearance-none">
                 <option value="">Tất cả</option>
-                @foreach($countries as $country)
-                    <option value="{{ $country }}">{{ $country }}</option>
+                @foreach($this->getCountries() as $code => $name)
+                    <option value="{{ $code }} {{ $name }}">{{ $code }} - {{ $name }}</option>
                 @endforeach
             </select>
         </x-ui.filter-item>
@@ -42,6 +42,7 @@
                 <tr>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Họ và Tên</th>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Liên hệ</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Phòng & Ngày Check-in</th>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">CCCD / Visa / Passport</th>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Hạn Visa</th>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Quốc tịch</th>
@@ -68,6 +69,19 @@
                             <div class="text-[13px] text-gray-900">{{ $customer->phone }}</div>
                             <div class="text-[11px] text-gray-500">{{ $customer->email }}</div>
                         </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            @if($customer->bookings->first())
+                                @php $activeBooking = $customer->bookings->first(); @endphp
+                                <div class="text-[13px] font-black {{ $activeBooking->status === 'checked_in' ? 'text-green-600' : 'text-blue-600' }}">
+                                    {{ $activeBooking->room->code ?? 'N/A' }}
+                                </div>
+                                <div class="text-[11px] text-gray-500 font-bold">
+                                    In: {{ $activeBooking->check_in->format('d/m') }}
+                                </div>
+                            @else
+                                <span class="text-gray-300 text-xs">-</span>
+                            @endif
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap text-[13px] font-bold text-gray-900">
                             {{ $customer->identity_id }}
                         </td>
@@ -88,8 +102,12 @@
                             @endif
                         </td>
 
-                        <td class="px-6 py-4 whitespace-nowrap text-[13px] text-gray-900">
-                            {{ $customer->nationality }}
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            @if($customer->nationality)
+                                <div class="text-[11px] font-black text-indigo-600 uppercase tracking-tighter">🌍 {{ $customer->nationality }}</div>
+                            @else
+                                <span class="text-gray-300 text-xs">-</span>
+                            @endif
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                              <x-ui.button wire:click="edit({{ $customer->id }})" variant="secondary" size="sm">
@@ -125,8 +143,8 @@
                     </div>
 
                     <div class="space-y-1">
-                        <label for="phone" class="block font-semibold text-gray-700 text-[11px] uppercase">Số điện thoại <span class="text-red-500">*</span></label>
-                        <input type="text" id="phone" wire:model="phone" required class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm font-bold focus:ring-blue-500 focus:border-blue-500">
+                        <label for="phone" class="block font-semibold text-gray-700 text-[11px] uppercase">Số điện thoại</label>
+                        <input type="text" id="phone" wire:model="phone" class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm font-bold focus:ring-blue-500 focus:border-blue-500" placeholder="Không bắt buộc">
                         @error('phone') <p class="text-[10px] text-red-500">{{ $message }}</p> @enderror
                     </div>
                     
@@ -140,22 +158,19 @@
                 {{-- Col 2 --}}
                 <div class="space-y-4">
                     <div class="space-y-1">
-                        <label for="identity_id" class="block font-semibold text-gray-700 text-[11px] uppercase">CCCD / Visa / Passport <span class="text-red-500">*</span></label>
-                        <input type="text" id="identity_id" wire:model="identity_id" required class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm font-bold focus:ring-blue-500 focus:border-blue-500">
+                        <label for="identity_id" class="block font-semibold text-gray-700 text-[11px] uppercase">CCCD / Visa / Passport</label>
+                        <input type="text" id="identity_id" wire:model="identity_id" class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm font-bold focus:ring-blue-500 focus:border-blue-500" placeholder="Không bắt buộc">
                         @error('identity_id') <p class="text-[10px] text-red-500">{{ $message }}</p> @enderror
                     </div>
 
                     <div class="space-y-1">
-                        <label for="nationality" class="block font-semibold text-gray-700 text-[11px] uppercase">Quốc tịch</label>
-                        <div class="relative">
-                            <x-ui.select-search 
-                                wire:model="nationality" 
-                                :options="$countries"
-                                :error="$errors->first('nationality')"
-                                placeholder="Chọn quốc tịch"
-                                class="bg-gray-50 border-gray-300"
-                            />
-                        </div>
+                        <label class="block font-semibold text-gray-700 text-[11px] uppercase mb-1">Quốc tịch</label>
+                        <x-ui.select-search 
+                            wire:model.live="nationality" 
+                            :options="$this->getFormattedCountries()"
+                            placeholder="Tìm quốc tịch (VNM, USA...)"
+                        />
+                        @error('nationality') <p class="text-[10px] text-red-500">{{ $message }}</p> @enderror
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">

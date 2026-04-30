@@ -76,13 +76,13 @@ class Index extends Component
         }
 
         $this->showModal = false;
-        session()->flash('success', $message);
+        $this->dispatch('toast', message: $message, type: 'success');
     }
 
     public function delete($id)
     {
         Service::find($id)->delete();
-        session()->flash('success', 'Xóa dịch vụ thành công.');
+        $this->dispatch('toast', message: 'Xóa dịch vụ thành công.', type: 'success');
     }
 
     public $search = '';

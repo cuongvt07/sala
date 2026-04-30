@@ -64,14 +64,14 @@ class Index extends Component
         }
 
         $this->showModal = false;
-        session()->flash('success', $message);
+        $this->dispatch('toast', message: $message, type: 'success');
         $this->reset(['name', 'address', 'description', 'editingAreaId']);
     }
 
     public function delete($id)
     {
         Area::find($id)->delete();
-        session()->flash('success', 'Xóa khu vực thành công.');
+        $this->dispatch('toast', message: 'Xóa khu vực thành công.', type: 'success');
     }
 
     public function render()

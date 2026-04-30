@@ -12,9 +12,29 @@
                 <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,0.08);">
                     {{-- HEADER --}}
                     <tr>
-                        <td style="background:linear-gradient(135deg,#4f46e5,#3b82f6); padding:28px 32px; text-align:center;">
-                            <h1 style="margin:0; color:#ffffff; font-size:22px; font-weight:800; letter-spacing:1px;">HOÁ ĐƠN THANH TOÁN</h1>
-                            <p style="margin:6px 0 0; color:rgba(255,255,255,0.85); font-size:13px;">{{ now()->format('d/m/Y H:i') }}</p>
+                        <td style="background:linear-gradient(135deg,#4f46e5,#3b82f6); padding:24px 32px;">
+                            <table width="100%" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td width="80" align="left">
+                                        @if(file_exists(public_path('logo.jpg')))
+                                            <img src="{{ $message->embed(public_path('logo.jpg')) }}" alt="Logo" style="width:80px; height:80px; border-radius:12px; object-fit:cover;">
+                                        @elseif(file_exists(public_path('sala.png')))
+                                            <img src="{{ $message->embed(public_path('sala.png')) }}" alt="Logo" style="width:80px; height:80px; border-radius:12px; object-fit:cover;">
+                                        @endif
+                                    </td>
+                                    <td align="center" style="padding:0 20px;">
+                                        <h1 style="margin:0; color:#ffffff; font-size:22px; font-weight:800; letter-spacing:1px; text-transform:uppercase;">HOÁ ĐƠN THANH TOÁN</h1>
+                                        <p style="margin:6px 0 0; color:rgba(255,255,255,0.85); font-size:13px;">{{ now()->format('d/m/Y H:i') }}</p>
+                                    </td>
+                                    <td width="80" align="right">
+                                        @if(file_exists(public_path('qr.jpg')))
+                                            <img src="{{ $message->embed(public_path('qr.jpg')) }}" alt="QR" style="width:80px; height:80px; border-radius:12px; background:#ffffff; padding:5px;">
+                                        @elseif(file_exists(public_path('qr.png')))
+                                            <img src="{{ $message->embed(public_path('qr.png')) }}" alt="QR" style="width:80px; height:80px; border-radius:12px; background:#ffffff; padding:5px;">
+                                        @endif
+                                    </td>
+                                </tr>
+                            </table>
                         </td>
                     </tr>
 
@@ -37,12 +57,6 @@
                                                 <td style="padding:4px 0; font-size:13px; color:#64748b;">Ngày vào:</td>
                                                 <td style="padding:4px 0; font-size:13px; color:#0f172a; font-weight:700; text-align:right;">{{ $booking->check_in ? $booking->check_in->format('d/m/Y') : '-' }}</td>
                                             </tr>
-                                            @if($booking->check_out)
-                                            <tr>
-                                                <td style="padding:4px 0; font-size:13px; color:#64748b;">Ngày ra:</td>
-                                                <td style="padding:4px 0; font-size:13px; color:#0f172a; font-weight:700; text-align:right;">{{ $booking->check_out->format('d/m/Y') }}</td>
-                                            </tr>
-                                            @endif
                                         </table>
                                     </td>
                                 </tr>
@@ -53,41 +67,45 @@
                     {{-- DETAIL TABLE --}}
                     <tr>
                         <td style="padding:0 32px 16px;">
-                            <p style="margin:0 0 10px; font-size:13px; font-weight:800; color:#0f172a; text-transform:uppercase; letter-spacing:1px;">Chi tiết hoá đơn</p>
+                            <p style="margin:0 0 10px; font-size:13px; font-weight:800; color:#0f172a; text-transform:uppercase; letter-spacing:1px;">Chi tiết dịch vụ</p>
                             <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
                                 <thead>
                                     <tr style="background:#f1f5f9;">
-                                        <th style="padding:8px 10px; font-size:11px; color:#64748b; text-align:left; text-transform:uppercase; font-weight:700; border-bottom:2px solid #e2e8f0;">Khoản mục</th>
-                                        <th style="padding:8px 10px; font-size:11px; color:#64748b; text-align:center; text-transform:uppercase; font-weight:700; border-bottom:2px solid #e2e8f0;">Chi tiết</th>
+                                        <th style="padding:8px 10px; font-size:11px; color:#64748b; text-align:left; text-transform:uppercase; font-weight:700; border-bottom:2px solid #e2e8f0;">Dịch vụ</th>
+                                        <th style="padding:8px 10px; font-size:11px; color:#64748b; text-align:center; text-transform:uppercase; font-weight:700; border-bottom:2px solid #e2e8f0;">Chỉ số / Chi tiết</th>
                                         <th style="padding:8px 10px; font-size:11px; color:#64748b; text-align:right; text-transform:uppercase; font-weight:700; border-bottom:2px solid #e2e8f0;">Thành tiền</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {{-- Room base price --}}
                                     <tr>
-                                        <td style="padding:8px 10px; font-size:13px; color:#0f172a; font-weight:600; border-bottom:1px solid #f1f5f9;">Tiền phòng</td>
-                                        <td style="padding:8px 10px; font-size:12px; color:#64748b; text-align:center; border-bottom:1px solid #f1f5f9;">{{ $booking->price_type === 'month' ? 'Dài hạn' : 'Ngày' }}</td>
-                                        <td style="padding:8px 10px; font-size:13px; color:#0f172a; font-weight:700; text-align:right; border-bottom:1px solid #f1f5f9;">{{ number_format($booking->price, 0, ',', '.') }}đ</td>
+                                        <td style="padding:10px 10px; font-size:13px; color:#0f172a; font-weight:700; border-bottom:1px solid #f1f5f9;">Tiền phòng</td>
+                                        <td style="padding:10px 10px; font-size:12px; color:#64748b; text-align:center; border-bottom:1px solid #f1f5f9;">
+                                            {{ $booking->price_type === 'month' ? 'Hợp đồng' : 'Ngày' }}
+                                        </td>
+                                        <td style="padding:10px 10px; font-size:13px; color:#0f172a; font-weight:800; text-align:right; border-bottom:1px solid #f1f5f9;">{{ number_format($booking->price, 0, ',', '.') }}đ</td>
                                     </tr>
+
                                     {{-- Usage logs --}}
                                     @foreach($usageLogs as $log)
                                     <tr>
-                                        <td style="padding:8px 10px; font-size:13px; color:#0f172a; font-weight:600; border-bottom:1px solid #f1f5f9;">
-                                            {{ $log->service->name ?? 'Phí phụ thu khác' }}
+                                        <td style="padding:10px 10px; font-size:13px; color:#0f172a; font-weight:600; border-bottom:1px solid #f1f5f9;">
+                                            {{ $log->service->name ?? ($log->notes ?: 'Phí phụ thu khác') }}
                                         </td>
-                                        <td style="padding:8px 10px; font-size:12px; color:#64748b; text-align:center; border-bottom:1px solid #f1f5f9;">
+                                        <td style="padding:10px 10px; font-size:12px; color:#64748b; text-align:center; border-bottom:1px solid #f1f5f9;">
                                             @if($log->type === 'meter')
-                                                {{ $log->start_index }} → {{ $log->end_index }}
+                                                <span style="font-weight:700; color:#3b82f6;">{{ $log->start_index }} → {{ $log->end_index }}</span>
+                                                <div style="font-size:10px; margin-top:2px;">(Sử dụng: {{ $log->end_index - $log->start_index }})</div>
                                             @elseif($log->type === 'manual')
                                                 Phụ thu
                                             @else
                                                 SL: {{ $log->quantity }}
                                             @endif
                                             @if($log->billing_date)
-                                                · {{ $log->billing_date->format('d/m') }}
+                                                · <span style="font-size:10px;">{{ $log->billing_date->format('d/m') }}</span>
                                             @endif
                                         </td>
-                                        <td style="padding:8px 10px; font-size:13px; color:#0f172a; font-weight:700; text-align:right; border-bottom:1px solid #f1f5f9;">{{ number_format($log->total_amount, 0, ',', '.') }}đ</td>
+                                        <td style="padding:10px 10px; font-size:13px; color:#0f172a; font-weight:800; text-align:right; border-bottom:1px solid #f1f5f9;">{{ number_format($log->total_amount, 0, ',', '.') }}đ</td>
                                     </tr>
                                     @endforeach
                                 </tbody>
@@ -103,17 +121,17 @@
                                     <td style="padding:16px 20px;">
                                         <table width="100%" cellpadding="0" cellspacing="0">
                                             <tr>
-                                                <td style="font-size:13px; color:rgba(255,255,255,0.8); font-weight:600;">TỔNG CỘNG</td>
-                                                <td style="font-size:20px; color:#ffffff; font-weight:800; text-align:right;">{{ number_format($totalAmount, 0, ',', '.') }}đ</td>
+                                                <td style="font-size:13px; color:rgba(255,255,255,0.8); font-weight:600;">TỔNG CỘNG HÓA ĐƠN</td>
+                                                <td style="font-size:22px; color:#ffffff; font-weight:900; text-align:right;">{{ number_format($totalAmount, 0, ',', '.') }}đ</td>
                                             </tr>
                                             @if($booking->deposit > 0)
                                             <tr>
-                                                <td style="font-size:12px; color:rgba(255,255,255,0.7); padding-top:4px;">Đã cọc</td>
-                                                <td style="font-size:13px; color:rgba(255,255,255,0.9); font-weight:700; text-align:right; padding-top:4px;">-{{ number_format($booking->deposit, 0, ',', '.') }}đ</td>
+                                                <td style="font-size:12px; color:rgba(255,255,255,0.7); padding-top:6px;">Đã cọc / thanh toán trước</td>
+                                                <td style="font-size:13px; color:rgba(255,255,255,0.9); font-weight:700; text-align:right; padding-top:6px;">-{{ number_format($booking->deposit, 0, ',', '.') }}đ</td>
                                             </tr>
                                             <tr>
-                                                <td style="font-size:13px; color:#ffffff; font-weight:700; padding-top:6px; border-top:1px solid rgba(255,255,255,0.2);">CÒN PHẢI THU</td>
-                                                <td style="font-size:18px; color:#fbbf24; font-weight:800; text-align:right; padding-top:6px; border-top:1px solid rgba(255,255,255,0.2);">{{ number_format($totalAmount - $booking->deposit, 0, ',', '.') }}đ</td>
+                                                <td style="font-size:14px; color:#ffffff; font-weight:800; padding-top:8px; border-top:1px solid rgba(255,255,255,0.2);">CÒN LẠI PHẢI THU</td>
+                                                <td style="font-size:20px; color:#fbbf24; font-weight:900; text-align:right; padding-top:8px; border-top:1px solid rgba(255,255,255,0.2);">{{ number_format($totalAmount - $booking->deposit, 0, ',', '.') }}đ</td>
                                             </tr>
                                             @endif
                                         </table>
@@ -126,8 +144,8 @@
                     {{-- FOOTER --}}
                     <tr>
                         <td style="padding:16px 32px 24px; text-align:center;">
-                            <p style="margin:0; font-size:12px; color:#94a3b8;">Cảm ơn quý khách đã sử dụng dịch vụ.</p>
-                            <p style="margin:4px 0 0; font-size:11px; color:#cbd5e1;">Email này được gửi tự động từ hệ thống quản lý.</p>
+                            <p style="margin:0; font-size:12px; color:#94a3b8; font-weight:600;">Trân trọng cảm ơn quý khách!</p>
+                            <p style="margin:4px 0 0; font-size:11px; color:#cbd5e1;">Hoá đơn được khởi tạo tự động bởi hệ thống Sala.</p>
                         </td>
                     </tr>
                 </table>
