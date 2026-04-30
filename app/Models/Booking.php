@@ -8,13 +8,8 @@ use App\Traits\LogsActivity;
 
 class Booking extends Model
 {
-<<<<<<< HEAD
-    use HasFactory;
-    protected $fillable = ['customer_id', 'room_id', 'check_in', 'check_out', 'price_type', 'unit_price', 'price', 'deposit', 'deposit_2', 'deposit_3', 'status', 'notes', 'source', 'additional_guests'];
-=======
     use HasFactory, LogsActivity;
-    protected $fillable = ['customer_id', 'room_id', 'check_in', 'check_out', 'price_type', 'unit_price', 'price', 'deposit', 'deposit_2', 'deposit_3', 'status', 'notes', 'source'];
->>>>>>> 916b261e0b1872196341bc0c72d2628fec8e3e7f
+    protected $fillable = ['customer_id', 'room_id', 'check_in', 'check_out', 'price_type', 'unit_price', 'price', 'deposit', 'deposit_2', 'deposit_3', 'status', 'notes', 'source', 'additional_guests'];
 
     protected $casts = [
         'check_in' => 'datetime',
