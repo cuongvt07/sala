@@ -256,6 +256,9 @@
                                             <option value="other">Khác</option>
                                         </select>
                                         <input type="text" wire:model="new_customer_identity" placeholder="CMND/Passport" class="rounded border-gray-200 p-2 text-sm col-span-2">
+                                        <div class="col-span-2">
+                                            <x-ui.select-date wire:model="new_customer_birthday" label="Ngày sinh" />
+                                        </div>
                                     </div>
                                     <div class="relative mt-2">
                                         <label class="text-[9px] text-gray-400 uppercase font-bold mb-1 block">Quốc tịch</label>

@@ -46,6 +46,7 @@ class BookingCalendar extends Component
     public $customer_identity;
     public $customer_gender;
     public $customer_nationality;
+    public $customer_birthday;
     public $customer_visa_number;
     public $customer_visa_expiry;
 
@@ -54,6 +55,7 @@ class BookingCalendar extends Component
     public $new_customer_email;
     public $new_customer_identity;
     public $new_customer_gender;
+    public $new_customer_birthday;
     public $new_customer_nationality;
     public $new_customer_visa_number;
     public $new_customer_visa_expiry;
@@ -69,8 +71,7 @@ class BookingCalendar extends Component
 
     public function removeGuest($index)
     {
-        unset($this->additional_guests[$index]);
-        $this->additional_guests = array_values($this->additional_guests);
+        $this->additional_guests = array_values(array_filter($this->additional_guests, fn($i) => $i !== $index, ARRAY_FILTER_USE_KEY));
     }
 
     public function updatedCustomerId($value)
@@ -83,13 +84,14 @@ class BookingCalendar extends Component
                 $this->customer_phone = $customer->phone;
                 $this->customer_email = $customer->email;
                 $this->customer_gender = $customer->gender;
+                $this->customer_birthday = $customer->birthday ? $customer->birthday->format('Y-m-d') : null;
                 $this->customer_identity = $customer->identity_id;
                 $this->customer_nationality = $customer->nationality;
                 $this->customer_visa_number = $customer->visa_number;
                 $this->customer_visa_expiry = $customer->visa_expiry ? $customer->visa_expiry->format('Y-m-d') : null;
             }
         } else {
-            $this->reset(['customer_name', 'customer_phone', 'customer_email', 'customer_gender', 'customer_identity', 'customer_nationality', 'customer_visa_number', 'customer_visa_expiry']);
+            $this->reset(['customer_name', 'customer_phone', 'customer_email', 'customer_gender', 'customer_birthday', 'customer_identity', 'customer_nationality', 'customer_visa_number', 'customer_visa_expiry']);
         }
     }
 
@@ -430,6 +432,7 @@ class BookingCalendar extends Component
             $this->customer_phone = $booking->customer->phone;
             $this->customer_email = $booking->customer->email;
             $this->customer_gender = $booking->customer->gender;
+            $this->customer_birthday = $booking->customer->birthday ? $booking->customer->birthday->format('Y-m-d') : null;
             $this->customer_identity = $booking->customer->identity_id;
             $this->customer_nationality = $booking->customer->nationality;
             $this->customer_visa_number = $booking->customer->visa_number;
@@ -707,6 +710,7 @@ class BookingCalendar extends Component
                 'phone' => $this->new_customer_phone,
                 'email' => $this->new_customer_email,
                 'gender' => $this->new_customer_gender,
+                'birthday' => $this->new_customer_birthday,
                 'identity_id' => $this->new_customer_identity,
             ];
 
@@ -718,25 +722,24 @@ class BookingCalendar extends Component
                 $newCustomerData['visa_number'] = $identityValue; // Lưu cùng giá trị với identity_id
                 $newCustomerData['visa_expiry'] = $this->customer_visa_expiry;
             }
-
             $customer = \App\Models\Customer::create($newCustomerData);
             $customerId = $customer->id;
-        } elseif ($customerId && $this->status === 'checked_in') {
-            // Chỉ cập nhật thông tin check-in khi trạng thái là 'checked_in'
+        } elseif ($customerId) {
+            // ĐỒNG BỘ: Luôn cập nhật thông tin khách hàng nếu có thay đổi từ form
             $customer = \App\Models\Customer::find($customerId);
             if ($customer) {
                 $customerDataToUpdate = [
-                    'gender' => $this->customer_gender,
-                    'identity_id' => $this->customer_identity,
-                    'nationality' => $this->customer_nationality,
-                    'visa_number' => $this->customer_identity, // Lưu cùng giá trị với identity_id
-                    'visa_expiry' => $this->customer_visa_expiry,
+                    'name' => $this->customer_name ?: $customer->name,
+                    'phone' => $this->customer_phone ?: $customer->phone,
+                    'email' => $this->customer_email ?: $customer->email,
+                    'gender' => $this->customer_gender ?: $customer->gender,
+                    'birthday' => $this->customer_birthday ?: $customer->birthday,
+                    'identity_id' => $this->customer_identity ?: $customer->identity_id,
+                    'nationality' => $this->customer_nationality ?: $customer->nationality,
+                    'visa_number' => $this->customer_identity ?: $customer->visa_number,
+                    'visa_expiry' => $this->customer_visa_expiry ?: $customer->visa_expiry,
                 ];
-                // Filter out nulls to avoid overwriting existing values with null
-                $filteredData = array_filter($customerDataToUpdate, fn($value) => !is_null($value) && $value !== '');
-                if (!empty($filteredData)) {
-                    $customer->update($filteredData);
-                }
+                $customer->update($customerDataToUpdate);
             }
         }
 

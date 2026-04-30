@@ -55,6 +55,7 @@ class Index extends Component
     public $new_customer_email;
     public $new_customer_identity;
     public $new_customer_gender;
+    public $new_customer_birthday;
     public $new_customer_nationality;
     public $new_customer_visa_number;
     public $new_customer_visa_expiry;
@@ -148,6 +149,7 @@ class Index extends Component
             $rules['new_customer_identity'] = 'nullable|string|max:255';
             $rules['new_customer_nationality'] = 'nullable|string|max:255';
             $rules['new_customer_visa_number'] = 'nullable|string|max:255';
+            $rules['new_customer_birthday'] = 'nullable|date';
             $rules['new_customer_visa_expiry'] = 'nullable|date';
             $rules['new_customer_image'] = 'nullable|image|max:10240'; // 10MB
         }
@@ -181,10 +183,18 @@ class Index extends Component
         if ($value) {
             $customer = Customer::find($value);
             if ($customer) {
+                $this->new_customer_name = $customer->name;
+                $this->new_customer_phone = $customer->phone;
+                $this->new_customer_email = $customer->email;
+                $this->new_customer_gender = $customer->gender;
+                $this->new_customer_birthday = $customer->birthday ? $customer->birthday->format('Y-m-d') : null;
+                $this->new_customer_identity = $customer->identity_id;
                 $this->new_customer_nationality = $customer->nationality;
+                $this->new_customer_visa_number = $customer->visa_number;
+                $this->new_customer_visa_expiry = $customer->visa_expiry ? $customer->visa_expiry->format('Y-m-d') : null;
             }
         } else {
-            $this->new_customer_nationality = '';
+            $this->reset(['new_customer_name', 'new_customer_phone', 'new_customer_email', 'new_customer_gender', 'new_customer_birthday', 'new_customer_identity', 'new_customer_nationality', 'new_customer_visa_number', 'new_customer_visa_expiry']);
         }
     }
 
@@ -859,6 +869,7 @@ class Index extends Component
                 'phone' => $this->new_customer_phone,
                 'email' => $this->new_customer_email,
                 'gender' => $this->new_customer_gender,
+                'birthday' => $this->new_customer_birthday,
                 'identity_id' => $this->new_customer_identity,
                 'nationality' => $this->new_customer_nationality ?: 'Vietnam',
                 'visa_number' => $this->new_customer_visa_number,
@@ -876,6 +887,8 @@ class Index extends Component
                     'phone' => $this->new_customer_phone ?: $customer->phone,
                     'email' => $this->new_customer_email ?: $customer->email,
                     'gender' => $this->new_customer_gender ?: $customer->gender,
+                    'birthday' => $this->new_customer_birthday ?: $customer->birthday,
+                    'identity_id' => $this->new_customer_identity ?: $customer->identity_id,
                     'nationality' => $this->new_customer_nationality ?: $customer->nationality,
                 ]);
             }

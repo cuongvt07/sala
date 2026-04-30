@@ -429,6 +429,7 @@
                                                 />
                                                 @error('customer_nationality') <span class="text-[10px] text-red-500">{{ $message }}</span> @enderror
                                             </div>
+                                            <x-ui.select-date wire:model="customer_birthday" label="Ngày sinh" />
                                             <x-ui.select-date wire:model="customer_visa_expiry" label="Hạn Visa" />
                                         </div>
                                     @endif
@@ -437,14 +438,17 @@
                                         <input type="text" wire:model.blur="new_customer_name" placeholder="Họ và tên *" class="w-full rounded border-gray-300 py-2 text-sm">
                                         <div class="grid grid-cols-2 gap-3">
                                             <input type="text" wire:model.blur="new_customer_phone" placeholder="Số điện thoại" class="w-full rounded border-gray-300 py-2 text-sm">
-                                            <select wire:model.blur="new_customer_gender" class="w-full rounded border-gray-300 py-2 text-sm">
-                                                <option value="">Giới tính</option>
-                                                <option value="male">Nam</option>
-                                                <option value="female">Nữ</option>
-                                                <option value="other">Khác</option>
-                                            </select>
-                                        </div>
-                                        <div class="grid grid-cols-2 gap-3">
+                                                <select wire:model.blur="new_customer_gender" class="w-full rounded border-gray-300 py-2 text-sm">
+                                                    <option value="">Giới tính</option>
+                                                    <option value="male">Nam</option>
+                                                    <option value="female">Nữ</option>
+                                                    <option value="other">Khác</option>
+                                                </select>
+                                            </div>
+                                            <div class="grid grid-cols-1 gap-3">
+                                                <x-ui.select-date wire:model="new_customer_birthday" label="Ngày sinh" />
+                                            </div>
+                                            <div class="grid grid-cols-2 gap-3">
                                             <div>
                                                 <input type="text" wire:model.blur="new_customer_identity" placeholder="CCCD/Passport" class="w-full rounded border-gray-300 py-2 text-sm">
                                                 @error('new_customer_identity') <span class="text-[10px] text-red-500">{{ $message }}</span> @enderror
