@@ -32,13 +32,39 @@
                     <option value="deleted">Xóa</option>
                 </select>
             </div>
-            <div>
+            <div x-data="{ 
+                fp: null,
+                init() {
+                    this.fp = flatpickr($refs.dateFrom, {
+                        altInput: true,
+                        altFormat: 'd/m/Y',
+                        dateFormat: 'Y-m-d',
+                        onChange: (selectedDates, dateStr) => {
+                            $wire.set('dateFrom', dateStr);
+                        }
+                    });
+                    $watch('dateFrom', value => this.fp.setDate(value));
+                }
+            }">
                 <label class="block text-xs font-medium uppercase text-gray-500">Từ ngày</label>
-                <input type="date" wire:model.live="dateFrom" class="mt-1 block w-full rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500">
+                <input x-ref="dateFrom" type="text" wire:model.live="dateFrom" class="mt-1 block w-full rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500">
             </div>
-            <div>
+            <div x-data="{ 
+                fp: null,
+                init() {
+                    this.fp = flatpickr($refs.dateTo, {
+                        altInput: true,
+                        altFormat: 'd/m/Y',
+                        dateFormat: 'Y-m-d',
+                        onChange: (selectedDates, dateStr) => {
+                            $wire.set('dateTo', dateStr);
+                        }
+                    });
+                    $watch('dateTo', value => this.fp.setDate(value));
+                }
+            }">
                 <label class="block text-xs font-medium uppercase text-gray-500">Đến ngày</label>
-                <input type="date" wire:model.live="dateTo" class="mt-1 block w-full rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500">
+                <input x-ref="dateTo" type="text" wire:model.live="dateTo" class="mt-1 block w-full rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500">
             </div>
             <div class="flex items-end">
                 <button wire:click="resetFilters" class="w-full rounded-lg border border-gray-300 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Xóa lọc</button>
