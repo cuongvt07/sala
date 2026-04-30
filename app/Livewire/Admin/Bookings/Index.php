@@ -54,11 +54,25 @@ class Index extends Component
     public $new_customer_phone;
     public $new_customer_email;
     public $new_customer_identity;
+    public $new_customer_gender;
     public $new_customer_nationality;
     public $new_customer_visa_number;
     public $new_customer_visa_expiry;
     public $new_customer_notes;
-    public $new_customer_image; // for file upload
+    public $new_customer_image;
+
+    public $additional_guests = [];
+
+    public function addGuest()
+    {
+        $this->additional_guests[] = ['name' => '', 'identity' => ''];
+    }
+
+    public function removeGuest($index)
+    {
+        unset($this->additional_guests[$index]);
+        $this->additional_guests = array_values($this->additional_guests);
+    } // for file upload
 
     public $room_id;
     public $price_type = 'day'; // day, hour, month
@@ -196,6 +210,7 @@ class Index extends Component
 
         $this->status = $booking->status;
         $this->notes = $booking->notes;
+        $this->additional_guests = $booking->additional_guests ?? [];
 
         // Load Usage Logs first so we can use them for suggestions
         $this->usage_logs = $booking->usageLogs->map(function ($log) {
@@ -669,12 +684,10 @@ class Index extends Component
         if ($this->activeTab === 'new') {
             $imagePath = null;
             if ($this->new_customer_image) {
-                // Compress Image Logic
                 $originalPath = $this->new_customer_image->getRealPath();
                 $filename = 'customers/' . uniqid() . '.jpg';
                 $storagePath = storage_path('app/public/' . $filename);
 
-                // Ensure directory exists
                 if (!file_exists(dirname($storagePath))) {
                     mkdir(dirname($storagePath), 0755, true);
                 }
@@ -689,13 +702,11 @@ class Index extends Component
                 else
                     $image = imagecreatefromstring(file_get_contents($originalPath));
 
-                // Save with 60% quality
                 if ($image) {
                     imagejpeg($image, $storagePath, 60);
                     imagedestroy($image);
                     $imagePath = $filename;
                 } else {
-                    // Fallback if compression fails
                     $imagePath = $this->new_customer_image->store('customers', 'public');
                 }
             }
@@ -704,6 +715,7 @@ class Index extends Component
                 'name' => $this->new_customer_name,
                 'phone' => $this->new_customer_phone,
                 'email' => $this->new_customer_email,
+                'gender' => $this->new_customer_gender,
                 'identity_id' => $this->new_customer_identity,
                 'nationality' => $this->new_customer_nationality ?: 'Vietnam',
                 'visa_number' => $this->new_customer_visa_number,
@@ -712,6 +724,17 @@ class Index extends Component
                 'images' => $imagePath,
             ]);
             $customerId = $customer->id;
+        } elseif ($customerId) {
+            // Auto Sync existing customer
+            $customer = Customer::find($customerId);
+            if ($customer) {
+                $customer->update([
+                    'name' => $this->new_customer_name ?: $customer->name,
+                    'phone' => $this->new_customer_phone ?: $customer->phone,
+                    'email' => $this->new_customer_email ?: $customer->email,
+                    'gender' => $this->new_customer_gender ?: $customer->gender,
+                ]);
+            }
         }
 
         $data = [
@@ -727,6 +750,7 @@ class Index extends Component
             'deposit_3' => $this->deposit_3,
             'status' => $this->status,
             'notes' => $this->notes,
+            'additional_guests' => $this->additional_guests,
         ];
 
         if ($this->editingBookingId) {

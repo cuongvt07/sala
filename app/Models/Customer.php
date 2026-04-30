@@ -9,11 +9,11 @@ use App\Models\Booking;
 class Customer extends Model
 {
     use HasFactory;
-    protected $fillable = ['name', 'email', 'phone', 'identity_id', 'birthday', 'nationality', 'visa_number', 'visa_expiry', 'images', 'notes'];
+    protected $fillable = ['name', 'email', 'phone', 'identity_id', 'birthday', 'gender', 'nationality', 'visa_number', 'visa_expiry', 'visa_status', 'images', 'notes'];
 
-    protected $casts = [
         'birthday' => 'date',
         'visa_expiry' => 'date',
+        'gender' => 'string',
     ];
 
     public function bookings()

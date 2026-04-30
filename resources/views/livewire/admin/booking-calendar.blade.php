@@ -316,14 +316,40 @@
                     <div class="bg-white p-4 rounded border border-gray-200">
                         <h4 class="font-semibold text-gray-800 mb-3 text-sm">Thời gian</h4>
                         <div class="grid grid-cols-2 gap-3">
-                            <div>
+                            <div x-data="{ 
+                                fp: null,
+                                init() {
+                                    this.fp = flatpickr($refs.checkin, {
+                                        altInput: true,
+                                        altFormat: 'd/m/Y',
+                                        dateFormat: 'Y-m-d',
+                                        onChange: (selectedDates, dateStr) => {
+                                            $wire.set('check_in', dateStr);
+                                        }
+                                    });
+                                    $watch('check_in', value => this.fp.setDate(value));
+                                }
+                            }">
                                 <label class="block text-xs font-medium text-gray-700 mb-1.5">Thời gian nhận</label>
-                                <input type="date" wire:model.live="check_in" class="w-full px-3 py-2 text-sm rounded border-gray-300 border focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                                <input x-ref="checkin" type="text" wire:model.live="check_in" class="w-full px-3 py-2 text-sm rounded border-gray-300 border focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
                                 @error('check_in') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
                             </div>
-                            <div>
+                            <div x-data="{ 
+                                fp: null,
+                                init() {
+                                    this.fp = flatpickr($refs.checkout, {
+                                        altInput: true,
+                                        altFormat: 'd/m/Y',
+                                        dateFormat: 'Y-m-d',
+                                        onChange: (selectedDates, dateStr) => {
+                                            $wire.set('check_out', dateStr);
+                                        }
+                                    });
+                                    $watch('check_out', value => this.fp.setDate(value));
+                                }
+                            }">
                                 <label class="block text-xs font-medium text-gray-700 mb-1.5">Thời gian trả</label>
-                                <input type="date" wire:model.live="check_out" wire:key="check-out-{{ $price_type }}" class="w-full px-3 py-2 text-sm rounded border-gray-300 border focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                                <input x-ref="checkout" type="text" wire:model.live="check_out" wire:key="check-out-{{ $price_type }}" class="w-full px-3 py-2 text-sm rounded border-gray-300 border focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
                                 @error('check_out') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
                             </div>
                         </div>
@@ -349,24 +375,118 @@
                         </div>
 
                         @if($activeTab === 'existing')
-                            <select wire:model.live="customer_id" class="w-full px-3 py-2 text-sm rounded border-gray-300 border focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
-                                <option value="">-- Chọn khách hàng --</option>
-                                @foreach($customers as $c)
-                                    @php
-                                        $expiry = $c->visa_expiry ? \Carbon\Carbon::parse($c->visa_expiry) : null;
-                                        $isExpiring = $expiry && $expiry->diffInDays(now(), false) > -30;
-                                    @endphp
-                                    <option value="{{ $c->id }}">{{ $c->name }} ({{ $c->phone }}) {{ $isExpiring ? '⚠️' : '' }}</option>
-                                @endforeach
-                            </select>
-                            @error('customer_id') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
+                            <div class="space-y-3">
+                                <select wire:model.live="customer_id" class="w-full px-3 py-2 text-sm rounded border-gray-300 border focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold bg-blue-50">
+                                    <option value="">-- Chọn khách hàng --</option>
+                                    @foreach($customers as $c)
+                                        @php
+                                            $expiry = $c->visa_expiry ? \Carbon\Carbon::parse($c->visa_expiry) : null;
+                                            $isExpiring = $expiry && $expiry->diffInDays(now(), false) > -30;
+                                        @endphp
+                                        <option value="{{ $c->id }}">{{ $c->name }} ({{ $c->phone }}) {{ $isExpiring ? '⚠️' : '' }}</option>
+                                    @endforeach
+                                </select>
+                                @error('customer_id') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
+
+                                @if($customer_id)
+                                    <div class="grid grid-cols-2 gap-3 p-3 bg-gray-50 rounded border border-gray-200">
+                                        <div class="col-span-2">
+                                            <label class="block text-[10px] font-bold text-gray-500 uppercase">Họ tên</label>
+                                            <input type="text" wire:model.blur="customer_name" class="w-full px-2 py-1 text-sm rounded border-gray-300 border">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-gray-500 uppercase">Số điện thoại</label>
+                                            <input type="text" wire:model.blur="customer_phone" class="w-full px-2 py-1 text-sm rounded border-gray-300 border">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-gray-500 uppercase">Email</label>
+                                            <input type="text" wire:model.blur="customer_email" class="w-full px-2 py-1 text-sm rounded border-gray-300 border">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-gray-500 uppercase">Passport/CCCD</label>
+                                            <input type="text" wire:model.blur="customer_identity" class="w-full px-2 py-1 text-sm rounded border-gray-300 border">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-gray-500 uppercase">Giới tính</label>
+                                            <select wire:model.blur="customer_gender" class="w-full px-2 py-1 text-sm rounded border-gray-300 border">
+                                                <option value="">Chọn</option>
+                                                <option value="male">Nam</option>
+                                                <option value="female">Nữ</option>
+                                                <option value="other">Khác</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-gray-500 uppercase">Quốc tịch</label>
+                                            <select wire:model.blur="customer_nationality" class="w-full px-2 py-1 text-sm rounded border-gray-300 border">
+                                                <option value="">Chọn quốc tịch</option>
+                                                @foreach($countries as $country)
+                                                    <option value="{{ $country }}">{{ $country }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-gray-500 uppercase">Số Visa</label>
+                                            <input type="text" wire:model.blur="customer_visa_number" class="w-full px-2 py-1 text-sm rounded border-gray-300 border">
+                                        </div>
+                                        <div x-data="{ 
+                                            fp: null,
+                                            init() {
+                                                this.fp = flatpickr($refs.visa_expiry, {
+                                                    altInput: true,
+                                                    altFormat: 'd/m/Y',
+                                                    dateFormat: 'Y-m-d',
+                                                    onChange: (selectedDates, dateStr) => {
+                                                        $wire.set('customer_visa_expiry', dateStr);
+                                                    }
+                                                });
+                                                $watch('customer_visa_expiry', value => this.fp.setDate(value));
+                                            }
+                                        }">
+                                            <label class="block text-[10px] font-bold text-gray-500 uppercase">Hạn Visa</label>
+                                            <input x-ref="visa_expiry" type="text" wire:model.blur="customer_visa_expiry" class="w-full px-2 py-1 text-sm rounded border-gray-300 border bg-white">
+                                        </div>
+                                    </div>
+                                @endif
+                            </div>
                         @else
                             <div class="space-y-2">
                                 <input type="text" wire:model.blur="new_customer_name" placeholder="Tên khách hàng *" class="w-full px-3 py-2 text-sm rounded border-gray-300 border focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
                                 @error('new_customer_name') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
-                                <input type="text" wire:model.blur="new_customer_phone" placeholder="Số điện thoại" class="w-full px-3 py-2 text-sm rounded border-gray-300 border focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                                <div class="grid grid-cols-2 gap-2">
+                                    <input type="text" wire:model.blur="new_customer_phone" placeholder="Số điện thoại" class="w-full px-3 py-2 text-sm rounded border-gray-300 border">
+                                    <input type="text" wire:model.blur="new_customer_email" placeholder="Email" class="w-full px-3 py-2 text-sm rounded border-gray-300 border">
+                                    <select wire:model.blur="new_customer_gender" class="w-full px-3 py-2 text-sm rounded border-gray-300 border">
+                                        <option value="">Giới tính</option>
+                                        <option value="male">Nam</option>
+                                        <option value="female">Nữ</option>
+                                        <option value="other">Khác</option>
+                                    </select>
+                                    <input type="text" wire:model.blur="new_customer_identity" placeholder="Passport/CCCD" class="w-full px-3 py-2 text-sm rounded border-gray-300 border">
+                                </div>
                             </div>
                         @endif
+
+                        {{-- Additional Guests --}}
+                        <div class="mt-4 p-3 bg-indigo-50/50 rounded border border-indigo-100">
+                            <div class="flex items-center justify-between mb-2">
+                                <h4 class="text-[10px] font-bold text-indigo-700 uppercase tracking-wider">Người ở cùng (Phát sinh)</h4>
+                                <button type="button" wire:click="addGuest" class="text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded font-bold hover:bg-indigo-700">+ Thêm</button>
+                            </div>
+                            <div class="space-y-2">
+                                @foreach($additional_guests as $index => $guest)
+                                    <div class="flex items-center gap-2">
+                                        <input type="text" wire:model="additional_guests.{{ $index }}.name" placeholder="Tên người ở cùng" class="flex-1 px-2 py-1 text-xs rounded border-gray-300 border">
+                                        <input type="text" wire:model="additional_guests.{{ $index }}.identity" placeholder="CCCD/Passport" class="w-32 px-2 py-1 text-xs rounded border-gray-300 border">
+                                        <button type="button" wire:click="removeGuest({{ $index }})" class="text-red-500 hover:text-red-700">
+                                            <x-icon name="heroicon-o-trash" class="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                @endforeach
+                                @if(empty($additional_guests))
+                                    <p class="text-[10px] text-gray-400 italic">Phòng ở 1 người (không có người ở cùng)</p>
+                                @endif
+                            </div>
+                        </div>
                     </div>
 
                     {{-- Booking Details --}}

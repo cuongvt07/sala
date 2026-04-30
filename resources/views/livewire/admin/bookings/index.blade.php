@@ -206,10 +206,36 @@
                                     @error('new_customer_name')<span class="text-red-500 text-xs">{{ $message }}</span>@enderror
                                     <div class="grid grid-cols-2 gap-1.5">
                                         <input type="text" wire:model="new_customer_phone" placeholder="SĐT" class="rounded border-gray-200 p-2 text-sm">
-                                        <input type="text" wire:model="new_customer_identity" placeholder="CMND" class="rounded border-gray-200 p-2 text-sm">
+                                        <select wire:model="new_customer_gender" class="rounded border-gray-200 p-2 text-sm">
+                                            <option value="">Giới tính</option>
+                                            <option value="male">Nam</option>
+                                            <option value="female">Nữ</option>
+                                            <option value="other">Khác</option>
+                                        </select>
+                                        <input type="text" wire:model="new_customer_identity" placeholder="CMND" class="rounded border-gray-200 p-2 text-sm col-span-2">
                                     </div>
                                 </div>
                             @endif
+                        </div>
+
+                        {{-- Additional Guests --}}
+                        <div class="bg-white p-3 rounded-lg border border-gray-200">
+                            <div class="flex items-center justify-between mb-2">
+                                <h4 class="text-[10px] font-black text-gray-400 uppercase">Người ở cùng</h4>
+                                <button type="button" wire:click="addGuest" class="text-[9px] bg-slate-600 text-white px-2 py-0.5 rounded font-bold hover:bg-slate-700">+ Thêm</button>
+                            </div>
+                            <div class="space-y-1.5">
+                                @foreach($additional_guests as $index => $guest)
+                                    <div class="flex items-center gap-2">
+                                        <input type="text" wire:model="additional_guests.{{ $index }}.name" placeholder="Tên" class="flex-1 rounded border-gray-200 p-1.5 text-xs">
+                                        <input type="text" wire:model="additional_guests.{{ $index }}.identity" placeholder="CMND" class="w-24 rounded border-gray-200 p-1.5 text-xs">
+                                        <button type="button" wire:click="removeGuest({{ $index }})" class="text-red-500"><x-icon name="heroicon-o-trash" class="h-4 w-4" /></button>
+                                    </div>
+                                @endforeach
+                                @if(empty($additional_guests))
+                                    <p class="text-[9px] text-gray-400 italic text-center">Không có người ở cùng</p>
+                                @endif
+                            </div>
                         </div>
 
                         <div class="bg-white p-3 rounded-lg border border-gray-200">
@@ -226,8 +252,41 @@
                     <div class="bg-white p-3 rounded-lg border border-gray-200">
                         <h4 class="text-[10px] font-black text-gray-400 uppercase mb-2">Thời gian & Giá</h4>
                         <div class="grid grid-cols-6 gap-2">
-                            <div><label class="text-[9px] text-gray-400 uppercase font-bold block mb-0.5">Check-in</label><input type="date" wire:model="check_in" class="w-full rounded border-gray-200 p-1.5 text-sm font-semibold">@error('check_in')<span class="text-red-500 text-[10px]">{{ $message }}</span>@enderror</div>
-                            <div><label class="text-[9px] text-gray-400 uppercase font-bold block mb-0.5">Check-out</label><input type="date" wire:model="check_out" class="w-full rounded border-gray-200 p-1.5 text-sm font-semibold"></div>
+                            <div x-data="{ 
+                                fp: null,
+                                init() {
+                                    this.fp = flatpickr($refs.checkin, {
+                                        altInput: true,
+                                        altFormat: 'd/m/Y',
+                                        dateFormat: 'Y-m-d',
+                                        onChange: (selectedDates, dateStr) => {
+                                            $wire.set('check_in', dateStr);
+                                        }
+                                    });
+                                    $watch('check_in', value => this.fp.setDate(value));
+                                }
+                            }">
+                                <label class="text-[9px] text-gray-400 uppercase font-bold block mb-0.5">Check-in</label>
+                                <input x-ref="checkin" type="text" wire:model="check_in" class="w-full rounded border-gray-200 p-1.5 text-sm font-semibold bg-white">
+                                @error('check_in')<span class="text-red-500 text-[10px]">{{ $message }}</span>@enderror
+                            </div>
+                            <div x-data="{ 
+                                fp: null,
+                                init() {
+                                    this.fp = flatpickr($refs.checkout, {
+                                        altInput: true,
+                                        altFormat: 'd/m/Y',
+                                        dateFormat: 'Y-m-d',
+                                        onChange: (selectedDates, dateStr) => {
+                                            $wire.set('check_out', dateStr);
+                                        }
+                                    });
+                                    $watch('check_out', value => this.fp.setDate(value));
+                                }
+                            }">
+                                <label class="text-[9px] text-gray-400 uppercase font-bold block mb-0.5">Check-out</label>
+                                <input x-ref="checkout" type="text" wire:model="check_out" class="w-full rounded border-gray-200 p-1.5 text-sm font-semibold bg-white">
+                            </div>
                             <div><label class="text-[9px] text-blue-500 uppercase font-bold block mb-0.5">Đơn giá</label><input type="text" wire:model.blur="unit_price" class="w-full rounded border-gray-200 p-1.5 text-sm font-bold" x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')"></div>
                             <div><label class="text-[9px] text-blue-500 uppercase font-bold block mb-0.5">Tổng tiền</label><input type="text" wire:model.blur="price" class="w-full rounded border-blue-300 bg-blue-50 p-1.5 text-sm font-bold text-blue-600" x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')">@error('price')<span class="text-red-500 text-[10px]">{{ $message }}</span>@enderror</div>
                             <div><label class="text-[9px] text-gray-400 uppercase font-bold block mb-0.5">Cọc L1</label><input type="text" wire:model.blur="deposit" class="w-full rounded border-gray-200 p-1.5 text-sm font-semibold text-indigo-600" x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')"></div>
@@ -413,9 +472,22 @@
                         <div class="bg-slate-100 px-3 py-2 border-b border-gray-200">
                             <div class="flex items-center justify-between">
                                 <h4 class="text-[10px] font-black text-slate-600 uppercase">Bảng Tổng Chi Phí</h4>
-                                <div class="flex items-center gap-2">
+                                <div class="flex items-center gap-2" x-data="{ 
+                                    fp: null,
+                                    init() {
+                                        this.fp = flatpickr($refs.billing_date, {
+                                            altInput: true,
+                                            altFormat: 'd/m/Y',
+                                            dateFormat: 'Y-m-d',
+                                            onChange: (selectedDates, dateStr) => {
+                                                $wire.set('global_billing_date', dateStr);
+                                            }
+                                        });
+                                        $watch('global_billing_date', value => this.fp.setDate(value));
+                                    }
+                                }">
                                     <label class="text-[10px] font-bold text-slate-600">📅 NGÀY CHỐT KỲ NÀY:</label>
-                                    <input type="date" wire:model.live="global_billing_date" class="text-[11px] border-slate-300 rounded px-2 py-1 font-semibold bg-white" placeholder="Chọn ngày">
+                                    <input x-ref="billing_date" type="text" wire:model.live="global_billing_date" class="text-[11px] border-slate-300 rounded px-2 py-1 font-semibold bg-white w-24" placeholder="Chọn ngày">
                                 </div>
                             </div>
                         </div>

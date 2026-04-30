@@ -40,21 +40,58 @@ class BookingCalendar extends Component
     ];
 
     public $customer_id;
+    public $customer_name;
+    public $customer_phone;
+    public $customer_email;
+    public $customer_identity;
+    public $customer_gender;
+    public $customer_nationality;
+    public $customer_visa_number;
+    public $customer_visa_expiry;
+
     public $new_customer_name;
     public $new_customer_phone;
     public $new_customer_email;
     public $new_customer_identity;
+    public $new_customer_gender;
     public $new_customer_nationality;
     public $new_customer_visa_number;
     public $new_customer_visa_expiry;
     public $new_customer_notes;
     public $new_customer_image;
 
-    // Customer Details for Check-in
-    public $customer_identity;
-    public $customer_nationality;
-    public $customer_visa_number;
-    public $customer_visa_expiry;
+    public $additional_guests = []; // Each guest: {name, identity}
+
+    public function addGuest()
+    {
+        $this->additional_guests[] = ['name' => '', 'identity' => ''];
+    }
+
+    public function removeGuest($index)
+    {
+        unset($this->additional_guests[$index]);
+        $this->additional_guests = array_values($this->additional_guests);
+    }
+
+    public function updatedCustomerId($value)
+    {
+        if ($value) {
+            $customer = Customer::find($value);
+            if ($customer) {
+                // Pre-fill check-in info from existing customer
+                $this->customer_name = $customer->name;
+                $this->customer_phone = $customer->phone;
+                $this->customer_email = $customer->email;
+                $this->customer_gender = $customer->gender;
+                $this->customer_identity = $customer->identity_id;
+                $this->customer_nationality = $customer->nationality;
+                $this->customer_visa_number = $customer->visa_number;
+                $this->customer_visa_expiry = $customer->visa_expiry ? $customer->visa_expiry->format('Y-m-d') : null;
+            }
+        } else {
+            $this->reset(['customer_name', 'customer_phone', 'customer_email', 'customer_gender', 'customer_identity', 'customer_nationality', 'customer_visa_number', 'customer_visa_expiry']);
+        }
+    }
 
     public $room_id;
     public $price_type = 'day';
@@ -75,22 +112,6 @@ class BookingCalendar extends Component
     public $countries = [];
 
     protected $listeners = ['area-selected' => '$refresh', 'refreshView' => '$refresh'];
-
-    public function updatedCustomerId($value)
-    {
-        if ($value) {
-            $customer = Customer::find($value);
-            if ($customer) {
-                // Pre-fill check-in info from existing customer
-                $this->customer_identity = $customer->identity_id;
-                $this->customer_nationality = $customer->nationality;
-                $this->customer_visa_number = $customer->visa_number;
-                $this->customer_visa_expiry = $customer->visa_expiry ? $customer->visa_expiry->format('Y-m-d') : null;
-            }
-        } else {
-            $this->reset(['customer_identity', 'customer_nationality', 'customer_visa_number', 'customer_visa_expiry']);
-        }
-    }
 
     public function mount()
     {
@@ -275,11 +296,17 @@ class BookingCalendar extends Component
 
         // Load Customer Check-in Info
         if ($booking->customer) {
+            $this->customer_name = $booking->customer->name;
+            $this->customer_phone = $booking->customer->phone;
+            $this->customer_email = $booking->customer->email;
+            $this->customer_gender = $booking->customer->gender;
             $this->customer_identity = $booking->customer->identity_id;
             $this->customer_nationality = $booking->customer->nationality;
             $this->customer_visa_number = $booking->customer->visa_number;
             $this->customer_visa_expiry = $booking->customer->visa_expiry ? $booking->customer->visa_expiry->format('Y-m-d') : null;
         }
+
+        $this->additional_guests = $booking->additional_guests ?? [];
 
         $this->selected_services = [];
         foreach ($booking->services as $service) {
@@ -484,40 +511,32 @@ class BookingCalendar extends Component
         $customerId = $this->customer_id;
 
         if ($this->activeTab === 'new') {
-            // Tạo khách hàng mới - chỉ lưu thông tin cơ bản
-            $newCustomerData = [
+            // Tạo khách hàng mới
+            $customer = \App\Models\Customer::create([
                 'name' => $this->new_customer_name,
                 'phone' => $this->new_customer_phone,
                 'email' => $this->new_customer_email,
+                'gender' => $this->new_customer_gender,
                 'identity_id' => $this->new_customer_identity,
-            ];
-
-            // Chỉ thêm thông tin check-in nếu trạng thái là 'checked_in'
-            if ($this->status === 'checked_in') {
-                $identityValue = $this->customer_identity ?: $this->new_customer_identity;
-                $newCustomerData['identity_id'] = $identityValue;
-                $newCustomerData['nationality'] = $this->customer_nationality ?: 'Vietnam';
-                $newCustomerData['visa_number'] = $identityValue; // Lưu cùng giá trị với identity_id
-                $newCustomerData['visa_expiry'] = $this->customer_visa_expiry;
-            }
-
-            $customer = \App\Models\Customer::create($newCustomerData);
+                'nationality' => $this->customer_nationality ?: 'Vietnam',
+                'visa_number' => $this->customer_visa_number,
+                'visa_expiry' => $this->customer_visa_expiry,
+            ]);
             $customerId = $customer->id;
-        } elseif ($customerId && $this->status === 'checked_in') {
-            // Chỉ cập nhật thông tin check-in khi trạng thái là 'checked_in'
+        } elseif ($customerId) {
+            // Cập nhật thông tin khách hàng cũ (Auto Sync)
             $customer = \App\Models\Customer::find($customerId);
             if ($customer) {
-                $customerDataToUpdate = [
+                $customer->update([
+                    'name' => $this->customer_name,
+                    'phone' => $this->customer_phone,
+                    'email' => $this->customer_email,
+                    'gender' => $this->customer_gender,
                     'identity_id' => $this->customer_identity,
                     'nationality' => $this->customer_nationality,
-                    'visa_number' => $this->customer_identity, // Lưu cùng giá trị với identity_id
+                    'visa_number' => $this->customer_visa_number,
                     'visa_expiry' => $this->customer_visa_expiry,
-                ];
-                // Filter out nulls to avoid overwriting existing values with null
-                $filteredData = array_filter($customerDataToUpdate, fn($value) => !is_null($value) && $value !== '');
-                if (!empty($filteredData)) {
-                    $customer->update($filteredData);
-                }
+                ]);
             }
         }
 
@@ -535,6 +554,7 @@ class BookingCalendar extends Component
             'status' => $this->status,
             'source' => $this->source,
             'notes' => $this->notes,
+            'additional_guests' => $this->additional_guests,
         ];
 
         if ($this->editingBookingId) {
@@ -653,22 +673,19 @@ class BookingCalendar extends Component
             $diffStartDays = $windowStart->diffInDays($checkInDate, false); // Int
 
             if ($booking->price_type === 'month') {
-                // Keep existing Month logic but mapped to new base?
-                // Visual Start usually at start of day (0.0) for Month?
                 $visualStart = (float) $diffStartDays;
+                $diffEndDays = $windowStart->diffInDays($checkOutDate, false);
+                $visualDays = $diffEndDays - $diffStartDays;
 
-                // Cross-month handling specific for Month Type
                 if ($visualStart < 0) {
+                    $loss = abs($visualStart);
                     $visualStart = 0;
-                    $diffM1vcCheckout = $windowStart->diffInDays($checkOutDate, false);
-                    $remainingDays = max(1, $diffM1vcCheckout);
-                    if ($remainingDays <= 10) {
-                        $visualDays = $remainingDays;
-                    } else {
-                        $visualDays = 5;
-                    }
-                } else {
-                    $visualDays = 10;
+                    $visualDays = max(0, $visualDays - $loss);
+                }
+                
+                // Ensure at least some width if it starts/ends within window
+                if ($visualDays <= 0 && $diffEndDays >= 0) {
+                    $visualDays = 1;
                 }
             } elseif ($booking->price_type === 'hour') {
                 $visualStart = (float) $diffStartDays;
