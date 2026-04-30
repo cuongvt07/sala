@@ -25,6 +25,7 @@ class Index extends Component
     public $email;
     public $identity_id;
     public $birthday;
+    public $gender;
 
     public $nationality = 'Vietnam';
     public $visa_number;
@@ -46,6 +47,7 @@ class Index extends Component
             'email' => 'nullable|email|max:255',
             'identity_id' => ['nullable', 'string', 'max:20', Rule::unique('customers', 'identity_id')->ignore($this->editingCustomerId)],
             'birthday' => 'nullable|date',
+            'gender' => 'nullable|string|in:male,female,other',
 
             'nationality' => 'nullable|string',
             'visa_number' => 'nullable|string|max:50',
@@ -56,7 +58,7 @@ class Index extends Component
     public function create()
     {
         $this->resetValidation();
-        $this->reset(['name', 'phone', 'email', 'identity_id', 'birthday', 'nationality', 'visa_number', 'visa_expiry', 'editingCustomerId']);
+        $this->reset(['name', 'phone', 'email', 'identity_id', 'birthday', 'gender', 'nationality', 'visa_number', 'visa_expiry', 'editingCustomerId']);
         $this->showModal = true;
     }
 
@@ -71,6 +73,7 @@ class Index extends Component
         $this->email = $customer->email;
         $this->identity_id = $customer->identity_id;
         $this->birthday = $customer->birthday ? \Carbon\Carbon::parse($customer->birthday)->format('Y-m-d') : null;
+        $this->gender = $customer->gender;
 
         $this->nationality = $customer->nationality;
         $this->visa_number = $customer->visa_number;
@@ -91,6 +94,7 @@ class Index extends Component
                 'email' => $this->email,
                 'identity_id' => $this->identity_id,
                 'birthday' => $this->birthday,
+                'gender' => $this->gender,
 
                 'nationality' => $this->nationality,
                 'visa_number' => $this->visa_number,
@@ -104,6 +108,7 @@ class Index extends Component
                 'email' => $this->email,
                 'identity_id' => $this->identity_id,
                 'birthday' => $this->birthday,
+                'gender' => $this->gender,
 
                 'nationality' => $this->nationality ?: 'Vietnam',
                 'visa_number' => $this->visa_number,
@@ -114,7 +119,7 @@ class Index extends Component
 
         $this->showModal = false;
         $this->dispatch('toast', message: $message, type: 'success');
-        $this->reset(['name', 'phone', 'email', 'identity_id', 'birthday', 'nationality', 'visa_number', 'visa_expiry', 'editingCustomerId']);
+        $this->reset(['name', 'phone', 'email', 'identity_id', 'birthday', 'gender', 'nationality', 'visa_number', 'visa_expiry', 'editingCustomerId']);
     }
 
     public function delete($id)

@@ -542,6 +542,7 @@ class Index extends Component
             'total_deposit' => $totalDeposit,
             'remaining' => $roomPrice - $totalDeposit,
             'notes' => $this->notes,
+            'additional_guests' => $this->additional_guests,
             'created_at' => now()->format('d/m/Y H:i')
         ];
 

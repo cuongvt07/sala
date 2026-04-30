@@ -274,8 +274,11 @@
                                  title="{{ $booking->customer->name }} - {{ \Carbon\Carbon::parse($booking->check_in)->format('d/m H:i') }} bis {{ \Carbon\Carbon::parse($booking->check_out)->format('d/m H:i') }}">
                                 <div class="px-2 w-full flex flex-col leading-tight h-full justify-center text-white relative select-none">
                                     {{-- Name: Visible if space permits --}}
-                                    <span class="font-bold uppercase text-[10px] truncate">
+                                    <span class="font-bold uppercase text-[10px] truncate flex items-center gap-1">
                                         {{ $booking->customer->name }}
+                                        @if(!empty($booking->additional_guests))
+                                            <span class="bg-white/20 px-1 rounded text-[8px]">+{{ count($booking->additional_guests) }}</span>
+                                        @endif
                                         @if($booking->source)
                                             ({{ $booking->source }})
                                         @endif
@@ -1154,16 +1157,23 @@
                         <table class="details-table">
                             <tr>
                                 <td class="label">Names of the guest</td>
-                                <td class="value">{{ $confirmation_data['customer_name'] }}</td>
+                                <td class="value">
+                                    <div class="font-black">{{ $confirmation_data['customer_name'] }}</div>
+                                    @if(!empty($confirmation_data['additional_guests']))
+                                        <div class="text-[11px] text-gray-500 font-medium mt-1">
+                                            Stay with: {{ collect($confirmation_data['additional_guests'])->pluck('name')->join(', ') }}
+                                        </div>
+                                    @endif
+                                </td>
                                 <td class="label">Phone number</td>
                                 <td class="value">{{ $confirmation_data['customer_phone'] }}</td>
-                            </tr>
-                            <tr>
+                             </tr>
+                             <tr>
                                 <td class="label">Room</td>
                                 <td class="value">{{ $confirmation_data['room_code'] }}</td>
                                 <td class="label">Number of guests</td>
-                                <td class="value">01</td>
-                            </tr>
+                                <td class="value">{{ sprintf('%02d', count($confirmation_data['additional_guests'] ?? []) + 1) }}</td>
+                             </tr>
                             <tr>
                                 <td class="label">Arrival date</td>
                                 <td class="value">{{ $confirmation_data['check_in'] }}</td>

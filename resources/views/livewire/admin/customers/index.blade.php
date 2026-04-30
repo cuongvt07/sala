@@ -55,6 +55,11 @@
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center gap-2">
                                 <div class="text-[13px] font-bold text-gray-900">{{ $customer->name }}</div>
+                                @if($customer->gender)
+                                    <span class="text-[10px] px-1.5 py-0.5 rounded-full {{ $customer->gender === 'male' ? 'bg-blue-50 text-blue-600 border border-blue-100' : ($customer->gender === 'female' ? 'bg-pink-50 text-pink-600 border border-pink-100' : 'bg-gray-50 text-gray-600 border border-gray-100') }}">
+                                        {{ $customer->gender === 'male' ? 'Nam' : ($customer->gender === 'female' ? 'Nữ' : 'Khác') }}
+                                    </span>
+                                @endif
                                 @if($customer->birthday && \Carbon\Carbon::parse($customer->birthday)->isBirthday())
                                     <span class="inline-flex items-center gap-1 bg-pink-100 text-pink-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-pink-200">
                                         🎂 Sinh nhật
@@ -152,6 +157,17 @@
                          <label for="email" class="block font-semibold text-gray-700 text-[11px] uppercase">Email</label>
                         <input type="email" id="email" wire:model="email" class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm focus:ring-blue-500 focus:border-blue-500">
                         @error('email') <p class="text-[10px] text-red-500">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div class="space-y-1">
+                        <label for="gender" class="block font-semibold text-gray-700 text-[11px] uppercase">Giới tính</label>
+                        <select id="gender" wire:model="gender" class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm font-bold focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Chọn</option>
+                            <option value="male">Nam</option>
+                            <option value="female">Nữ</option>
+                            <option value="other">Khác</option>
+                        </select>
+                        @error('gender') <p class="text-[10px] text-red-500">{{ $message }}</p> @enderror
                     </div>
                 </div>
 

@@ -846,7 +846,11 @@
 
                     <!-- Greeting -->
                     <div class="mb-4 text-sm">
-                        <p>Kính gửi/ Dear <strong>{{ $customerName }}</strong></p>
+                        <p>Kính gửi/ Dear <strong>{{ $customerName }}</strong>
+                        @if(!empty($additional_guests))
+                            và cộng sự/ and guests: <strong>{{ collect($additional_guests)->pluck('name')->join(', ') }}</strong>
+                        @endif
+                        </p>
                     </div>
 
                     <!-- Content -->
@@ -1239,7 +1243,14 @@
                         <table class="details-table">
                             <tr>
                                 <td class="label">Names of the guest</td>
-                                <td class="value">{{ $confirmation_data['customer_name'] }}</td>
+                                <td class="value">
+                                    <div class="font-black">{{ $confirmation_data['customer_name'] }}</div>
+                                    @if(!empty($confirmation_data['additional_guests']))
+                                        <div class="text-[11px] text-gray-500 font-medium mt-1">
+                                            Stay with: {{ collect($confirmation_data['additional_guests'])->pluck('name')->join(', ') }}
+                                        </div>
+                                    @endif
+                                </td>
                                 <td class="label">Phone number</td>
                                 <td class="value">{{ $confirmation_data['customer_phone'] }}</td>
                             </tr>
@@ -1247,7 +1258,7 @@
                                 <td class="label">Room</td>
                                 <td class="value">{{ $confirmation_data['room_code'] }}</td>
                                 <td class="label">Number of guests</td>
-                                <td class="value">01</td>
+                                <td class="value">{{ sprintf('%02d', count($confirmation_data['additional_guests'] ?? []) + 1) }}</td>
                             </tr>
                             <tr>
                                 <td class="label">Arrival date</td>
