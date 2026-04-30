@@ -11,20 +11,22 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('activity_logs', function (Blueprint $blueprint) {
-            $blueprint->id();
-            $blueprint->foreignId('user_id')->nullable()->constrained()->onDelete('set null');
-            $blueprint->string('action'); // created, updated, deleted
-            $blueprint->string('model_type', 191);
-            $blueprint->unsignedBigInteger('model_id');
-            $blueprint->json('old_values')->nullable();
-            $blueprint->json('new_values')->nullable();
-            $blueprint->string('ip_address', 45)->nullable();
-            $blueprint->text('user_agent')->nullable();
-            $blueprint->timestamps();
+        if (!Schema::hasTable('activity_logs')) {
+            Schema::create('activity_logs', function (Blueprint $blueprint) {
+                $blueprint->id();
+                $blueprint->foreignId('user_id')->nullable()->constrained()->onDelete('set null');
+                $blueprint->string('action'); // created, updated, deleted
+                $blueprint->string('model_type', 191);
+                $blueprint->unsignedBigInteger('model_id');
+                $blueprint->json('old_values')->nullable();
+                $blueprint->json('new_values')->nullable();
+                $blueprint->string('ip_address', 45)->nullable();
+                $blueprint->text('user_agent')->nullable();
+                $blueprint->timestamps();
 
-            $blueprint->index(['model_type', 'model_id']);
-        });
+                $blueprint->index(['model_type', 'model_id']);
+            });
+        }
     }
 
     /**
