@@ -31,7 +31,7 @@
         } else {
             this.day = '';
             this.month = '';
-            this.year = '';
+            this.year = new Date().getFullYear();
         }
     },
     update() {
