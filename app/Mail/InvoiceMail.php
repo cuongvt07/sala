@@ -17,12 +17,14 @@ class InvoiceMail extends Mailable
     public Booking $booking;
     public Collection $usageLogs;
     public float $totalAmount;
+    public float $totalDeposit;
 
     public function __construct(Booking $booking, Collection $usageLogs)
     {
         $this->booking = $booking;
         $this->usageLogs = $usageLogs;
         $this->totalAmount = $usageLogs->sum('total_amount') + $booking->price;
+        $this->totalDeposit = (float)($booking->deposit ?? 0) + (float)($booking->deposit_2 ?? 0) + (float)($booking->deposit_3 ?? 0);
     }
 
     public function envelope(): Envelope

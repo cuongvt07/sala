@@ -9,12 +9,13 @@ use App\Traits\LogsActivity;
 class Booking extends Model
 {
     use HasFactory, LogsActivity;
-    protected $fillable = ['customer_id', 'room_id', 'check_in', 'check_out', 'price_type', 'unit_price', 'price', 'deposit', 'deposit_2', 'deposit_3', 'status', 'notes', 'source', 'additional_guests'];
+    protected $fillable = ['customer_id', 'room_id', 'check_in', 'check_out', 'price_type', 'is_contract', 'unit_price', 'price', 'deposit', 'deposit_2', 'deposit_3', 'status', 'notes', 'source', 'additional_guests'];
 
     protected $casts = [
         'check_in' => 'datetime',
         'check_out' => 'datetime',
         'additional_guests' => 'array',
+        'is_contract' => 'boolean',
     ];
 
     public function customer()

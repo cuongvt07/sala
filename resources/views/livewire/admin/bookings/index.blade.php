@@ -113,7 +113,9 @@
                                     $totalCoc = $booking->deposit + $booking->deposit_2 + $booking->deposit_3;
                                     $totalPrice = $booking->price ?? 0;
                                 @endphp
-                                @if($totalCoc > 0)
+                                @if($booking->is_contract)
+                                    <div class="mt-0.5 text-[8px] font-black uppercase text-blue-600 bg-blue-50 px-1 py-0.5 rounded border border-blue-100 w-max">Hợp đồng</div>
+                                @elseif($totalCoc > 0)
                                     @if($totalCoc >= $totalPrice)
                                         <div class="mt-0.5 text-[8px] font-black uppercase text-green-600 bg-green-50 px-1 py-0.5 rounded border border-green-100 w-max">Full</div>
                                     @else
@@ -298,7 +300,16 @@
                                 <select wire:model.live="room_id" class="w-full rounded border-gray-200 p-2 text-sm font-bold"><option value="">-- Phòng --</option>@foreach($rooms as $r)<option value="{{ $r->id }}">{{ $r->code }}</option>@endforeach</select>
                                 @php $statusBg = ['pending' => 'bg-yellow-100 border-yellow-300', 'checked_in' => 'bg-green-100 border-green-300', 'checked_out' => 'bg-gray-100 border-gray-300', 'cancelled' => 'bg-red-100 border-red-300']; @endphp
                                 <select wire:model="status" class="w-full rounded border-2 p-2 text-sm font-bold {{ $statusBg[$status] ?? 'border-gray-200' }}"><option value="pending">Chờ lấy</option><option value="checked_in">Nhận phòng</option><option value="checked_out">Trả phòng</option><option value="cancelled">Hủy</option></select>
-                                <div class="col-span-2"><div class="flex p-0.5 bg-gray-100 rounded text-center"><button type="button" wire:click="$set('price_type', 'day')" class="flex-1 py-1.5 rounded text-xs font-bold {{ $price_type === 'day' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500' }}">Ngày</button><button type="button" wire:click="$set('price_type', 'month')" class="flex-1 py-1.5 rounded text-xs font-bold {{ $price_type === 'month' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500' }}">Hợp đồng</button></div></div>
+                                <div class="col-span-2 flex items-center gap-3">
+                                    <div class="flex-1 flex p-0.5 bg-gray-200/50 rounded-lg text-center overflow-hidden border border-gray-200">
+                                        <button type="button" wire:click="$set('price_type', 'day')" class="flex-1 py-1.5 rounded-md text-xs font-bold transition-all {{ $price_type === 'day' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Ngày</button>
+                                        <button type="button" wire:click="$set('price_type', 'month')" class="flex-1 py-1.5 rounded-md text-xs font-bold transition-all {{ $price_type === 'month' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Tháng</button>
+                                    </div>
+                                    <div class="flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-lg border border-blue-200 h-full">
+                                        <input type="checkbox" wire:model.live="is_contract" id="is_contract_idx" class="rounded text-blue-600 focus:ring-blue-500 h-4 w-4">
+                                        <label for="is_contract_idx" class="text-[10px] font-black text-blue-700 cursor-pointer uppercase tracking-tight">Hợp đồng</label>
+                                    </div>
+                                </div>
                             </div>
                             @error('room_id')<span class="text-red-500 text-xs">{{ $message }}</span>@enderror
                         </div>
@@ -624,7 +635,7 @@
                                 </tr>
                             </tbody>
                                 <!-- Khấu trừ cọc (Tự động) -->
-                                @if(!empty($deposits))
+                                @if(!empty($deposits) && !$is_contract)
                                     <tr class="bg-gray-50/50">
                                         <td colspan="4" class="px-3 py-1 text-[9px] font-black text-gray-500 uppercase bg-gray-100/50 border-y border-gray-200">
                                             KHẤU TRỪ TIỀN CỌC (TỰ ĐỘNG)
@@ -652,7 +663,7 @@
                             @php
                                 // Tính tổng tiền cọc đã áp dụng
                                 $appliedDepositTotal = collect($deposits)->where('is_applied', true)->sum('amount');
-                                $grandTotalAfterDeposit = $grandTotal - $appliedDepositTotal;
+                                $grandTotalAfterDeposit = $is_contract ? $grandTotal : ($grandTotal - $appliedDepositTotal);
                             @endphp
                             
                             <tfoot class="bg-slate-800 text-white">

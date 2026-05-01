@@ -124,14 +124,23 @@
                                                 <td style="font-size:13px; color:rgba(255,255,255,0.8); font-weight:600;">TỔNG CỘNG HÓA ĐƠN</td>
                                                 <td style="font-size:22px; color:#ffffff; font-weight:900; text-align:right;">{{ number_format($totalAmount, 0, ',', '.') }}đ</td>
                                             </tr>
-                                            @if($booking->deposit > 0)
+                                            @if($totalDeposit > 0 && !$booking->is_contract)
                                             <tr>
                                                 <td style="font-size:12px; color:rgba(255,255,255,0.7); padding-top:6px;">Đã cọc / thanh toán trước</td>
-                                                <td style="font-size:13px; color:rgba(255,255,255,0.9); font-weight:700; text-align:right; padding-top:6px;">-{{ number_format($booking->deposit, 0, ',', '.') }}đ</td>
+                                                <td style="font-size:13px; color:rgba(255,255,255,0.9); font-weight:700; text-align:right; padding-top:6px;">-{{ number_format($totalDeposit, 0, ',', '.') }}đ</td>
                                             </tr>
                                             <tr>
                                                 <td style="font-size:14px; color:#ffffff; font-weight:800; padding-top:8px; border-top:1px solid rgba(255,255,255,0.2);">CÒN LẠI PHẢI THU</td>
-                                                <td style="font-size:20px; color:#fbbf24; font-weight:900; text-align:right; padding-top:8px; border-top:1px solid rgba(255,255,255,0.2);">{{ number_format($totalAmount - $booking->deposit, 0, ',', '.') }}đ</td>
+                                                <td style="font-size:20px; color:#fbbf24; font-weight:900; text-align:right; padding-top:8px; border-top:1px solid rgba(255,255,255,0.2);">{{ number_format($totalAmount - $totalDeposit, 0, ',', '.') }}đ</td>
+                                            </tr>
+                                            @elseif($booking->is_contract)
+                                            <tr>
+                                                <td style="font-size:12px; color:rgba(255,255,255,0.7); padding-top:6px;">Tiền cọc (Khoản ngoài)</td>
+                                                <td style="font-size:13px; color:rgba(255,255,255,0.9); font-weight:700; text-align:right; padding-top:6px;">{{ number_format($totalDeposit, 0, ',', '.') }}đ</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="font-size:14px; color:#ffffff; font-weight:800; padding-top:8px; border-top:1px solid rgba(255,255,255,0.2);">TỔNG THANH TOÁN KỲ NÀY</td>
+                                                <td style="font-size:20px; color:#fbbf24; font-weight:900; text-align:right; padding-top:8px; border-top:1px solid rgba(255,255,255,0.2);">{{ number_format($totalAmount, 0, ',', '.') }}đ</td>
                                             </tr>
                                             @endif
                                         </table>

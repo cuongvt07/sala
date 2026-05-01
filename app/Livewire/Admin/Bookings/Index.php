@@ -77,6 +77,7 @@ class Index extends Component
 
     public $room_id;
     public $price_type = 'day'; // day, hour, month
+    public $is_contract = false;
     public $unit_price = 0;
     public $check_in;
     public $check_out;
@@ -125,6 +126,7 @@ class Index extends Component
         $rules = [
             'room_id' => 'required|exists:rooms,id',
             'price_type' => 'required|in:day,month',
+            'is_contract' => 'boolean',
             'unit_price' => 'required|numeric|min:0',
             'check_in' => 'required|date',
             'check_out' => [
@@ -263,7 +265,7 @@ class Index extends Component
     public function create()
     {
         $this->resetValidation();
-        $this->reset(['customer_id', 'new_customer_name', 'new_customer_phone', 'new_customer_email', 'new_customer_identity', 'new_customer_visa_number', 'new_customer_visa_expiry', 'new_customer_notes', 'new_customer_image', 'room_id', 'price_type', 'unit_price', 'check_in', 'check_out', 'price', 'deposit', 'deposit_2', 'deposit_3', 'status', 'notes', 'editingBookingId', 'selected_services', 'usage_logs']);
+        $this->reset(['customer_id', 'new_customer_name', 'new_customer_phone', 'new_customer_email', 'new_customer_identity', 'new_customer_visa_number', 'new_customer_visa_expiry', 'new_customer_notes', 'new_customer_image', 'room_id', 'price_type', 'is_contract', 'unit_price', 'check_in', 'check_out', 'price', 'deposit', 'deposit_2', 'deposit_3', 'status', 'notes', 'editingBookingId', 'selected_services', 'usage_logs']);
         $this->price_type = 'day';
         $this->activeTab = 'existing';
         $this->manual_fee_date = date('Y-m-d');
@@ -282,8 +284,8 @@ class Index extends Component
             $this->new_customer_nationality = $booking->customer->nationality;
         }
         $this->room_id = $booking->room_id; // Always default to existing for edit
-
         $this->price_type = ($booking->price_type === 'month') ? 'month' : 'day'; // Default to day, map legacy 'hour' to day
+        $this->is_contract = (bool)$booking->is_contract;
         $this->unit_price = $booking->unit_price ?? 0;
         $this->check_in = $booking->check_in ? $booking->check_in->format('Y-m-d') : null; // Ensure Y-m-d for date input
         $this->check_out = $booking->check_out ? $booking->check_out->format('Y-m-d') : null;
@@ -366,7 +368,7 @@ class Index extends Component
                     return (($l['type'] ?? '') === 'deduction' && ($l['notes'] ?? '') === $noteKey);
                 });
 
-                if (!$log && $booking) {
+                if (!$log && $booking && !$this->is_contract) {
                     // Auto-apply if not already in logs
                     $logData = [
                         'service_id' => null,
@@ -550,7 +552,7 @@ class Index extends Component
             'price_type' => $this->price_type === 'month' ? 'tháng' : 'ngày',
             'room_price' => $roomPrice,
             'total_deposit' => $totalDeposit,
-            'remaining' => $roomPrice - $totalDeposit,
+            'remaining' => $this->is_contract ? $roomPrice : ($roomPrice - $totalDeposit),
             'notes' => $this->notes,
             'additional_guests' => $this->additional_guests,
             'created_at' => now()->format('d/m/Y H:i')
@@ -898,6 +900,7 @@ class Index extends Component
             'customer_id' => $customerId,
             'room_id' => $this->room_id,
             'price_type' => $this->price_type,
+            'is_contract' => $this->is_contract,
             'unit_price' => $this->unit_price,
             'check_in' => $this->check_in,
             'check_out' => ($this->price_type === 'month' && empty($this->check_out)) ? null : $this->check_out,

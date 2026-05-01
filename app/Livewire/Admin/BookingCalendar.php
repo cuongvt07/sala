@@ -98,6 +98,7 @@ class BookingCalendar extends Component
 
     public $room_id;
     public $price_type = 'day';
+    public $is_contract = false;
     public $unit_price = 0;
     public $check_in;
     public $check_out;
@@ -222,7 +223,7 @@ class BookingCalendar extends Component
             'price_type' => $this->price_type === 'month' ? 'tháng' : 'ngày',
             'room_price' => $roomPrice,
             'total_deposit' => $totalDeposit,
-            'remaining' => $roomPrice - $totalDeposit,
+            'remaining' => $this->is_contract ? $roomPrice : ($roomPrice - $totalDeposit),
             'notes' => $this->notes,
             'additional_guests' => $this->additional_guests,
             'created_at' => now()->format('d/m/Y H:i')
@@ -281,6 +282,7 @@ class BookingCalendar extends Component
         return [
             'room_id' => 'required|exists:rooms,id',
             'price_type' => 'required|in:day,month',
+            'is_contract' => 'boolean',
             'unit_price' => 'required',
             'check_in' => 'required',
             'check_out' => [
@@ -399,7 +401,7 @@ class BookingCalendar extends Component
     {
         \Illuminate\Support\Facades\Log::info('BookingCalendar CreateBooking Triggered', ['room_id' => $roomId, 'date' => $date]);
         $this->resetValidation();
-        $this->reset(['customer_id', 'new_customer_name', 'new_customer_phone', 'new_customer_email', 'new_customer_identity', 'new_customer_nationality', 'new_customer_visa_number', 'new_customer_visa_expiry', 'new_customer_notes', 'new_customer_image', 'customer_identity', 'customer_nationality', 'customer_visa_number', 'customer_visa_expiry', 'room_id', 'price_type', 'unit_price', 'check_in', 'check_out', 'price', 'deposit', 'deposit_2', 'deposit_3', 'status', 'source', 'notes', 'editingBookingId', 'selected_services', 'usage_logs']);
+        $this->reset(['customer_id', 'new_customer_name', 'new_customer_phone', 'new_customer_email', 'new_customer_identity', 'new_customer_nationality', 'new_customer_visa_number', 'new_customer_visa_expiry', 'new_customer_notes', 'new_customer_image', 'customer_identity', 'customer_nationality', 'customer_visa_number', 'customer_visa_expiry', 'room_id', 'price_type', 'is_contract', 'unit_price', 'check_in', 'check_out', 'price', 'deposit', 'deposit_2', 'deposit_3', 'status', 'source', 'notes', 'editingBookingId', 'selected_services', 'usage_logs']);
 
         $this->room_id = $roomId;
         $this->check_in = $date;
@@ -427,6 +429,7 @@ class BookingCalendar extends Component
         $this->activeTab = 'existing';
         $this->room_id = $booking->room_id;
         $this->price_type = ($booking->price_type === 'month') ? 'month' : 'day';
+        $this->is_contract = (bool)$booking->is_contract;
         $this->unit_price = number_format($booking->unit_price ?? 0, 0, ',', '.');
         $this->check_in = $booking->check_in ? $booking->check_in->format('Y-m-d') : null;
         $this->check_out = $booking->check_out ? $booking->check_out->format('Y-m-d') : null;
@@ -759,6 +762,7 @@ class BookingCalendar extends Component
             'customer_id' => $customerId,
             'room_id' => $this->room_id,
             'price_type' => $this->price_type,
+            'is_contract' => $this->is_contract,
             'unit_price' => $cleanUnitPrice,
             'check_in' => $this->check_in,
             'check_out' => ($this->price_type === 'month' && empty($this->check_out)) ? null : $this->check_out,
