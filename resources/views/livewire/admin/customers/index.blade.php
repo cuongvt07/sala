@@ -78,7 +78,7 @@
                             @if($customer->bookings->first())
                                 @php $activeBooking = $customer->bookings->first(); @endphp
                                 <div class="text-[13px] font-black {{ $activeBooking->status === 'checked_in' ? 'text-green-600' : 'text-blue-600' }}">
-                                    {{ $activeBooking->room->code ?? 'N/A' }}
+                                    {{ $activeBooking->room->code ?? '-' }}
                                 </div>
                                 <div class="text-[11px] text-gray-500 font-bold">
                                     In: {{ $activeBooking->check_in->format('d/m') }}

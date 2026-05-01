@@ -80,7 +80,7 @@
                             {{ $room->type }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-[13px] text-gray-900">
-                            {{ $room->area->name ?? 'N/A' }}
+                            {{ $room->area->name ?? '-' }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-[13px] font-bold text-gray-900">
                             {{ number_format($room->price_day, 0, ',', '.') }}đ

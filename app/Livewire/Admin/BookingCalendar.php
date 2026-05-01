@@ -178,10 +178,10 @@ class BookingCalendar extends Component
             'room_price' => $roomPrice,
             'total' => $periodLogs->sum('total_amount') + $roomPrice,
             'booking' => [
-                'customer_name' => $booking?->customer?->name ?? 'N/A',
-                'customer_phone' => $booking?->customer?->phone ?? 'N/A',
-                'room_code' => $booking?->room?->code ?? 'N/A',
-                'check_in' => $booking?->check_in?->format('d/m/Y') ?? 'N/A',
+                'customer_name' => $booking?->customer?->name ?? '-',
+                'customer_phone' => $booking?->customer?->phone ?? '-',
+                'room_code' => $booking?->room?->code ?? '-',
+                'check_in' => $booking?->check_in?->format('d/m/Y') ?? '-',
             ]
         ];
 
@@ -212,10 +212,10 @@ class BookingCalendar extends Component
 
         $this->confirmation_data = [
             'booking_id' => $booking->id,
-            'customer_name' => $booking->customer->name ?? 'N/A',
-            'customer_phone' => $booking->customer->phone ?? 'N/A',
-            'room_code' => $booking->room->code ?? 'N/A',
-            'check_in' => $booking->check_in ? $booking->check_in->format('d / m / Y') : 'N/A',
+            'customer_name' => $booking->customer->name ?? '-',
+            'customer_phone' => $booking->customer->phone ?? '-',
+            'room_code' => $booking->room->code ?? '-',
+            'check_in' => $booking->check_in ? $booking->check_in->format('d / m / Y') : '-',
             'check_out' => $booking->check_out ? $booking->check_out->format('d / m / Y') : 'Hợp đồng',
             'term_of_stay' => $booking->check_in && $booking->check_out ? $booking->check_in->diff($booking->check_out)->format('%a đêm') : 'Dài hạn',
             'unit_price' => number_format((float)str_replace(['.',','],'',$this->unit_price ?: 0), 0, ',', '.'),

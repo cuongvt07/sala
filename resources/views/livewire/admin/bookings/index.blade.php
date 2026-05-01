@@ -79,11 +79,11 @@
                             <span class="text-[10px] font-black text-gray-400">#{{ $booking->id }}</span>
                         </td>
                         <td class="px-3 py-3 whitespace-nowrap bg-gray-50/50">
-                            <div class="text-xs font-black text-gray-900">{{ $booking->room->code ?? 'N/A' }}</div>
+                            <div class="text-xs font-black text-gray-900">{{ $booking->room->code ?? '-' }}</div>
                             <div class="text-[9px] text-blue-600 font-bold mt-0.5">In: {{ $booking->check_in ? $booking->check_in->format('d/m') : '-' }}</div>
                         </td>
                         <td class="px-3 py-3 text-xs text-gray-900 max-w-[140px]">
-                            <div class="font-bold text-gray-900 leading-tight">{{ $booking->customer->name ?? 'N/A' }}</div>
+                            <div class="font-bold text-gray-900 leading-tight">{{ $booking->customer->name ?? '-' }}</div>
                             <div class="text-[10px] text-gray-500">{{ $booking->customer->phone ?? '' }}</div>
                             @if($booking->customer && $booking->customer->nationality)
                                 <div class="text-[9px] text-indigo-600 font-black uppercase mt-0.5 tracking-tighter">🌍 {{ $booking->customer->nationality }}</div>
@@ -160,7 +160,7 @@
     </x-ui.card>
 
     <!-- Modal -->
-    <x-ui.modal name="showModal" :title="$editingBookingId ? 'Quản lý Booking: ' . ($bookings->find($editingBookingId)->room->code ?? '') : 'Tạo Booking mới'" width="max-w-5xl">
+    <x-ui.modal name="showModal" :title="$editingBookingId ? 'Quản lý Booking: ' . ($bookings->find($editingBookingId)->room->code ?? '-') : 'Tạo Booking mới'" width="max-w-5xl">
         @php
             $logTotal = collect($usage_logs)->sum('total_amount');
             $basePrice = (float) str_replace(['.', ','], '', $price ?: 0);
@@ -192,7 +192,7 @@
                         <div class="flex items-start justify-between gap-4">
                             <div class="flex-1 space-y-2">
                                 <div class="flex items-center gap-3">
-                                    <span class="text-2xl font-black">{{ $rooms->find($room_id)?->code ?? 'N/A' }}</span>
+                                    <span class="text-2xl font-black">{{ $rooms->find($room_id)?->code ?? '-' }}</span>
                                     @php $statusSelectBg = ['pending' => 'bg-yellow-500', 'checked_in' => 'bg-green-500', 'checked_out' => 'bg-gray-400', 'cancelled' => 'bg-red-500']; @endphp
                                     <select wire:model.live="status" class="px-2 py-0.5 text-[10px] font-bold uppercase rounded text-white border-0 cursor-pointer {{ $statusSelectBg[$status] ?? 'bg-gray-500' }}">
                                         <option value="pending" class="bg-yellow-500">Chờ lấy</option>
@@ -726,8 +726,8 @@
                 </button>
 
                 @php
-                    $roomCode = $rooms->find($room_id)?->code ?? 'N/A';
-                    $customerName = $activeTab === 'existing' ? ($customers->find($customer_id)?->name ?? 'N/A') : $new_customer_name;
+                    $roomCode = $rooms->find($room_id)?->code ?? '-';
+                    $customerName = $activeTab === 'existing' ? ($customers->find($customer_id)?->name ?? '-') : $new_customer_name;
                     $billingMonth = date('m.Y');
                     
                     // Tính toán các khoản
@@ -842,8 +842,8 @@
                     <div class="flex justify-end mb-4">
                         <div class="border border-gray-800 px-4 py-2 text-right text-sm">
                             <p><em>Phòng/Room:</em> <strong>{{ $roomCode }}</strong></p>
-                            <p><em>Check-in:</em> <strong>{{ $check_in ? \Carbon\Carbon::parse($check_in)->format('d/m/Y') : 'N/A' }}</strong></p>
-                            <p><em>Check-out:</em> <strong>{{ $check_out ? \Carbon\Carbon::parse($check_out)->format('d/m/Y') : 'N/A' }}</strong></p>
+                            <p><em>Check-in:</em> <strong>{{ $check_in ? \Carbon\Carbon::parse($check_in)->format('d/m/Y') : '-' }}</strong></p>
+                            <p><em>Check-out:</em> <strong>{{ $check_out ? \Carbon\Carbon::parse($check_out)->format('d/m/Y') : '-' }}</strong></p>
                         </div>
                     </div>
 
@@ -1333,9 +1333,9 @@
                     </button>
 
                     @php
-                        $roomCode = $invoice_data['booking']['room_code'] ?? 'N/A';
-                        $customerName = $invoice_data['booking']['customer_name'] ?? 'N/A';
-                        $checkIn = $invoice_data['booking']['check_in'] ?? 'N/A';
+                        $roomCode = $invoice_data['booking']['room_code'] ?? '-';
+                        $customerName = $invoice_data['booking']['customer_name'] ?? '-';
+                        $checkIn = $invoice_data['booking']['check_in'] ?? '-';
                         $period = $invoice_data['period'] ?? '';
                         
                         // Organize services by type

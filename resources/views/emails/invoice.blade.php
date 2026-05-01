@@ -47,11 +47,11 @@
                                         <table width="100%" cellpadding="0" cellspacing="0">
                                             <tr>
                                                 <td style="padding:4px 0; font-size:13px; color:#64748b; width:40%;">Khách hàng:</td>
-                                                <td style="padding:4px 0; font-size:13px; color:#0f172a; font-weight:700; text-align:right;">{{ $booking->customer->name ?? 'N/A' }}</td>
+                                                <td style="padding:4px 0; font-size:13px; color:#0f172a; font-weight:700; text-align:right;">{{ $booking->customer->name ?? '-' }}</td>
                                             </tr>
                                             <tr>
                                                 <td style="padding:4px 0; font-size:13px; color:#64748b;">Phòng:</td>
-                                                <td style="padding:4px 0; font-size:13px; color:#0f172a; font-weight:700; text-align:right;">{{ $booking->room->code ?? 'N/A' }}</td>
+                                                <td style="padding:4px 0; font-size:13px; color:#0f172a; font-weight:700; text-align:right;">{{ $booking->room->code ?? '-' }}</td>
                                             </tr>
                                             <tr>
                                                 <td style="padding:4px 0; font-size:13px; color:#64748b;">Ngày vào:</td>

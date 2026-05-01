@@ -159,7 +159,7 @@
                                 </div>
                                 <div>
                                     <p class="text-xs font-bold text-gray-800">{{ $cus->name }}</p>
-                                    <p class="text-[10px] text-gray-500">{{ $cus->phone ?? 'N/A' }}</p>
+                                    <p class="text-[10px] text-gray-500">{{ $cus->phone ?? '-' }}</p>
                                 </div>
                             </div>
                             <span class="text-[10px] font-bold text-pink-600 bg-white px-2 py-0.5 rounded-full border border-pink-100">

@@ -29,7 +29,7 @@
                     <select id="room_id" wire:model="room_id" class="block w-full rounded-lg border-gray-200 bg-gray-50 p-2.5 text-sm text-gray-900 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm">
                         <option value="">-- Chọn Phòng --</option>
                         @foreach($rooms as $room)
-                            <option value="{{ $room->id }}">{{ $room->code }} - {{ $room->type }} ({{ $room->area->name ?? 'N/A' }})</option>
+                            <option value="{{ $room->id }}">{{ $room->code }} - {{ $room->type }} ({{ $room->area->name ?? '-' }})</option>
                         @endforeach
                     </select>
                     @error('room_id') <p class="text-xs text-red-500">{{ $message }}</p> @enderror
