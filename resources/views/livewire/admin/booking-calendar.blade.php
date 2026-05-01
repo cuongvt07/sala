@@ -141,6 +141,20 @@
             font-size: 0.7rem;
             font-weight: 500;
         }
+
+        /* Premium Input Style */
+        .premium-input {
+            background-color: #f8fafc !important; /* light slate */
+            border: 1.5px solid #cbd5e1 !important; /* slate-300 */
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05) !important; /* Sunken effect */
+            transition: all 0.2s ease-in-out;
+        }
+        .premium-input:focus {
+            background-color: #fff !important;
+            border-color: #3b82f6 !important; /* blue-500 */
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), inset 0 2px 4px 0 rgba(0, 0, 0, 0.05) !important;
+            outline: none;
+        }
     </style>
 
     <!-- Header & Controls -->
@@ -306,7 +320,7 @@
             <div class="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity" wire:click="$set('showModal', false)"></div>
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
             
-            <div class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full z-[110] relative border border-gray-100">
+            <div x-data="{ activeTab: @entangle('activeModalTab') }" class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full z-[110] relative border border-gray-100">
                 {{-- Header --}}
                 <div class="bg-gray-800 px-6 py-4 flex justify-between items-center text-white">
                     <div>
@@ -331,8 +345,9 @@
                         ];
                     @endphp
                     @foreach($tabs as $key => $label)
-                        <button wire:click="setTab('{{ $key }}')" 
-                                class="px-5 py-3 text-sm font-medium transition-all relative {{ $activeModalTab === $key ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700' }}">
+                        <button @click="activeTab = '{{ $key }}'" 
+                                :class="activeTab === '{{ $key }}' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'"
+                                class="px-5 py-3 text-sm font-medium transition-all relative">
                             {{ $label }}
                         </button>
                     @endforeach
@@ -341,7 +356,7 @@
                 {{-- Body --}}
                 <div class="px-6 py-6 max-h-[calc(100vh-250px)] overflow-y-auto bg-white">
                     
-                    @if($activeModalTab === 'overview')
+                    <div x-show="activeTab === 'overview'" x-cloak>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {{-- LEFT COLUMN: Basic Info --}}
                             <div class="space-y-4">
@@ -350,7 +365,7 @@
                                 <div class="grid grid-cols-2 gap-4">
                                     <div class="col-span-2">
                                         <label class="block text-xs font-medium text-gray-500 mb-1">Phòng</label>
-                                        <select wire:model.live="room_id" class="w-full rounded border-gray-300 py-2 text-sm focus:ring-blue-500 focus:border-blue-500">
+                                        <select wire:model.live="room_id" class="w-full rounded premium-input py-2 text-sm focus:ring-blue-500 focus:border-blue-500">
                                             @foreach($all_rooms as $r)
                                                 <option value="{{ $r->id }}">{{ $r->code }} ({{ $r->area->name ?? '' }})</option>
                                             @endforeach
@@ -358,14 +373,14 @@
                                     </div>
                                     <div>
                                         <label class="block text-xs font-medium text-gray-500 mb-1">Loại giá</label>
-                                        <select wire:model.live="price_type" class="w-full rounded border-gray-300 py-2 text-sm focus:ring-blue-500 focus:border-blue-500">
+                                        <select wire:model.live="price_type" class="w-full rounded premium-input py-2 text-sm focus:ring-blue-500 focus:border-blue-500">
                                             <option value="day">Theo ngày</option>
                                             <option value="month">Thuê hợp đồng</option>
                                         </select>
                                     </div>
                                     <div>
                                         <label class="block text-xs font-medium text-gray-500 mb-1">Đơn giá</label>
-                                        <input type="text" wire:model.blur="unit_price" class="w-full rounded border-gray-300 py-2 text-sm font-bold focus:ring-blue-500 focus:border-blue-500" x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')">
+                                        <input type="text" wire:model.blur="unit_price" class="w-full rounded premium-input py-2 text-sm font-bold focus:ring-blue-500 focus:border-blue-500" x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')">
                                     </div>
                                 </div>
 
@@ -387,7 +402,7 @@
                                 @if($activeTab === 'existing')
                                     <div>
                                         <label class="block text-xs font-medium text-gray-500 mb-1">Chọn khách hàng</label>
-                                        <select wire:model.live="customer_id" class="w-full rounded border-gray-300 py-2 text-sm focus:ring-blue-500 focus:border-blue-500 font-bold">
+                                        <select wire:model.live="customer_id" class="w-full rounded premium-input py-2 text-sm focus:ring-blue-500 focus:border-blue-500 font-bold">
                                             <option value="">-- Chọn --</option>
                                             @foreach($customers as $c)
                                                 <option value="{{ $c->id }}">{{ $c->name }} ({{ $c->phone }})</option>
@@ -399,15 +414,15 @@
                                         <div class="grid grid-cols-2 gap-3 bg-blue-50/50 p-3 rounded-lg border border-blue-100">
                                             <div class="col-span-2">
                                                 <label class="block text-[10px] font-bold text-blue-600 uppercase mb-1">Họ tên</label>
-                                                <input type="text" wire:model.blur="customer_name" class="w-full rounded border-blue-200 py-1.5 text-xs">
+                                                <input type="text" wire:model.blur="customer_name" class="w-full rounded premium-input py-1.5 text-xs">
                                             </div>
                                             <div>
                                                 <label class="block text-[10px] font-bold text-blue-600 uppercase mb-1">SĐT</label>
-                                                <input type="text" wire:model.blur="customer_phone" class="w-full rounded border-blue-200 py-1.5 text-xs">
+                                                <input type="text" wire:model.blur="customer_phone" class="w-full rounded premium-input py-1.5 text-xs">
                                             </div>
                                             <div>
                                                 <label class="block text-[10px] font-bold text-blue-600 uppercase mb-1">Giới tính</label>
-                                                <select wire:model.blur="customer_gender" class="w-full rounded border-blue-200 py-1.5 text-xs">
+                                                <select wire:model.blur="customer_gender" class="w-full rounded premium-input py-1.5 text-xs">
                                                     <option value="">Chọn</option>
                                                     <option value="male">Nam</option>
                                                     <option value="female">Nữ</option>
@@ -416,7 +431,7 @@
                                             </div>
                                             <div>
                                                 <label class="block text-[10px] font-bold text-blue-600 uppercase mb-1">CCCD/Passport *</label>
-                                                <input type="text" wire:model.blur="customer_identity" class="w-full rounded border-blue-200 py-1.5 text-xs">
+                                                <input type="text" wire:model.blur="customer_identity" class="w-full rounded premium-input py-1.5 text-xs">
                                                 @error('customer_identity') <span class="text-[10px] text-red-500">{{ $message }}</span> @enderror
                                             </div>
                                             <div>
@@ -435,10 +450,10 @@
                                     @endif
                                 @else
                                     <div class="space-y-3">
-                                        <input type="text" wire:model.blur="new_customer_name" placeholder="Họ và tên *" class="w-full rounded border-gray-300 py-2 text-sm">
+                                        <input type="text" wire:model.blur="new_customer_name" placeholder="Họ và tên *" class="w-full rounded premium-input py-2 text-sm">
                                         <div class="grid grid-cols-2 gap-3">
-                                            <input type="text" wire:model.blur="new_customer_phone" placeholder="Số điện thoại" class="w-full rounded border-gray-300 py-2 text-sm">
-                                                <select wire:model.blur="new_customer_gender" class="w-full rounded border-gray-300 py-2 text-sm">
+                                            <input type="text" wire:model.blur="new_customer_phone" placeholder="Số điện thoại" class="w-full rounded premium-input py-2 text-sm">
+                                                <select wire:model.blur="new_customer_gender" class="w-full rounded premium-input py-2 text-sm">
                                                     <option value="">Giới tính</option>
                                                     <option value="male">Nam</option>
                                                     <option value="female">Nữ</option>
@@ -450,7 +465,7 @@
                                             </div>
                                             <div class="grid grid-cols-2 gap-3">
                                             <div>
-                                                <input type="text" wire:model.blur="new_customer_identity" placeholder="CCCD/Passport" class="w-full rounded border-gray-300 py-2 text-sm">
+                                                <input type="text" wire:model.blur="new_customer_identity" placeholder="CCCD/Passport" class="w-full rounded premium-input py-2 text-sm">
                                                 @error('new_customer_identity') <span class="text-[10px] text-red-500">{{ $message }}</span> @enderror
                                             </div>
                                             <div>
@@ -463,9 +478,10 @@
                                                 @error('new_customer_nationality') <span class="text-[10px] text-red-500">{{ $message }}</span> @enderror
                                             </div>
                                         </div>
-                                        <div>
-                                            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Ảnh hộ chiếu/CCCD (nếu có)</label>
-                                            <input type="file" wire:model="new_customer_image" class="text-xs">
+                                            <div>
+                                                <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Ảnh hộ chiếu/CCCD (nếu có)</label>
+                                                <input type="file" wire:model="new_customer_image" class="text-xs">
+                                            </div>
                                         </div>
                                     </div>
                                 @endif
@@ -479,8 +495,8 @@
                                     <div class="space-y-2">
                                         @foreach($additional_guests as $index => $guest)
                                             <div class="flex items-center gap-2">
-                                                <input type="text" wire:model="additional_guests.{{ $index }}.name" placeholder="Tên" class="flex-1 px-2 py-1 text-xs rounded border-gray-300 border">
-                                                <input type="text" wire:model="additional_guests.{{ $index }}.identity" placeholder="CCCD/Passport" class="w-32 px-2 py-1 text-xs rounded border-gray-300 border">
+                                                <input type="text" wire:model="additional_guests.{{ $index }}.name" placeholder="Tên" class="flex-1 px-2 py-1 text-xs rounded premium-input">
+                                                <input type="text" wire:model="additional_guests.{{ $index }}.identity" placeholder="CCCD/Passport" class="w-32 px-2 py-1 text-xs rounded premium-input">
                                                 <button type="button" wire:click="removeGuest({{ $index }})" class="text-red-500 hover:text-red-700">
                                                     <x-icon name="heroicon-o-trash" class="h-4 w-4" />
                                                 </button>
@@ -495,7 +511,7 @@
                                 <div class="grid grid-cols-2 gap-4 pt-2">
                                     <div>
                                         <label class="block text-xs font-medium text-gray-500 mb-1">Trạng thái</label>
-                                        <select wire:model.live="status" class="w-full rounded border-gray-300 py-2 text-sm focus:ring-blue-500 focus:border-blue-500">
+                                        <select wire:model.live="status" class="w-full rounded premium-input py-2 text-sm focus:ring-blue-500 focus:border-blue-500">
                                             <option value="pending">Chờ lấy phòng</option>
                                             <option value="checked_in">Đã nhận phòng</option>
                                             <option value="checked_out">Trả phòng</option>
@@ -504,7 +520,7 @@
                                     </div>
                                     <div>
                                         <label class="block text-xs font-medium text-gray-500 mb-1">Hình thức đặt</label>
-                                        <select wire:model.live="source" class="w-full rounded border-gray-300 py-2 text-sm focus:ring-blue-500 focus:border-blue-500">
+                                        <select wire:model.live="source" class="w-full rounded premium-input py-2 text-sm focus:ring-blue-500 focus:border-blue-500">
                                             <option value="">-- Chọn --</option>
                                             <option value="Airbnb">Airbnb</option>
                                             <option value="OTA">OTA</option>
@@ -516,14 +532,14 @@
                                     </div>
                                     <div class="col-span-2">
                                         <label class="block text-xs font-medium text-gray-500 mb-1">Ghi chú</label>
-                                        <textarea wire:model.blur="notes" rows="2" class="w-full rounded border-gray-300 py-2 text-sm" placeholder="Ghi chú..."></textarea>
+                                        <textarea wire:model.blur="notes" rows="2" class="w-full rounded premium-input py-2 text-sm" placeholder="Ghi chú..."></textarea>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    @endif
+                    </div>
 
-                    @if($activeModalTab === 'services')
+                    <div x-show="activeTab === 'services'" x-cloak>
                         <div class="space-y-6" wire:key="tab-services">
                             {{-- Chốt dịch vụ nhanh --}}
                             <div class="bg-gray-50 rounded border p-5">
@@ -534,13 +550,13 @@
                                         @if($service->type === 'meter')
                                             <div class="bg-white border rounded p-3">
                                                 <div class="text-xs font-bold mb-2">{{ $service->name }}</div>
-                                                <div class="grid grid-cols-2 gap-2">
-                                                    <input type="text" wire:model.blur="service_inputs.{{ $service->id }}.start_index" placeholder="Số đầu" class="border rounded p-1.5 text-xs text-center">
-                                                    <input type="text" wire:model.blur="service_inputs.{{ $service->id }}.end_index" placeholder="Số cuối" class="border rounded p-1.5 text-xs text-center font-bold">
+                                                    <div class="grid grid-cols-2 gap-2">
+                                                        <input type="text" wire:model.blur="service_inputs.{{ $service->id }}.start_index" placeholder="Số đầu" class="premium-input rounded p-1.5 text-xs text-center">
+                                                        <input type="text" wire:model.blur="service_inputs.{{ $service->id }}.end_index" placeholder="Số cuối" class="premium-input rounded p-1.5 text-xs text-center font-bold">
+                                                    </div>
+                                                    <button wire:click="addServiceLog({{ $service->id }})" class="w-full mt-2 py-1 bg-blue-600 text-white rounded text-[10px] font-bold uppercase">Lưu số</button>
                                                 </div>
-                                                <button wire:click="addServiceLog({{ $service->id }})" class="w-full mt-2 py-1 bg-blue-600 text-white rounded text-[10px] font-bold uppercase">Lưu số</button>
-                                            </div>
-                                        @endif
+                                            @endif
                                     @endforeach
                                 </div>
                                 
@@ -680,9 +696,9 @@
                                 </div>
                             </div>
                         </div>
-                    @endif
+                    </div>
 
-                    @if($activeModalTab === 'payments')
+                    <div x-show="activeTab === 'payments'" x-cloak>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-8" wire:key="tab-payments">
                             <div class="space-y-4">
                                 <h4 class="text-sm font-bold text-gray-900 pb-2 border-b">Tiền cọc</h4>
@@ -690,7 +706,7 @@
                                     @foreach(['deposit' => 'Cọc lần 1', 'deposit_2' => 'Cọc lần 2', 'deposit_3' => 'Cọc lần 3'] as $field => $label)
                                         <div class="flex items-center justify-between p-3 border rounded">
                                             <span class="text-xs font-medium text-gray-500">{{ $label }}</span>
-                                            <input type="text" wire:model.blur="{{ $field }}" class="text-right font-bold text-blue-600 border-none p-0 focus:ring-0 w-32" x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')">
+                                            <input type="text" wire:model.blur="{{ $field }}" class="text-right font-bold text-blue-600 premium-input rounded px-2 py-1 focus:ring-0 w-32" x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')">
                                         </div>
                                     @endforeach
                                 </div>
@@ -701,19 +717,19 @@
                                 <div class="bg-gray-50 p-4 rounded border space-y-3">
                                     <div>
                                         <label class="block text-xs font-medium text-gray-500 mb-1">Số tiền</label>
-                                        <input type="text" wire:model="manual_fee_amount" class="w-full rounded border-gray-300 p-2 text-sm font-bold text-blue-600" x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')" placeholder="0">
+                                        <input type="text" wire:model="manual_fee_amount" class="w-full rounded premium-input p-2 text-sm font-bold text-blue-600" x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')" placeholder="0">
                                     </div>
                                     <div>
                                         <label class="block text-xs font-medium text-gray-500 mb-1">Lý do</label>
-                                        <input type="text" wire:model="manual_fee_notes" class="w-full rounded border-gray-300 p-2 text-sm" placeholder="Nội dung...">
+                                        <input type="text" wire:model="manual_fee_notes" class="w-full rounded premium-input p-2 text-sm" placeholder="Nội dung...">
                                     </div>
                                     <button wire:click="addManualSurcharge" class="w-full py-2 bg-gray-800 text-white rounded text-xs font-bold uppercase">Ghi nhận phí</button>
                                 </div>
                             </div>
                         </div>
-                    @endif
+                    </div>
 
-                    @if($activeModalTab === 'invoice')
+                    <div x-show="activeTab === 'invoice'" x-cloak>
                         <div class="space-y-6" wire:key="tab-invoice">
                             <div class="flex justify-between items-center border p-4 rounded bg-gray-50">
                                 <div>
@@ -738,7 +754,7 @@
                                 <button wire:click="exportInvoice" class="px-8 py-3 bg-blue-600 text-white rounded font-bold text-xs uppercase tracking-widest shadow-md">Gửi email hóa đơn</button>
                             </div>
                         </div>
-                    @endif
+                    </div>
 
                 </div>
 
