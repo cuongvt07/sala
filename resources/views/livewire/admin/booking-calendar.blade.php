@@ -371,18 +371,12 @@
                                             @endforeach
                                         </select>
                                     </div>
-                                    <div class="flex items-end gap-2">
-                                        <div class="flex-1">
-                                            <label class="block text-xs font-medium text-gray-500 mb-1">Loại giá</label>
-                                            <select wire:model.live="price_type" class="w-full rounded premium-input py-2 text-sm focus:ring-blue-500 focus:border-blue-500">
-                                                <option value="day">Theo ngày</option>
-                                                <option value="month">Theo tháng</option>
-                                            </select>
-                                        </div>
-                                        <div class="flex items-center h-10 px-3 bg-gray-50 rounded border border-gray-200">
-                                            <input type="checkbox" wire:model.live="is_contract" id="is_contract_cal" class="rounded text-blue-600 focus:ring-blue-500 h-4 w-4">
-                                            <label for="is_contract_cal" class="ml-2 text-xs font-bold text-gray-700 cursor-pointer">Hợp đồng</label>
-                                        </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-500 mb-1">Loại giá</label>
+                                        <select wire:model.live="price_type" class="w-full rounded premium-input py-2 text-sm focus:ring-blue-500 focus:border-blue-500">
+                                            <option value="day">Theo ngày</option>
+                                            <option value="month">Thuê hợp đồng</option>
+                                        </select>
                                     </div>
                                     <div>
                                         <label class="block text-xs font-medium text-gray-500 mb-1">Đơn giá</label>

@@ -326,6 +326,7 @@ class BookingCalendar extends Component
 
     public function updatedPriceType()
     {
+        $this->is_contract = ($this->price_type === 'month');
         if ($this->price_type === 'month') {
             $this->check_out = '';
             $this->resetValidation('check_out');

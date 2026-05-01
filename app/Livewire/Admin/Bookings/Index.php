@@ -166,8 +166,15 @@ class Index extends Component
 
     public function updatedPriceType()
     {
+        $this->is_contract = ($this->price_type === 'month');
         $this->updatePricing();
         $this->calculateTotal();
+    }
+
+    public function setPriceType($type)
+    {
+        $this->price_type = $type;
+        $this->updatedPriceType();
     }
 
     public function updatedCheckIn()
@@ -251,7 +258,7 @@ class Index extends Component
         } elseif ($this->price_type === 'day') {
             $this->unit_price = $room->price_day ?? 0;
         } elseif ($this->price_type === 'month') {
-            $this->unit_price = $room->price_day ?? 0;
+            $this->unit_price = $room->price_month ?? 0;
         }
 
         $this->extra_night_price = number_format((float)str_replace(['.', ','], '', $this->unit_price), 0, ',', '.');
