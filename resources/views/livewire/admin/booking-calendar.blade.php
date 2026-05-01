@@ -393,36 +393,77 @@
                             {{-- RIGHT COLUMN: Customer --}}
                             <div class="space-y-4">
                                 <h4 class="text-sm font-bold text-gray-900 pb-2 border-b">Khách hàng</h4>
-                                
-                                <div class="flex border rounded overflow-hidden mb-4">
-                                    <button wire:click="$set('activeTab', 'existing')" class="flex-1 py-1.5 text-xs font-medium {{ $activeTab === 'existing' ? 'bg-gray-100 text-blue-600' : 'bg-white text-gray-500' }}">Khách cũ</button>
-                                    <button wire:click="$set('activeTab', 'new')" class="flex-1 py-1.5 text-xs font-medium {{ $activeTab === 'new' ? 'bg-gray-100 text-blue-600' : 'bg-white text-gray-500' }}">Khách mới</button>
-                                </div>
-
-                                @if($activeTab === 'existing')
-                                    <div>
-                                        <label class="block text-xs font-medium text-gray-500 mb-1">Chọn khách hàng</label>
-                                        <select wire:model.live="customer_id" class="w-full rounded premium-input py-2 text-sm focus:ring-blue-500 focus:border-blue-500 font-bold">
-                                            <option value="">-- Chọn --</option>
-                                            @foreach($customers as $c)
-                                                <option value="{{ $c->id }}">{{ $c->name }} ({{ $c->phone }})</option>
-                                            @endforeach
-                                        </select>
+                                <div x-data="{ customerTab: @entangle('activeTab') }">
+                                    <div class="flex border rounded overflow-hidden mb-4">
+                                        <button type="button" @click="customerTab = 'existing'" :class="customerTab === 'existing' ? 'bg-gray-100 text-blue-600' : 'bg-white text-gray-500'" class="flex-1 py-1.5 text-xs font-medium transition-colors">Khách cũ</button>
+                                        <button type="button" @click="customerTab = 'new'" :class="customerTab === 'new' ? 'bg-gray-100 text-blue-600' : 'bg-white text-gray-500'" class="flex-1 py-1.5 text-xs font-medium transition-colors">Khách mới</button>
                                     </div>
 
-                                    @if($customer_id)
-                                        <div class="grid grid-cols-2 gap-3 bg-blue-50/50 p-3 rounded-lg border border-blue-100">
+                                    <div x-show="customerTab === 'existing'">
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-500 mb-1">Chọn khách hàng</label>
+                                            <select wire:model.live="customer_id" class="w-full rounded premium-input py-2 text-sm focus:ring-blue-500 focus:border-blue-500 font-bold">
+                                                <option value="">-- Chọn --</option>
+                                                @foreach($customers as $c)
+                                                    <option value="{{ $c->id }}">{{ $c->name }} ({{ $c->phone }})</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+
+                                        @if($customer_id)
+                                            <div class="grid grid-cols-2 gap-3 bg-blue-50/50 p-3 rounded-lg border border-blue-100 mt-3">
+                                                <div class="col-span-2">
+                                                    <label class="block text-[10px] font-bold text-blue-600 uppercase mb-1">Họ tên</label>
+                                                    <input type="text" wire:model.blur="customer_name" class="w-full rounded premium-input py-1.5 text-xs">
+                                                </div>
+                                                <div>
+                                                    <label class="block text-[10px] font-bold text-blue-600 uppercase mb-1">SĐT</label>
+                                                    <input type="text" wire:model.blur="customer_phone" class="w-full rounded premium-input py-1.5 text-xs">
+                                                </div>
+                                                <div>
+                                                    <label class="block text-[10px] font-bold text-blue-600 uppercase mb-1">Giới tính</label>
+                                                    <select wire:model.blur="customer_gender" class="w-full rounded premium-input py-1.5 text-xs">
+                                                        <option value="">Chọn</option>
+                                                        <option value="male">Nam</option>
+                                                        <option value="female">Nữ</option>
+                                                        <option value="other">Khác</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label class="block text-[10px] font-bold text-blue-600 uppercase mb-1">CCCD/Passport *</label>
+                                                    <input type="text" wire:model.blur="customer_identity" class="w-full rounded premium-input py-1.5 text-xs">
+                                                    @error('customer_identity') <span class="text-[10px] text-red-500">{{ $message }}</span> @enderror
+                                                </div>
+                                                <div>
+                                                    <label class="block text-[10px] font-bold text-blue-600 uppercase mb-1">Quốc tịch *</label>
+                                                    <x-ui.select-search 
+                                                        wire:model="customer_nationality" 
+                                                        :options="$this->getFormattedCountries()"
+                                                        placeholder="Quốc tịch"
+                                                        class="text-xs"
+                                                    />
+                                                    @error('customer_nationality') <span class="text-[10px] text-red-500">{{ $message }}</span> @enderror
+                                                </div>
+                                                <x-ui.select-date wire:model="customer_birthday" label="Ngày sinh" />
+                                                <x-ui.select-date wire:model="customer_visa_expiry" label="Hạn Visa" />
+                                            </div>
+                                        @endif
+                                    </div>
+
+                                    <div x-show="customerTab === 'new'" x-cloak>
+                                        <div class="grid grid-cols-2 gap-3 bg-gray-50 p-3 rounded-lg border border-gray-200">
                                             <div class="col-span-2">
-                                                <label class="block text-[10px] font-bold text-blue-600 uppercase mb-1">Họ tên</label>
-                                                <input type="text" wire:model.blur="customer_name" class="w-full rounded premium-input py-1.5 text-xs">
+                                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Họ tên *</label>
+                                                <input type="text" wire:model.blur="new_customer_name" class="w-full rounded premium-input py-1.5 text-xs">
+                                                @error('new_customer_name') <span class="text-[10px] text-red-500">{{ $message }}</span> @enderror
                                             </div>
                                             <div>
-                                                <label class="block text-[10px] font-bold text-blue-600 uppercase mb-1">SĐT</label>
-                                                <input type="text" wire:model.blur="customer_phone" class="w-full rounded premium-input py-1.5 text-xs">
+                                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">SĐT</label>
+                                                <input type="text" wire:model.blur="new_customer_phone" class="w-full rounded premium-input py-1.5 text-xs">
                                             </div>
                                             <div>
-                                                <label class="block text-[10px] font-bold text-blue-600 uppercase mb-1">Giới tính</label>
-                                                <select wire:model.blur="customer_gender" class="w-full rounded premium-input py-1.5 text-xs">
+                                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Giới tính</label>
+                                                <select wire:model.blur="new_customer_gender" class="w-full rounded premium-input py-1.5 text-xs">
                                                     <option value="">Chọn</option>
                                                     <option value="male">Nam</option>
                                                     <option value="female">Nữ</option>
@@ -430,60 +471,30 @@
                                                 </select>
                                             </div>
                                             <div>
-                                                <label class="block text-[10px] font-bold text-blue-600 uppercase mb-1">CCCD/Passport *</label>
-                                                <input type="text" wire:model.blur="customer_identity" class="w-full rounded premium-input py-1.5 text-xs">
-                                                @error('customer_identity') <span class="text-[10px] text-red-500">{{ $message }}</span> @enderror
-                                            </div>
-                                            <div>
-                                                <label class="block text-[10px] font-bold text-blue-600 uppercase mb-1">Quốc tịch *</label>
-                                                <x-ui.select-search 
-                                                    wire:model="customer_nationality" 
-                                                    :options="$this->getFormattedCountries()"
-                                                    placeholder="Quốc tịch"
-                                                    class="text-xs"
-                                                />
-                                                @error('customer_nationality') <span class="text-[10px] text-red-500">{{ $message }}</span> @enderror
-                                            </div>
-                                            <x-ui.select-date wire:model="customer_birthday" label="Ngày sinh" />
-                                            <x-ui.select-date wire:model="customer_visa_expiry" label="Hạn Visa" />
-                                        </div>
-                                    @endif
-                                @else
-                                    <div class="space-y-3">
-                                        <input type="text" wire:model.blur="new_customer_name" placeholder="Họ và tên *" class="w-full rounded premium-input py-2 text-sm">
-                                        <div class="grid grid-cols-2 gap-3">
-                                            <input type="text" wire:model.blur="new_customer_phone" placeholder="Số điện thoại" class="w-full rounded premium-input py-2 text-sm">
-                                                <select wire:model.blur="new_customer_gender" class="w-full rounded premium-input py-2 text-sm">
-                                                    <option value="">Giới tính</option>
-                                                    <option value="male">Nam</option>
-                                                    <option value="female">Nữ</option>
-                                                    <option value="other">Khác</option>
-                                                </select>
-                                            </div>
-                                            <div class="grid grid-cols-1 gap-3">
-                                                <x-ui.select-date wire:model="new_customer_birthday" label="Ngày sinh" />
-                                            </div>
-                                            <div class="grid grid-cols-2 gap-3">
-                                            <div>
-                                                <input type="text" wire:model.blur="new_customer_identity" placeholder="CCCD/Passport" class="w-full rounded premium-input py-2 text-sm">
+                                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">CMND/Passport *</label>
+                                                <input type="text" wire:model.blur="new_customer_identity" class="w-full rounded premium-input py-1.5 text-xs">
                                                 @error('new_customer_identity') <span class="text-[10px] text-red-500">{{ $message }}</span> @enderror
                                             </div>
                                             <div>
+                                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Quốc tịch *</label>
                                                 <x-ui.select-search 
                                                     wire:model="new_customer_nationality" 
                                                     :options="$this->getFormattedCountries()"
                                                     placeholder="Quốc tịch"
-                                                    class="text-sm"
+                                                    class="text-xs"
                                                 />
                                                 @error('new_customer_nationality') <span class="text-[10px] text-red-500">{{ $message }}</span> @enderror
                                             </div>
-                                        </div>
-                                            <div>
+                                            <x-ui.select-date wire:model="new_customer_birthday" label="Ngày sinh" />
+                                            <x-ui.select-date wire:model="new_customer_visa_expiry" label="Hạn Visa" />
+                                            
+                                            <div class="col-span-2">
                                                 <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Ảnh hộ chiếu/CCCD (nếu có)</label>
                                                 <input type="file" wire:model="new_customer_image" class="text-xs">
                                             </div>
                                         </div>
                                     </div>
+                                </div>
                                 @endif
 
                                 {{-- Additional Guests --}}

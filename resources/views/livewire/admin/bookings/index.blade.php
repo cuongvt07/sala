@@ -224,28 +224,29 @@
                         <div class="bg-orange-500 p-3 rounded-lg text-white"><p class="text-[10px] uppercase font-bold opacity-80">Còn lại</p><p class="text-xl font-black">{{ number_format($grandTotal - $totalDeposit, 0, ',', '.') }}đ</p></div>
                     </div>
                     <div class="grid grid-cols-2 gap-3">
-                        <div class="bg-white p-3 rounded-lg border border-gray-200">
+                        <div x-data="{ customerTab: @entangle('activeTab') }" class="bg-white p-3 rounded-lg border border-gray-200">
                             <div class="flex items-center justify-between mb-2">
                                 <h4 class="text-[10px] font-black text-gray-400 uppercase">Khách hàng</h4>
-                                <button type="button" wire:click="$set('activeTab', '{{ $activeTab === 'existing' ? 'new' : 'existing' }}')" class="text-[9px] font-bold py-0.5 px-1.5 rounded bg-gray-100 text-gray-500 uppercase hover:bg-blue-600 hover:text-white">{{ $activeTab === 'existing' ? '+ Mới' : '← Chọn' }}</button>
+                                <button type="button" @click="customerTab = (customerTab === 'existing' ? 'new' : 'existing')" class="text-[9px] font-bold py-0.5 px-1.5 rounded bg-gray-100 text-gray-500 uppercase hover:bg-blue-600 hover:text-white" x-text="customerTab === 'existing' ? '+ Mới' : '← Chọn'"></button>
                             </div>
-                            @if($activeTab === 'existing')
+
+                            <div x-show="customerTab === 'existing'">
                                 <div class="space-y-1.5">
                                     <select wire:model.live="customer_id" class="w-full rounded border-gray-200 p-2 text-sm font-semibold"><option value="">-- Chọn khách hàng --</option>@foreach($customers as $c)<option value="{{ $c->id }}">{{ $c->name }} ({{ $c->phone }})</option>@endforeach</select>
                                     @error('customer_id')<span class="text-red-500 text-xs">{{ $message }}</span>@enderror
                                     
-                                    @if($customer_id)
-                                        <div class="relative mt-2">
-                                            <label class="text-[9px] text-gray-400 uppercase font-bold mb-1 block">Quốc tịch</label>
-                                            <x-ui.select-search 
-                                                wire:model.live="new_customer_nationality" 
-                                                :options="$this->getFormattedCountries()"
-                                                placeholder="Tìm quốc tịch (VNM, USA...)"
-                                            />
-                                        </div>
-                                    @endif
+                                    <div x-show="$wire.customer_id" class="relative mt-2">
+                                        <label class="text-[9px] text-gray-400 uppercase font-bold mb-1 block">Quốc tịch</label>
+                                        <x-ui.select-search 
+                                            wire:model.live="new_customer_nationality" 
+                                            :options="$this->getFormattedCountries()"
+                                            placeholder="Tìm quốc tịch (VNM, USA...)"
+                                        />
+                                    </div>
                                 </div>
-                            @else
+                            </div>
+
+                            <div x-show="customerTab === 'new'" x-cloak>
                                 <div class="space-y-1.5">
                                     <input type="text" wire:model="new_customer_name" placeholder="Họ tên *" class="w-full rounded border-gray-200 p-2 text-sm font-semibold">
                                     @error('new_customer_name')<span class="text-red-500 text-xs">{{ $message }}</span>@enderror
@@ -271,7 +272,7 @@
                                         />
                                     </div>
                                 </div>
-                            @endif
+                            </div>
                         </div>
 
                         {{-- Additional Guests --}}
