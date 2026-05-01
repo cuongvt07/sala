@@ -14,16 +14,16 @@ class GlobalAreaSelector extends Component
         $this->selectedAreaId = session('admin_selected_area_id', '');
     }
 
-    public function updatedSelectedAreaId($value)
+    public function setArea($id)
     {
-        if ($value) {
-            session(['admin_selected_area_id' => $value]);
+        $this->selectedAreaId = $id;
+        if ($id) {
+            session(['admin_selected_area_id' => $id]);
         } else {
             session()->forget('admin_selected_area_id');
         }
 
         $this->dispatch('area-selected');
-        // Removed redirect to allow SPA-like refresh via listeners
     }
 
     public function render()
