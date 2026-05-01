@@ -495,7 +495,6 @@
                                         </div>
                                     </div>
                                 </div>
-                                @endif
 
                                 {{-- Additional Guests --}}
                                 <div class="mt-4 p-3 bg-indigo-50/50 rounded border border-indigo-100">
