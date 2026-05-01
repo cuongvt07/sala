@@ -15,6 +15,7 @@ use Carbon\Carbon;
 class BookingCalendar extends Component
 {
     use \Livewire\WithFileUploads;
+    use \App\Traits\HasCountryData;
 
     public $startDate;
     public $selectedArea = '';
@@ -118,6 +119,17 @@ class BookingCalendar extends Component
     public function mount()
     {
         $this->startDate = now()->format('Y-m-d');
+        $this->countries = $this->getFormattedCountries();
+    }
+
+    public function updatedCustomerNationality($value)
+    {
+        $this->customer_nationality = $this->handleNationalityUpdate($value);
+    }
+
+    public function updatedNewCustomerNationality($value)
+    {
+        $this->new_customer_nationality = $this->handleNationalityUpdate($value);
     }
 
     public $invoice_data = [];
