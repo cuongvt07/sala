@@ -142,19 +142,6 @@
             font-weight: 500;
         }
 
-        /* Premium Input Style */
-        .premium-input {
-            background-color: #f8fafc !important; /* light slate */
-            border: 1.5px solid #cbd5e1 !important; /* slate-300 */
-            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05) !important; /* Sunken effect */
-            transition: all 0.2s ease-in-out;
-        }
-        .premium-input:focus {
-            background-color: #fff !important;
-            border-color: #3b82f6 !important; /* blue-500 */
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), inset 0 2px 4px 0 rgba(0, 0, 0, 0.05) !important;
-            outline: none;
-        }
     </style>
 
     <!-- Header & Controls -->
@@ -320,7 +307,48 @@
             <div class="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity" wire:click="$set('showModal', false)"></div>
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
             
-            <div x-data="{ activeTab: @entangle('activeModalTab') }" class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full z-[110] relative border border-gray-100">
+            <div x-data="{ 
+                activeTab: @entangle('activeModalTab'),
+                checkIn: @entangle('check_in'),
+                checkOut: @entangle('check_out'),
+                unitPrice: @entangle('unit_price'),
+                priceType: @entangle('price_type'),
+                totalPrice: @entangle('price'),
+                serviceInputs: @entangle('service_inputs'),
+                calculateTotal() {
+                    if (!this.checkIn || !this.checkOut || !this.unitPrice) return;
+                    let start = new Date(this.checkIn);
+                    let end = new Date(this.checkOut);
+                    if (end <= start) return;
+                    
+                    let diffTime = Math.abs(end - start);
+                    let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    
+                    let uPrice = parseInt(this.unitPrice.toString().replace(/[^0-9]/g, '')) || 0;
+                    let total = 0;
+                    
+                    if (this.priceType === 'day') {
+                        total = Math.max(1, diffDays) * uPrice;
+                    } else {
+                        total = (uPrice / 30) * diffDays;
+                    }
+
+                    // Add pending services from serviceInputs
+                    let pendingServices = 0;
+                    Object.values(this.serviceInputs).forEach(s => {
+                        let up = parseInt((s.unit_price || 0).toString().replace(/[^0-9]/g, '')) || 0;
+                        if (s.start_index !== undefined && s.end_index !== undefined) {
+                            pendingServices += Math.max(0, (parseFloat(s.end_index) || 0) - (parseFloat(s.start_index) || 0)) * up;
+                        } else {
+                            pendingServices += (parseFloat(s.quantity) || 1) * up;
+                        }
+                    });
+                    
+                    this.totalPrice = new Intl.NumberFormat('vi-VN').format(Math.round(total + pendingServices)).replace(/,/g, '.');
+                }
+            }" 
+            x-init="$watch('checkIn', () => calculateTotal()); $watch('checkOut', () => calculateTotal()); $watch('unitPrice', () => calculateTotal()); $watch('priceType', () => calculateTotal()); $watch('serviceInputs', () => calculateTotal());"
+            class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full z-[110] relative border border-gray-100">
                 {{-- Header --}}
                 <div class="bg-gray-800 px-6 py-4 flex justify-between items-center text-white">
                     <div>
@@ -497,24 +525,24 @@
                                 </div>
 
                                 {{-- Additional Guests --}}
-                                <div class="mt-4 p-3 bg-indigo-50/50 rounded border border-indigo-100">
+                                <div x-data="{ guests: @entangle('additional_guests') }" class="mt-4 p-3 bg-indigo-50/50 rounded border border-indigo-100">
                                     <div class="flex items-center justify-between mb-2">
                                         <h4 class="text-[10px] font-bold text-indigo-700 uppercase tracking-wider">Người ở cùng</h4>
-                                        <button type="button" wire:click="addGuest" class="text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded font-bold hover:bg-indigo-700">+ Thêm</button>
+                                        <button type="button" @click="guests.push({ name: '', identity: '' })" class="text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded font-bold hover:bg-indigo-700">+ Thêm</button>
                                     </div>
                                     <div class="space-y-2">
-                                        @foreach($additional_guests as $index => $guest)
+                                        <template x-for="(guest, index) in guests" :key="index">
                                             <div class="flex items-center gap-2">
-                                                <input type="text" wire:model="additional_guests.{{ $index }}.name" placeholder="Tên" class="flex-1 px-2 py-1 text-xs rounded premium-input">
-                                                <input type="text" wire:model="additional_guests.{{ $index }}.identity" placeholder="CCCD/Passport" class="w-32 px-2 py-1 text-xs rounded premium-input">
-                                                <button type="button" wire:click="removeGuest({{ $index }})" class="text-red-500 hover:text-red-700">
+                                                <input type="text" x-model="guest.name" placeholder="Tên" class="flex-1 px-2 py-1 text-xs rounded premium-input">
+                                                <input type="text" x-model="guest.identity" placeholder="CCCD/Passport" class="w-32 px-2 py-1 text-xs rounded premium-input">
+                                                <button type="button" @click="guests.splice(index, 1)" class="text-red-500 hover:text-red-700">
                                                     <x-icon name="heroicon-o-trash" class="h-4 w-4" />
                                                 </button>
                                             </div>
-                                        @endforeach
-                                        @if(empty($additional_guests))
+                                        </template>
+                                        <div x-show="guests.length === 0" class="text-center py-2">
                                             <p class="text-[10px] text-gray-400 italic">Không có người ở cùng</p>
-                                        @endif
+                                        </div>
                                     </div>
                                 </div>
 

@@ -39,14 +39,12 @@
     <div class="relative">
         <button type="button" 
             @click="open = !open" 
-            class="relative w-full rounded-lg border border-gray-200 bg-white p-2.5 text-left text-[12px] text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            class="premium-select text-left relative"
             :class="{'border-red-500 bg-red-50': '{{ $error }}'}"
         >
-            <span x-text="selected ? selected : '{{ $placeholder }}'" class="block truncate" :class="{'text-gray-500': !selected}"></span>
-            <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                    <path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 011.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
-                </svg>
+            <span x-text="selected ? selected : '{{ $placeholder }}'" class="block truncate pr-8" :class="{'text-gray-400': !selected}"></span>
+            <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                <x-icon name="heroicon-m-chevron-up-down" class="h-4 w-4 text-gray-400" />
             </span>
         </button>
 
@@ -60,7 +58,7 @@
             style="display: none;">
             
             <div class="px-2 py-2 sticky top-0 bg-white border-b border-gray-100">
-                <input x-model="search" type="text" class="w-full rounded-md border-gray-300 py-1.5 text-xs text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" placeholder="Tìm kiếm...">
+                <input x-model="search" type="text" class="premium-input !rounded-lg !p-2 !text-[11px]" placeholder="Tìm kiếm...">
             </div>
 
             <ul class="max-h-50 overflow-y-auto">

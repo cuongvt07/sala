@@ -218,35 +218,73 @@
                     </div>
                 @else
                     {{-- TẠO MỚI: Form đầy đủ --}}
-                    <div class="grid grid-cols-3 gap-3">
-                        <div class="bg-indigo-600 p-3 rounded-lg text-white"><p class="text-[10px] uppercase font-bold opacity-80">Tổng tiền</p><p class="text-xl font-black">{{ number_format($grandTotal, 0, ',', '.') }}đ</p></div>
-                        <div class="bg-green-600 p-3 rounded-lg text-white"><p class="text-[10px] uppercase font-bold opacity-80">Đã thu</p><p class="text-xl font-black">{{ number_format($totalDeposit, 0, ',', '.') }}đ</p></div>
-                        <div class="bg-orange-500 p-3 rounded-lg text-white"><p class="text-[10px] uppercase font-bold opacity-80">Còn lại</p><p class="text-xl font-black">{{ number_format($grandTotal - $totalDeposit, 0, ',', '.') }}đ</p></div>
+        <div x-data="{ 
+            activeTab: @entangle('activeTab'),
+            checkIn: @entangle('check_in'),
+            checkOut: @entangle('check_out'),
+            unitPrice: @entangle('unit_price'),
+            priceType: @entangle('price_type'),
+            price: @entangle('price'),
+            logTotal: {{ $logTotal }},
+            selectedServices: @entangle('selected_services'),
+            
+            get grandTotal() {
+                let base = parseInt(this.price.toString().replace(/[^0-9]/g, '')) || 0;
+                let pending = 0;
+                Object.values(this.selectedServices).forEach(s => {
+                    let up = parseInt(s.unit_price.toString().replace(/[^0-9]/g, '')) || 0;
+                    if (s.start_index !== undefined && s.end_index !== undefined && s.start_index !== null) {
+                        pending += Math.max(0, (parseFloat(s.end_index) || 0) - (parseFloat(s.start_index) || 0)) * up;
+                    } else {
+                        pending += (parseFloat(s.quantity) || 1) * up;
+                    }
+                });
+                return new Intl.NumberFormat('vi-VN').format(base + this.logTotal + pending).replace(/,/g, '.');
+            },
+
+            calculateBasePrice() {
+                if (!this.checkIn || !this.checkOut || !this.unitPrice) return;
+                let start = new Date(this.checkIn);
+                let end = new Date(this.checkOut);
+                if (end <= start) return;
+                let diffDays = Math.ceil(Math.abs(end - start) / (1000 * 60 * 60 * 24));
+                let uPrice = parseInt(this.unitPrice.toString().replace(/[^0-9]/g, '')) || 0;
+                let total = (this.priceType === 'day') ? Math.max(1, diffDays) * uPrice : (uPrice / 30) * diffDays;
+                this.price = new Intl.NumberFormat('vi-VN').format(Math.round(total)).replace(/,/g, '.');
+            }
+        }" x-init="$watch('checkIn', () => calculateBasePrice()); $watch('checkOut', () => calculateBasePrice()); $watch('unitPrice', () => calculateBasePrice()); $watch('priceType', () => calculateBasePrice());">
+            <div class="grid grid-cols-3 gap-3">
+                <div class="bg-indigo-600 p-3 rounded-lg text-white"><p class="text-[10px] uppercase font-bold opacity-80">Tổng tiền</p><p class="text-xl font-black" x-text="grandTotal + 'đ'">{{ number_format($grandTotal, 0, ',', '.') }}đ</p></div>
+                <div class="bg-green-600 p-3 rounded-lg text-white"><p class="text-[10px] uppercase font-bold opacity-80">Đã thu</p><p class="text-xl font-black">{{ number_format($totalDeposit, 0, ',', '.') }}đ</p></div>
+                <div class="bg-orange-500 p-3 rounded-lg text-white">
+                    <p class="text-[10px] uppercase font-bold opacity-80">Còn lại</p>
+                    <p class="text-xl font-black" x-text="new Intl.NumberFormat('vi-VN').format((parseInt(grandTotal.replace(/\./g, '')) || 0) - {{ (int)$totalDeposit }}).replace(/,/g, '.') + 'đ'">{{ number_format($grandTotal - $totalDeposit, 0, ',', '.') }}đ</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3 mt-3">
+                <div class="bg-white p-3 rounded-lg border border-gray-200">
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="text-[10px] font-black text-gray-400 uppercase">Khách hàng</h4>
+                        <button type="button" @click="activeTab = (activeTab === 'existing' ? 'new' : 'existing')" class="text-[9px] font-bold py-0.5 px-1.5 rounded bg-gray-100 text-gray-500 uppercase hover:bg-blue-600 hover:text-white" x-text="activeTab === 'existing' ? '+ Mới' : '← Chọn'"></button>
                     </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div x-data="{ customerTab: @entangle('activeTab') }" class="bg-white p-3 rounded-lg border border-gray-200">
-                            <div class="flex items-center justify-between mb-2">
-                                <h4 class="text-[10px] font-black text-gray-400 uppercase">Khách hàng</h4>
-                                <button type="button" @click="customerTab = (customerTab === 'existing' ? 'new' : 'existing')" class="text-[9px] font-bold py-0.5 px-1.5 rounded bg-gray-100 text-gray-500 uppercase hover:bg-blue-600 hover:text-white" x-text="customerTab === 'existing' ? '+ Mới' : '← Chọn'"></button>
-                            </div>
 
-                            <div x-show="customerTab === 'existing'">
-                                <div class="space-y-1.5">
-                                    <select wire:model.live="customer_id" class="w-full rounded border-gray-200 p-2 text-sm font-semibold"><option value="">-- Chọn khách hàng --</option>@foreach($customers as $c)<option value="{{ $c->id }}">{{ $c->name }} ({{ $c->phone }})</option>@endforeach</select>
-                                    @error('customer_id')<span class="text-red-500 text-xs">{{ $message }}</span>@enderror
-                                    
-                                    <div x-show="$wire.customer_id" class="relative mt-2">
-                                        <label class="text-[9px] text-gray-400 uppercase font-bold mb-1 block">Quốc tịch</label>
-                                        <x-ui.select-search 
-                                            wire:model.live="new_customer_nationality" 
-                                            :options="$this->getFormattedCountries()"
-                                            placeholder="Tìm quốc tịch (VNM, USA...)"
-                                        />
-                                    </div>
-                                </div>
+                    <div x-show="activeTab === 'existing'">
+                        <div class="space-y-1.5">
+                            <select wire:model.live="customer_id" class="w-full rounded border-gray-200 p-2 text-sm font-semibold"><option value="">-- Chọn khách hàng --</option>@foreach($customers as $c)<option value="{{ $c->id }}">{{ $c->name }} ({{ $c->phone }})</option>@endforeach</select>
+                            @error('customer_id')<span class="text-red-500 text-xs">{{ $message }}</span>@enderror
+                            
+                            <div x-show="$wire.customer_id" class="relative mt-2">
+                                <label class="text-[9px] text-gray-400 uppercase font-bold mb-1 block">Quốc tịch</label>
+                                <x-ui.select-search 
+                                    wire:model.live="new_customer_nationality" 
+                                    :options="$this->getFormattedCountries()"
+                                    placeholder="Tìm quốc tịch (VNM, USA...)"
+                                />
                             </div>
+                        </div>
+                    </div>
 
-                            <div x-show="customerTab === 'new'" x-cloak>
+                    <div x-show="activeTab === 'new'" x-cloak>
                                 <div class="space-y-1.5">
                                     <input type="text" wire:model="new_customer_name" placeholder="Họ tên *" class="w-full rounded border-gray-200 p-2 text-sm font-semibold">
                                     @error('new_customer_name')<span class="text-red-500 text-xs">{{ $message }}</span>@enderror
@@ -276,22 +314,22 @@
                         </div>
 
                         {{-- Additional Guests --}}
-                        <div class="bg-white p-3 rounded-lg border border-gray-200">
+                        <div x-data="{ guests: @entangle('additional_guests') }" class="bg-white p-3 rounded-lg border border-gray-200">
                             <div class="flex items-center justify-between mb-2">
                                 <h4 class="text-[10px] font-black text-gray-400 uppercase">Người ở cùng</h4>
-                                <button type="button" wire:click="addGuest" class="text-[9px] bg-slate-600 text-white px-2 py-0.5 rounded font-bold hover:bg-slate-700">+ Thêm</button>
+                                <button type="button" @click="guests.push({ name: '', identity: '' })" class="text-[9px] bg-slate-600 text-white px-2 py-0.5 rounded font-bold hover:bg-slate-700">+ Thêm</button>
                             </div>
                             <div class="space-y-1.5">
-                                @foreach($additional_guests as $index => $guest)
+                                <template x-for="(guest, index) in guests" :key="index">
                                     <div class="flex items-center gap-2">
-                                        <input type="text" wire:model="additional_guests.{{ $index }}.name" placeholder="Tên" class="flex-1 rounded border-gray-200 p-1.5 text-xs">
-                                        <input type="text" wire:model="additional_guests.{{ $index }}.identity" placeholder="CMND" class="w-24 rounded border-gray-200 p-1.5 text-xs">
-                                        <button type="button" wire:click="removeGuest({{ $index }})" class="text-red-500"><x-icon name="heroicon-o-trash" class="h-4 w-4" /></button>
+                                        <input type="text" x-model="guest.name" placeholder="Tên" class="flex-1 rounded border-gray-200 p-1.5 text-xs">
+                                        <input type="text" x-model="guest.identity" placeholder="CMND" class="w-24 rounded border-gray-200 p-1.5 text-xs">
+                                        <button type="button" @click="guests.splice(index, 1)" class="text-red-500"><x-icon name="heroicon-o-trash" class="h-4 w-4" /></button>
                                     </div>
-                                @endforeach
-                                @if(empty($additional_guests))
+                                </template>
+                                <div x-show="guests.length === 0">
                                     <p class="text-[9px] text-gray-400 italic text-center">Không có người ở cùng</p>
-                                @endif
+                                </div>
                             </div>
                         </div>
 
@@ -477,15 +515,39 @@
 
                 {{-- ===== 2 CỘT: DỊCH VỤ | BẢNG TỔNG CHI PHÍ ===== --}}
                 <div class="grid grid-cols-5 gap-3">
-                    <!-- CỘT TRÁI: Chọn dịch vụ (1/5) -->
-                    <div class="col-span-2 bg-white rounded-lg border border-gray-200 p-3">
+                    <!-- CỘT TRÁI: Chọn dịch vụ (2/5) -->
+                    <div x-data="{ 
+                        selectedServices: @entangle('selected_services'),
+                        toggleService(id, name, defaultPrice) {
+                            if (this.selectedServices[id]) {
+                                let newServices = { ...this.selectedServices };
+                                delete newServices[id];
+                                this.selectedServices = newServices;
+                            } else {
+                                this.selectedServices = {
+                                    ...this.selectedServices,
+                                    [id]: {
+                                        selected: true,
+                                        quantity: 1,
+                                        unit_price: new Intl.NumberFormat('vi-VN').format(defaultPrice).replace(/,/g, '.'),
+                                        start_index: 0,
+                                        end_index: 0
+                                    }
+                                };
+                            }
+                        }
+                    }" class="col-span-2 bg-white rounded-lg border border-gray-200 p-3">
                         <h4 class="text-[10px] font-black text-gray-400 uppercase mb-2">Chọn dịch vụ</h4>
                         <div class="space-y-1 max-h-64 overflow-y-auto">
                             @foreach($all_services as $service)
-                                @php $isSelected = !empty($selected_services[$service->id]['selected']); @endphp
-                                <div wire:click="toggleService({{ $service->id }})" class="p-2 rounded border cursor-pointer transition-all flex items-center gap-2 {{ $isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-100 hover:border-gray-300' }}">
-                                    <div class="w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 {{ $isSelected ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-300' }}">
-                                        @if($isSelected) <x-icon name="heroicon-s-check" class="h-2.5 w-2.5" /> @endif
+                                <div @click="toggleService({{ $service->id }}, '{{ $service->name }}', {{ $service->unit_price }})" 
+                                     :class="selectedServices[{{ $service->id }}] ? 'border-blue-500 bg-blue-50' : 'border-gray-100 hover:border-gray-300'"
+                                     class="p-2 rounded border cursor-pointer transition-all flex items-center gap-2">
+                                    <div :class="selectedServices[{{ $service->id }}] ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-300'"
+                                         class="w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0">
+                                        <template x-if="selectedServices[{{ $service->id }}]">
+                                            <x-icon name="heroicon-s-check" class="h-2.5 w-2.5" />
+                                        </template>
                                     </div>
                                     <div class="flex-1 min-w-0">
                                         <p class="text-xs font-bold text-gray-900 truncate">{{ $service->name }}</p>

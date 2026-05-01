@@ -52,7 +52,7 @@
     <div class="flex gap-1.5">
         {{-- Day --}}
         <div class="flex-1">
-            <select x-model="day" @change="update()" class="w-full rounded-lg border-gray-200 bg-gray-50 p-2 text-xs font-bold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 appearance-none cursor-pointer">
+            <select x-model="day" @change="update()" class="premium-select !bg-gray-50/50 !p-2 text-center">
                 <option value="">D</option>
                 @for($i=1; $i<=31; $i++)
                     <option value="{{ $i }}">{{ sprintf('%02d', $i) }}</option>
@@ -62,7 +62,7 @@
 
         {{-- Month --}}
         <div class="flex-1">
-            <select x-model="month" @change="update()" class="w-full rounded-lg border-gray-200 bg-gray-50 p-2 text-xs font-bold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 appearance-none cursor-pointer">
+            <select x-model="month" @change="update()" class="premium-select !bg-gray-50/50 !p-2 text-center">
                 <option value="">M</option>
                 @for($i=1; $i<=12; $i++)
                     <option value="{{ $i }}">{{ sprintf('%02d', $i) }}</option>
@@ -72,7 +72,7 @@
 
         {{-- Year --}}
         <div class="flex-[1.5]">
-            <select x-model="year" @change="update()" class="w-full rounded-lg border-gray-200 bg-gray-50 p-2 text-xs font-bold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 appearance-none cursor-pointer">
+            <select x-model="year" @change="update()" class="premium-select !bg-gray-50/50 !p-2 text-center">
                 <option value="">Y</option>
                 @php $currentYear = date('Y'); @endphp
                 @for($i=$currentYear + 10; $i>=$currentYear - 80; $i--)

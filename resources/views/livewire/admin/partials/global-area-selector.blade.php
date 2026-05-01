@@ -1,16 +1,8 @@
-<div class="flex items-center space-x-2 bg-gray-100 p-1 rounded-lg border border-gray-200">
-    <button 
-        wire:click="$set('selectedAreaId', '')"
-        class="px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 {{ $selectedAreaId === '' ? 'bg-white text-blue-600 shadow-sm ring-1 ring-black/5' : 'text-gray-900 hover:text-black hover:bg-gray-200/50' }}"
-    >
-        All
-    </button>
-    @foreach($areas as $area)
-        <button 
-            wire:click="$set('selectedAreaId', {{ $area->id }})"
-            class="px-4 py-2 text-[12px] font-medium rounded-md transition-all duration-200 {{ $selectedAreaId == $area->id ? 'bg-white text-blue-600 shadow-sm ring-1 ring-black/5' : 'text-gray-900 hover:text-black hover:bg-gray-200/50' }}"
-        >
-            {{ $area->name }}
-        </button>
-    @endforeach
+<div class="relative">
+    <select wire:model.live="selectedArea" class="premium-select !rounded-full !px-6 !py-1.5 !text-[10px] !bg-slate-50 hover:!bg-white border-slate-200">
+        <option value="">-- Tất cả khu vực --</option>
+        @foreach($areas as $area)
+            <option value="{{ $area->id }}">{{ $area->name }}</option>
+        @endforeach
+    </select>
 </div>
