@@ -897,14 +897,14 @@
                 {{-- Footer --}}
                 <div class="bg-gray-50 px-6 py-4 flex justify-between items-center border-t">
                     <div class="flex flex-col">
-                        <label class="text-[10px] text-gray-500 font-bold uppercase mb-0.5">Tổng tiền phòng:</label>
-                        <div class="flex items-center">
+                        <label class="text-[10px] text-gray-500 font-bold uppercase mb-1">Tổng tiền phòng:</label>
+                        <div class="flex items-center bg-gray-100 border border-gray-200 rounded-lg px-3 py-1 shadow-inner group hover:bg-white transition-colors duration-200">
                             <input type="text" 
                                    x-model="totalPrice"
                                    x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.'); calculateUnitPrice();"
-                                   class="text-lg font-black text-blue-700 bg-transparent border-none p-0 w-32 focus:ring-0"
+                                   class="text-lg font-black text-blue-700 bg-transparent border-none p-0 w-32 focus:ring-0 text-right"
                             >
-                            <span class="text-lg font-black text-blue-700 ml-0.5">đ</span>
+                            <span class="text-sm font-bold text-gray-400 ml-1.5 border-l border-gray-300 pl-1.5">đ</span>
                         </div>
                     </div>
                     <div class="flex gap-4">
