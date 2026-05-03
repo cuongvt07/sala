@@ -113,6 +113,14 @@ class BookingCalendar extends Component
     public $manual_fee_amount;
     public $manual_fee_notes;
     public $manual_fee_date;
+    
+    public $deposit_usd = 0;
+    public $deposit_2_usd = 0;
+    public $usd_rate = 25400;
+    
+    public $deposit_currency = 'VND';
+    public $deposit_2_currency = 'VND';
+
     public $countries = [];
 
     protected $listeners = ['area-selected' => '$refresh', 'refreshView' => '$refresh'];
@@ -324,6 +332,11 @@ class BookingCalendar extends Component
         $this->calculateTotal();
     }
 
+    public function updatedPrice()
+    {
+        $this->calculateUnitPrice();
+    }
+
     public function updatedPriceType()
     {
         $this->is_contract = ($this->price_type === 'month');
@@ -358,27 +371,52 @@ class BookingCalendar extends Component
                 return;
 
             $unitPrice = (float) str_replace(['.', ','], '', $this->unit_price);
+            $diff = abs($start->diffInDays($end));
 
             if ($this->price_type === 'day') {
-                // Calculate days, including partial days if needed, but per requirement "day" usually means 24h blocks or calendar days.
-                // Logic based on nightly rate:
-                $diff = abs($start->diffInDays($end));
-                // If less than 1 day but parsed, count as 1? Or float? 
-                // Usually hotels count nights. 
                 $days = max(1, $diff);
                 $total = $days * $unitPrice;
             } else {
                 // Contract (formerly Month)
-                // Calculate total based on daily rate = monthly price / 30
-                $nights = $start->diffInDays($end);
+                $nights = $diff;
                 $total = ($unitPrice / 30) * $nights;
             }
 
             $this->price = number_format($total, 0, ',', '.');
 
-        } catch (\Exception $e) {
-            // Ignore parse errors
-        }
+        } catch (\Exception $e) {}
+    }
+
+    public function calculateUnitPrice()
+    {
+        if (!$this->check_in || !$this->check_out || !$this->price)
+            return;
+
+        try {
+            $start = Carbon::parse($this->check_in);
+            $end = Carbon::parse($this->check_out);
+
+            if ($end->lte($start))
+                return;
+
+            $totalPrice = (float) str_replace(['.', ','], '', $this->price);
+            $diff = abs($start->diffInDays($end));
+            $unitPrice = 0;
+
+            if ($this->price_type === 'day') {
+                $days = max(1, $diff);
+                $unitPrice = $totalPrice / $days;
+            } else {
+                // Contract (formerly Month)
+                $nights = $diff;
+                if ($nights > 0) {
+                    $unitPrice = ($totalPrice * 30) / $nights;
+                }
+            }
+
+            $this->unit_price = number_format($unitPrice, 0, ',', '.');
+
+        } catch (\Exception $e) {}
     }
 
     protected function updatePricing()
@@ -402,7 +440,10 @@ class BookingCalendar extends Component
     {
         \Illuminate\Support\Facades\Log::info('BookingCalendar CreateBooking Triggered', ['room_id' => $roomId, 'date' => $date]);
         $this->resetValidation();
-        $this->reset(['customer_id', 'new_customer_name', 'new_customer_phone', 'new_customer_email', 'new_customer_identity', 'new_customer_nationality', 'new_customer_visa_number', 'new_customer_visa_expiry', 'new_customer_notes', 'new_customer_image', 'customer_identity', 'customer_nationality', 'customer_visa_number', 'customer_visa_expiry', 'room_id', 'price_type', 'is_contract', 'unit_price', 'check_in', 'check_out', 'price', 'deposit', 'deposit_2', 'deposit_3', 'status', 'source', 'notes', 'editingBookingId', 'selected_services', 'usage_logs']);
+        $this->reset(['customer_id', 'new_customer_name', 'new_customer_phone', 'new_customer_email', 'new_customer_identity', 'new_customer_nationality', 'new_customer_visa_number', 'new_customer_visa_expiry', 'new_customer_notes', 'new_customer_image', 'customer_identity', 'customer_nationality', 'customer_visa_number', 'customer_visa_expiry', 'room_id', 'price_type', 'is_contract', 'unit_price', 'check_in', 'check_out', 'price', 'deposit', 'deposit_2', 'deposit_3', 'deposit_usd', 'deposit_2_usd', 'usd_rate', 'deposit_currency', 'deposit_2_currency', 'status', 'source', 'notes', 'editingBookingId', 'selected_services', 'usage_logs']);
+        $this->usd_rate = 25400;
+        $this->deposit_currency = 'VND';
+        $this->deposit_2_currency = 'VND';
 
         $this->room_id = $roomId;
         $this->check_in = $date;
@@ -437,7 +478,13 @@ class BookingCalendar extends Component
         $this->price = number_format($booking->price, 0, ',', '.');
         $this->deposit = $booking->deposit ? number_format($booking->deposit, 0, ',', '.') : 0;
         $this->deposit_2 = $booking->deposit_2 ? number_format($booking->deposit_2, 0, ',', '.') : 0;
-        $this->deposit_3 = $booking->deposit_3 ? number_format($booking->deposit_3, 0, ',', '.') : 0;
+        $this->deposit_3 = 0; // Hide
+        $this->deposit_usd = $booking->deposit_usd ?? 0;
+        $this->deposit_2_usd = $booking->deposit_2_usd ?? 0;
+        $this->usd_rate = $booking->usd_rate ?? 25400;
+        
+        $this->deposit_currency = ($booking->deposit_usd > 0) ? 'USD' : 'VND';
+        $this->deposit_2_currency = ($booking->deposit_2_usd > 0) ? 'USD' : 'VND';
         $this->status = $booking->status;
         $this->source = $booking->source ?: 'Hotline';
         $this->notes = $booking->notes;
@@ -687,8 +734,25 @@ class BookingCalendar extends Component
         $cleanPrice = str_replace('.', '', $this->price);
         $cleanDeposit = str_replace('.', '', $this->deposit);
         $cleanDeposit2 = str_replace('.', '', $this->deposit_2);
-        $cleanDeposit3 = str_replace('.', '', $this->deposit_3);
+        $cleanDeposit3 = 0;
         $cleanUnitPrice = str_replace('.', '', $this->unit_price);
+        
+        $cleanDepositUsd = str_replace(['.', ','], '', $this->deposit_usd);
+        $cleanDeposit2Usd = str_replace(['.', ','], '', $this->deposit_2_usd);
+        $cleanUsdRate = str_replace(['.', ','], '', $this->usd_rate);
+
+        // Ensure only one currency is saved per deposit round
+        if ($this->deposit_currency === 'USD') {
+            $cleanDeposit = 0;
+        } else {
+            $cleanDepositUsd = 0;
+        }
+
+        if ($this->deposit_2_currency === 'USD') {
+            $cleanDeposit2 = 0;
+        } else {
+            $cleanDeposit2Usd = 0;
+        }
 
         // Convert empty strings to null for decimal columns
         $cleanPrice = $cleanPrice === '' ? null : $cleanPrice;
@@ -759,6 +823,39 @@ class BookingCalendar extends Component
             }
         }
 
+        // Process Additional Guests as Customers
+        $processedGuests = [];
+        foreach ($this->additional_guests as $guest) {
+            if (empty($guest['name'])) continue;
+
+            $guestCustomer = null;
+            if (!empty($guest['identity'])) {
+                $guestCustomer = \App\Models\Customer::where('identity_id', $guest['identity'])->first();
+            } elseif (!empty($guest['phone'])) {
+                $guestCustomer = \App\Models\Customer::where('phone', $guest['phone'])->first();
+            }
+
+            $guestData = [
+                'name' => $guest['name'],
+                'phone' => $guest['phone'] ?? null,
+                'identity_id' => $guest['identity'] ?? null,
+                'gender' => $guest['gender'] ?? null,
+                'birthday' => !empty($guest['birthday']) ? $guest['birthday'] : null,
+                'nationality' => $guest['nationality'] ?? 'Vietnam',
+                'visa_number' => $guest['visa_number'] ?? null,
+                'visa_expiry' => !empty($guest['visa_expiry']) ? $guest['visa_expiry'] : null,
+            ];
+
+            if ($guestCustomer) {
+                $guestCustomer->update(array_filter($guestData));
+            } else {
+                $guestCustomer = \App\Models\Customer::create($guestData);
+            }
+
+            $guestData['customer_id'] = $guestCustomer->id;
+            $processedGuests[] = $guestData;
+        }
+
         $data = [
             'customer_id' => $customerId,
             'room_id' => $this->room_id,
@@ -771,10 +868,13 @@ class BookingCalendar extends Component
             'deposit' => $cleanDeposit,
             'deposit_2' => $cleanDeposit2,
             'deposit_3' => $cleanDeposit3,
+            'deposit_usd' => $cleanDepositUsd,
+            'deposit_2_usd' => $cleanDeposit2Usd,
+            'usd_rate' => $cleanUsdRate,
             'status' => $this->status,
             'source' => $this->source,
             'notes' => $this->notes,
-            'additional_guests' => $this->additional_guests,
+            'additional_guests' => $processedGuests,
         ];
 
         if ($this->editingBookingId) {

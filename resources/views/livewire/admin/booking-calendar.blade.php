@@ -332,22 +332,31 @@
                     } else {
                         total = (uPrice / 30) * diffDays;
                     }
-
-                    // Add pending services from serviceInputs
-                    let pendingServices = 0;
-                    Object.values(this.serviceInputs).forEach(s => {
-                        let up = parseInt((s.unit_price || 0).toString().replace(/[^0-9]/g, '')) || 0;
-                        if (s.start_index !== undefined && s.end_index !== undefined) {
-                            pendingServices += Math.max(0, (parseFloat(s.end_index) || 0) - (parseFloat(s.start_index) || 0)) * up;
-                        } else {
-                            pendingServices += (parseFloat(s.quantity) || 1) * up;
-                        }
-                    });
                     
-                    this.totalPrice = new Intl.NumberFormat('vi-VN').format(Math.round(total + pendingServices)).replace(/,/g, '.');
+                    this.totalPrice = new Intl.NumberFormat('vi-VN').format(Math.round(total)).replace(/,/g, '.');
+                },
+                calculateUnitPrice() {
+                    if (!this.checkIn || !this.checkOut || !this.totalPrice) return;
+                    let start = new Date(this.checkIn);
+                    let end = new Date(this.checkOut);
+                    if (end <= start) return;
+                    
+                    let diffTime = Math.abs(end - start);
+                    let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    
+                    let tPrice = parseInt(this.totalPrice.toString().replace(/[^0-9]/g, '')) || 0;
+                    let uPrice = 0;
+                    
+                    if (this.priceType === 'day') {
+                        uPrice = Math.round(tPrice / Math.max(1, diffDays));
+                    } else {
+                        uPrice = Math.round((tPrice * 30) / diffDays);
+                    }
+                    
+                    this.unitPrice = new Intl.NumberFormat('vi-VN').format(uPrice).replace(/,/g, '.');
                 }
             }" 
-            x-init="$watch('checkIn', () => calculateTotal()); $watch('checkOut', () => calculateTotal()); $watch('unitPrice', () => calculateTotal()); $watch('priceType', () => calculateTotal()); $watch('serviceInputs', () => calculateTotal());"
+            x-init="$watch('checkIn', () => calculateTotal()); $watch('checkOut', () => calculateTotal()); $watch('priceType', () => calculateTotal());"
             class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full z-[110] relative border border-gray-100">
                 {{-- Header --}}
                 <div class="bg-gray-800 px-6 py-4 flex justify-between items-center text-white">
@@ -368,7 +377,6 @@
                         $tabs = [
                             'overview' => 'Tổng quan',
                             'services' => 'Dịch vụ',
-                            'payments' => 'Thanh toán',
                             'invoice' => 'Hoá đơn'
                         ];
                     @endphp
@@ -408,13 +416,89 @@
                                     </div>
                                     <div>
                                         <label class="block text-xs font-medium text-gray-500 mb-1">Đơn giá</label>
-                                        <input type="text" wire:model.blur="unit_price" class="w-full rounded premium-input py-2 text-sm font-bold focus:ring-blue-500 focus:border-blue-500" x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')">
+                                        <input type="text" wire:model.blur="unit_price" 
+                                               class="w-full rounded premium-input py-2 text-sm font-bold focus:ring-blue-500 focus:border-blue-500" 
+                                               x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.'); calculateTotal();">
                                     </div>
                                 </div>
 
                                 <div class="grid grid-cols-2 gap-4 pt-2">
                                     <x-ui.select-date wire:model="check_in" label="Ngày nhận" />
                                     <x-ui.select-date wire:model="check_out" label="Ngày trả" />
+                                </div>
+
+                                {{-- Move Payments content here --}}
+                                <div class="space-y-4 pt-4 border-t border-gray-100">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div class="space-y-3">
+                                            <div class="flex justify-between items-center">
+                                                <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Tiền cọc</h4>
+                                                @if($is_contract)
+                                                    <div class="flex items-center gap-2">
+                                                        <span class="text-[10px] text-gray-400">Tỷ giá:</span>
+                                                        <input type="text" wire:model.live="usd_rate" class="w-16 text-right px-1 py-0.5 text-[10px] border-b border-gray-200 focus:border-blue-500 focus:ring-0 outline-none">
+                                                    </div>
+                                                @endif
+                                            </div>
+                                            <div class="space-y-3 bg-blue-50/30 p-3 rounded-lg border border-blue-100/50">
+                                                @foreach([
+                                                    'deposit' => ['label' => 'Cọc lần 1', 'currency' => 'deposit_currency', 'usd' => 'deposit_usd'],
+                                                    'deposit_2' => ['label' => 'Cọc lần 2', 'currency' => 'deposit_2_currency', 'usd' => 'deposit_2_usd']
+                                                ] as $field => $config)
+                                                    <div class="space-y-1">
+                                                        <div class="flex justify-between items-center">
+                                                            <span class="text-[10px] font-bold text-blue-600 uppercase">{{ $config['label'] }}</span>
+                                                            <select wire:model.live="{{ $config['currency'] }}" class="text-[10px] bg-white border border-gray-200 rounded px-1 py-0.5 outline-none focus:border-blue-500">
+                                                                <option value="VND">VND</option>
+                                                                <option value="USD">USD</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="relative">
+                                                            @if($this->{$config['currency']} === 'VND')
+                                                                <input type="text" wire:model.blur="{{ $field }}" 
+                                                                       class="w-full rounded premium-input py-1.5 px-2 text-xs font-bold text-blue-700 text-right pr-6" 
+                                                                       x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')">
+                                                                <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400">đ</span>
+                                                            @else
+                                                                <input type="text" wire:model.blur="{{ $config['usd'] }}" 
+                                                                       class="w-full rounded premium-input py-1.5 px-2 text-xs font-bold text-green-700 text-right pr-6"
+                                                                       placeholder="0.00">
+                                                                <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400">$</span>
+                                                            @endif
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                                
+                                                <div class="pt-2 border-t border-blue-100 flex justify-between items-center">
+                                                    <span class="text-[10px] font-bold text-gray-400 uppercase">Tổng cộng:</span>
+                                                    <div class="text-right">
+                                                        @php
+                                                            $totalVnd = (float)str_replace(['.',','],'',$deposit ?: 0) + (float)str_replace(['.',','],'',$deposit_2 ?: 0);
+                                                            $totalUsd = (float)str_replace(['.',','],'',$deposit_usd ?: 0) + (float)str_replace(['.',','],'',$deposit_2_usd ?: 0);
+                                                        @endphp
+                                                        @if($totalVnd > 0)
+                                                            <div class="text-xs font-black text-blue-800">{{ number_format($totalVnd, 0, ',', '.') }}đ</div>
+                                                        @endif
+                                                        @if($totalUsd > 0)
+                                                            <div class="text-xs font-black text-green-700">${{ number_format($totalUsd, 2) }}</div>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="space-y-3">
+                                            <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Phụ thu / Giảm trừ</h4>
+                                            <div class="space-y-2 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                                                <div class="relative">
+                                                    <input type="text" wire:model="manual_fee_amount" class="w-full rounded premium-input p-1.5 text-xs font-bold text-indigo-600 pr-6" x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')" placeholder="Số tiền">
+                                                    <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400">đ</span>
+                                                </div>
+                                                <input type="text" wire:model="manual_fee_notes" class="w-full rounded premium-input p-1.5 text-xs" placeholder="Lý do...">
+                                                <button wire:click="addManualSurcharge" class="w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[10px] font-bold uppercase transition-all shadow-sm">Ghi nhận phí</button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -525,23 +609,67 @@
                                 </div>
 
                                 {{-- Additional Guests --}}
-                                <div x-data="{ guests: @entangle('additional_guests') }" class="mt-4 p-3 bg-indigo-50/50 rounded border border-indigo-100">
-                                    <div class="flex items-center justify-between mb-2">
-                                        <h4 class="text-[10px] font-bold text-indigo-700 uppercase tracking-wider">Người ở cùng</h4>
-                                        <button type="button" @click="guests.push({ name: '', identity: '' })" class="text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded font-bold hover:bg-indigo-700">+ Thêm</button>
+                                <div x-data="{ guests: @entangle('additional_guests') }" class="mt-4 p-4 bg-indigo-50/50 rounded-xl border border-indigo-100">
+                                    <div class="flex items-center justify-between mb-4">
+                                        <div class="flex items-center gap-2">
+                                            <div class="bg-indigo-100 p-1.5 rounded-lg">
+                                                <x-icon name="heroicon-o-users" class="h-4 w-4 text-indigo-600" />
+                                            </div>
+                                            <h4 class="text-xs font-bold text-indigo-700 uppercase tracking-wider">Thông tin người ở cùng</h4>
+                                        </div>
+                                        <button type="button" @click="guests.push({ name: '', phone: '', identity: '', gender: '', nationality: 'Vietnam', birthday: '', visa_expiry: '' })" class="text-[10px] bg-indigo-600 text-white px-3 py-1 rounded-full font-bold hover:bg-indigo-700 transition-all shadow-sm">+ Thêm khách</button>
                                     </div>
-                                    <div class="space-y-2">
+                                    
+                                    <div class="space-y-4">
                                         <template x-for="(guest, index) in guests" :key="index">
-                                            <div class="flex items-center gap-2">
-                                                <input type="text" x-model="guest.name" placeholder="Tên" class="flex-1 px-2 py-1 text-xs rounded premium-input">
-                                                <input type="text" x-model="guest.identity" placeholder="CCCD/Passport" class="w-32 px-2 py-1 text-xs rounded premium-input">
-                                                <button type="button" @click="guests.splice(index, 1)" class="text-red-500 hover:text-red-700">
+                                            <div class="bg-white p-4 rounded-lg border border-indigo-100 shadow-sm relative group">
+                                                <button type="button" @click="guests.splice(index, 1)" class="absolute -top-2 -right-2 bg-white text-red-500 hover:text-red-700 rounded-full p-1 shadow-md border border-red-50 border-gray-100 transition-transform group-hover:scale-110">
                                                     <x-icon name="heroicon-o-trash" class="h-4 w-4" />
                                                 </button>
+                                                
+                                                <div class="grid grid-cols-2 gap-3">
+                                                    <div class="col-span-2">
+                                                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Họ tên *</label>
+                                                        <input type="text" x-model="guest.name" placeholder="Nguyễn Văn A" class="w-full px-3 py-1.5 text-xs rounded-lg premium-input">
+                                                    </div>
+                                                    <div>
+                                                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Số điện thoại</label>
+                                                        <input type="text" x-model="guest.phone" placeholder="090..." class="w-full px-3 py-1.5 text-xs rounded-lg premium-input">
+                                                    </div>
+                                                    <div>
+                                                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Giới tính</label>
+                                                        <select x-model="guest.gender" class="w-full px-3 py-1.5 text-xs rounded-lg premium-input">
+                                                            <option value="">Chọn</option>
+                                                            <option value="male">Nam</option>
+                                                            <option value="female">Nữ</option>
+                                                            <option value="other">Khác</option>
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">CCCD / Passport</label>
+                                                        <input type="text" x-model="guest.identity" class="w-full px-3 py-1.5 text-xs rounded-lg premium-input">
+                                                    </div>
+                                                    <div>
+                                                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Quốc tịch</label>
+                                                        <select x-model="guest.nationality" class="w-full px-3 py-1.5 text-xs rounded-lg premium-input">
+                                                            @foreach($this->getFormattedCountries() as $code => $name)
+                                                                <option value="{{ $name }}">{{ $name }}</option>
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Ngày sinh</label>
+                                                        <input type="date" x-model="guest.birthday" class="w-full px-3 py-1.5 text-xs rounded-lg premium-input">
+                                                    </div>
+                                                    <div>
+                                                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Hạn Visa</label>
+                                                        <input type="date" x-model="guest.visa_expiry" class="w-full px-3 py-1.5 text-xs rounded-lg premium-input">
+                                                    </div>
+                                                </div>
                                             </div>
                                         </template>
-                                        <div x-show="guests.length === 0" class="text-center py-2">
-                                            <p class="text-[10px] text-gray-400 italic">Không có người ở cùng</p>
+                                        <div x-show="guests.length === 0" class="text-center py-6 border-2 border-dashed border-indigo-100 rounded-lg">
+                                            <p class="text-xs text-gray-400 italic">Chưa có người ở cùng</p>
                                         </div>
                                     </div>
                                 </div>
@@ -736,36 +864,6 @@
                         </div>
                     </div>
 
-                    <div x-show="activeTab === 'payments'" x-cloak>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8" wire:key="tab-payments">
-                            <div class="space-y-4">
-                                <h4 class="text-sm font-bold text-gray-900 pb-2 border-b">Tiền cọc</h4>
-                                <div class="space-y-3">
-                                    @foreach(['deposit' => 'Cọc lần 1', 'deposit_2' => 'Cọc lần 2', 'deposit_3' => 'Cọc lần 3'] as $field => $label)
-                                        <div class="flex items-center justify-between p-3 border rounded">
-                                            <span class="text-xs font-medium text-gray-500">{{ $label }}</span>
-                                            <input type="text" wire:model.blur="{{ $field }}" class="text-right font-bold text-blue-600 premium-input rounded px-2 py-1 focus:ring-0 w-32" x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')">
-                                        </div>
-                                    @endforeach
-                                </div>
-                            </div>
-
-                            <div class="space-y-4">
-                                <h4 class="text-sm font-bold text-gray-900 pb-2 border-b">Phụ thu & Giảm trừ</h4>
-                                <div class="bg-gray-50 p-4 rounded border space-y-3">
-                                    <div>
-                                        <label class="block text-xs font-medium text-gray-500 mb-1">Số tiền</label>
-                                        <input type="text" wire:model="manual_fee_amount" class="w-full rounded premium-input p-2 text-sm font-bold text-blue-600" x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')" placeholder="0">
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs font-medium text-gray-500 mb-1">Lý do</label>
-                                        <input type="text" wire:model="manual_fee_notes" class="w-full rounded premium-input p-2 text-sm" placeholder="Nội dung...">
-                                    </div>
-                                    <button wire:click="addManualSurcharge" class="w-full py-2 bg-gray-800 text-white rounded text-xs font-bold uppercase">Ghi nhận phí</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
 
                     <div x-show="activeTab === 'invoice'" x-cloak>
                         <div class="space-y-6" wire:key="tab-invoice">
@@ -799,8 +897,15 @@
                 {{-- Footer --}}
                 <div class="bg-gray-50 px-6 py-4 flex justify-between items-center border-t">
                     <div class="flex flex-col">
-                        <span class="text-[10px] text-gray-500 font-bold uppercase">Tổng cộng:</span>
-                        <span class="text-lg font-bold text-gray-900">{{ $price }}đ</span>
+                        <label class="text-[10px] text-gray-500 font-bold uppercase mb-0.5">Tổng tiền phòng:</label>
+                        <div class="flex items-center">
+                            <input type="text" 
+                                   x-model="totalPrice"
+                                   x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.'); calculateUnitPrice();"
+                                   class="text-lg font-black text-blue-700 bg-transparent border-none p-0 w-32 focus:ring-0"
+                            >
+                            <span class="text-lg font-black text-blue-700 ml-0.5">đ</span>
+                        </div>
                     </div>
                     <div class="flex gap-4">
                         @if($editingBookingId)
