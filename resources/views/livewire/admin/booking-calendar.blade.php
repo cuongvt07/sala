@@ -434,27 +434,32 @@
                                             <div class="flex justify-between items-center">
                                                 <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Tiền cọc</h4>
                                                 @if($is_contract)
-                                                    <div class="flex items-center gap-2">
-                                                        <span class="text-[10px] text-gray-400">Tỷ giá:</span>
-                                                        <input type="text" wire:model.live="usd_rate" class="w-16 text-right px-1 py-0.5 text-[10px] border-b border-gray-200 focus:border-blue-500 focus:ring-0 outline-none">
+                                                    <div class="flex items-center gap-3">
+                                                        <label class="flex items-center cursor-pointer gap-2">
+                                                            <span class="text-[10px] font-bold {{ $use_usd ? 'text-green-600' : 'text-gray-400' }}">Dùng USD</span>
+                                                            <div class="relative">
+                                                                <input type="checkbox" wire:model.live="use_usd" class="sr-only peer">
+                                                                <div class="w-7 h-4 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-green-600"></div>
+                                                            </div>
+                                                        </label>
+                                                        @if($use_usd)
+                                                            <div class="flex items-center gap-1 border-l pl-2 border-gray-200">
+                                                                <span class="text-[10px] text-gray-400">Tỷ giá:</span>
+                                                                <input type="text" wire:model.live="usd_rate" class="w-14 text-right px-1 py-0.5 text-[10px] border-b border-gray-200 focus:border-blue-500 focus:ring-0 outline-none font-bold text-green-700">
+                                                            </div>
+                                                        @endif
                                                     </div>
                                                 @endif
                                             </div>
                                             <div class="space-y-3 bg-blue-50/30 p-3 rounded-lg border border-blue-100/50">
                                                 @foreach([
-                                                    'deposit' => ['label' => 'Cọc lần 1', 'currency' => 'deposit_currency', 'usd' => 'deposit_usd'],
-                                                    'deposit_2' => ['label' => 'Cọc lần 2', 'currency' => 'deposit_2_currency', 'usd' => 'deposit_2_usd']
+                                                    'deposit' => ['label' => 'Cọc lần 1', 'usd' => 'deposit_usd'],
+                                                    'deposit_2' => ['label' => 'Cọc lần 2', 'usd' => 'deposit_2_usd']
                                                 ] as $field => $config)
                                                     <div class="space-y-1">
-                                                        <div class="flex justify-between items-center">
-                                                            <span class="text-[10px] font-bold text-blue-600 uppercase">{{ $config['label'] }}</span>
-                                                            <select wire:model.live="{{ $config['currency'] }}" class="text-[10px] bg-white border border-gray-200 rounded px-1 py-0.5 outline-none focus:border-blue-500">
-                                                                <option value="VND">VND</option>
-                                                                <option value="USD">USD</option>
-                                                            </select>
-                                                        </div>
+                                                        <span class="text-[10px] font-bold text-blue-600 uppercase">{{ $config['label'] }}</span>
                                                         <div class="relative">
-                                                            @if($this->{$config['currency']} === 'VND')
+                                                            @if(!$use_usd)
                                                                 <input type="text" wire:model.blur="{{ $field }}" 
                                                                        class="w-full rounded premium-input py-1.5 px-2 text-xs font-bold text-blue-700 text-right pr-6" 
                                                                        x-on:input="$el.value = $el.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')">
@@ -476,10 +481,9 @@
                                                             $totalVnd = (float)str_replace(['.',','],'',$deposit ?: 0) + (float)str_replace(['.',','],'',$deposit_2 ?: 0);
                                                             $totalUsd = (float)str_replace(['.',','],'',$deposit_usd ?: 0) + (float)str_replace(['.',','],'',$deposit_2_usd ?: 0);
                                                         @endphp
-                                                        @if($totalVnd > 0)
+                                                        @if(!$use_usd)
                                                             <div class="text-xs font-black text-blue-800">{{ number_format($totalVnd, 0, ',', '.') }}đ</div>
-                                                        @endif
-                                                        @if($totalUsd > 0)
+                                                        @else
                                                             <div class="text-xs font-black text-green-700">${{ number_format($totalUsd, 2) }}</div>
                                                         @endif
                                                     </div>

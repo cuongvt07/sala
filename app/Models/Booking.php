@@ -16,6 +16,9 @@ class Booking extends Model
         'check_out' => 'datetime',
         'additional_guests' => 'array',
         'is_contract' => 'boolean',
+        'deposit_usd' => 'float',
+        'deposit_2_usd' => 'float',
+        'usd_rate' => 'float',
     ];
 
     public function customer()

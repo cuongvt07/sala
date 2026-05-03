@@ -117,6 +117,7 @@ class BookingCalendar extends Component
     public $deposit_usd = 0;
     public $deposit_2_usd = 0;
     public $usd_rate = 25400;
+    public $use_usd = false;
     
     public $deposit_currency = 'VND';
     public $deposit_2_currency = 'VND';
@@ -343,6 +344,8 @@ class BookingCalendar extends Component
         if ($this->price_type === 'month') {
             $this->check_out = '';
             $this->resetValidation('check_out');
+        } else {
+            $this->use_usd = false;
         }
         $this->updatePricing();
         $this->calculateTotal();
@@ -440,8 +443,9 @@ class BookingCalendar extends Component
     {
         \Illuminate\Support\Facades\Log::info('BookingCalendar CreateBooking Triggered', ['room_id' => $roomId, 'date' => $date]);
         $this->resetValidation();
-        $this->reset(['customer_id', 'new_customer_name', 'new_customer_phone', 'new_customer_email', 'new_customer_identity', 'new_customer_nationality', 'new_customer_visa_number', 'new_customer_visa_expiry', 'new_customer_notes', 'new_customer_image', 'customer_identity', 'customer_nationality', 'customer_visa_number', 'customer_visa_expiry', 'room_id', 'price_type', 'is_contract', 'unit_price', 'check_in', 'check_out', 'price', 'deposit', 'deposit_2', 'deposit_3', 'deposit_usd', 'deposit_2_usd', 'usd_rate', 'deposit_currency', 'deposit_2_currency', 'status', 'source', 'notes', 'editingBookingId', 'selected_services', 'usage_logs']);
+        $this->reset(['customer_id', 'new_customer_name', 'new_customer_phone', 'new_customer_email', 'new_customer_identity', 'new_customer_nationality', 'new_customer_visa_number', 'new_customer_visa_expiry', 'new_customer_notes', 'new_customer_image', 'customer_identity', 'customer_nationality', 'customer_visa_number', 'customer_visa_expiry', 'room_id', 'price_type', 'is_contract', 'unit_price', 'check_in', 'check_out', 'price', 'deposit', 'deposit_2', 'deposit_3', 'deposit_usd', 'deposit_2_usd', 'usd_rate', 'use_usd', 'deposit_currency', 'deposit_2_currency', 'status', 'source', 'notes', 'editingBookingId', 'selected_services', 'usage_logs']);
         $this->usd_rate = 25400;
+        $this->use_usd = false;
         $this->deposit_currency = 'VND';
         $this->deposit_2_currency = 'VND';
 
@@ -479,12 +483,13 @@ class BookingCalendar extends Component
         $this->deposit = $booking->deposit ? number_format($booking->deposit, 0, ',', '.') : 0;
         $this->deposit_2 = $booking->deposit_2 ? number_format($booking->deposit_2, 0, ',', '.') : 0;
         $this->deposit_3 = 0; // Hide
-        $this->deposit_usd = $booking->deposit_usd ?? 0;
-        $this->deposit_2_usd = $booking->deposit_2_usd ?? 0;
-        $this->usd_rate = $booking->usd_rate ?? 25400;
+        $this->deposit_usd = (float)($booking->deposit_usd ?? 0);
+        $this->deposit_2_usd = (float)($booking->deposit_2_usd ?? 0);
+        $this->usd_rate = (float)($booking->usd_rate ?? 25400);
+        $this->use_usd = ($this->deposit_usd > 0 || $this->deposit_2_usd > 0);
         
-        $this->deposit_currency = ($booking->deposit_usd > 0) ? 'USD' : 'VND';
-        $this->deposit_2_currency = ($booking->deposit_2_usd > 0) ? 'USD' : 'VND';
+        $this->deposit_currency = ($this->deposit_usd > 0) ? 'USD' : 'VND';
+        $this->deposit_2_currency = ($this->deposit_2_usd > 0) ? 'USD' : 'VND';
         $this->status = $booking->status;
         $this->source = $booking->source ?: 'Hotline';
         $this->notes = $booking->notes;
@@ -737,21 +742,26 @@ class BookingCalendar extends Component
         $cleanDeposit3 = 0;
         $cleanUnitPrice = str_replace('.', '', $this->unit_price);
         
-        $cleanDepositUsd = str_replace(['.', ','], '', $this->deposit_usd);
-        $cleanDeposit2Usd = str_replace(['.', ','], '', $this->deposit_2_usd);
-        $cleanUsdRate = str_replace(['.', ','], '', $this->usd_rate);
+        // For USD fields, remove thousands separators (commas) but keep the decimal point.
+        // If the user uses dots as thousands separators (VN style), we handle that too.
+        $cleanDepositUsd = (float) str_replace(',', '', (string)$this->deposit_usd);
+        $cleanDeposit2Usd = (float) str_replace(',', '', (string)$this->deposit_2_usd);
+        
+        // For usd_rate, it's VND/USD, so it's a large number. 
+        // We ensure it's a clean number by removing any non-numeric characters except the dot.
+        // But wait, if it's 25.400 (VND), we want 25400.
+        // Let's use a safer approach: if it's already numeric (float/int), use it.
+        // If it's a string from the DB with .00, the previous cast to float in editBooking fixed it.
+        $cleanUsdRate = is_numeric($this->usd_rate) ? $this->usd_rate : str_replace(['.', ','], '', $this->usd_rate);
 
-        // Ensure only one currency is saved per deposit round
-        if ($this->deposit_currency === 'USD') {
+        // Ensure only one currency is saved per deposit round based on use_usd toggle
+        if ($this->use_usd && $this->is_contract) {
             $cleanDeposit = 0;
-        } else {
-            $cleanDepositUsd = 0;
-        }
-
-        if ($this->deposit_2_currency === 'USD') {
             $cleanDeposit2 = 0;
         } else {
+            $cleanDepositUsd = 0;
             $cleanDeposit2Usd = 0;
+            $this->use_usd = false; // Force false if not contract
         }
 
         // Convert empty strings to null for decimal columns
