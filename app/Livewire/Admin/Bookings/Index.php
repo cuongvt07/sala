@@ -951,15 +951,55 @@ class Index extends Component
             'deposit_3' => $this->deposit_3,
             'status' => $this->status,
             'notes' => $this->notes,
-            'additional_guests' => collect($this->additional_guests)->map(function($guest) {
-                $guest['birthday'] = $this->parseDate($guest['birthday'] ?? null);
-                $guest['visa_expiry'] = $this->parseDate($guest['visa_expiry'] ?? null);
-                // Ensure identity is always saved as 'identity' for consistency
-                if (isset($guest['identity'])) {
-                    $guest['identity_id'] = $guest['identity'];
-                }
-                return $guest;
-            })->toArray(),
+        // Process Additional Guests as Customers
+        $processedGuests = [];
+        foreach ($this->additional_guests as $guest) {
+            if (empty($guest['name'])) continue;
+
+            $guestCustomer = null;
+            if (!empty($guest['identity'])) {
+                $guestCustomer = \App\Models\Customer::where('identity_id', $guest['identity'])->first();
+            } elseif (!empty($guest['phone'])) {
+                $guestCustomer = \App\Models\Customer::where('phone', $guest['phone'])->first();
+            }
+
+            $guestData = [
+                'name' => $guest['name'],
+                'phone' => $guest['phone'] ?? null,
+                'identity_id' => $guest['identity'] ?? null,
+                'gender' => $guest['gender'] ?? null,
+                'birthday' => $this->parseDate($guest['birthday'] ?? null),
+                'nationality' => $guest['nationality'] ?? 'Vietnam',
+                'visa_number' => $guest['identity'] ?? null,
+                'visa_expiry' => $this->parseDate($guest['visa_expiry'] ?? null),
+                'identity' => $guest['identity'] ?? null, // Keep for JSON
+            ];
+
+            if ($guestCustomer) {
+                $guestCustomer->update(array_filter($guestData));
+            } else {
+                $guestCustomer = \App\Models\Customer::create($guestData);
+            }
+
+            $guestData['customer_id'] = $guestCustomer->id;
+            $processedGuests[] = $guestData;
+        }
+
+        $data = [
+            'customer_id' => $customerId,
+            'room_id' => $this->room_id,
+            'price_type' => $this->price_type,
+            'is_contract' => $this->is_contract,
+            'unit_price' => $this->unit_price,
+            'check_in' => $this->check_in,
+            'check_out' => ($this->price_type === 'month' && empty($this->check_out)) ? null : $this->check_out,
+            'price' => $this->price,
+            'deposit' => $this->deposit,
+            'deposit_2' => $this->deposit_2,
+            'deposit_3' => $this->deposit_3,
+            'status' => $this->status,
+            'notes' => $this->notes,
+            'additional_guests' => $processedGuests,
         ];
 
         if ($this->editingBookingId) {

@@ -882,12 +882,13 @@ class BookingCalendar extends Component
             $guestData = [
                 'name' => $guest['name'],
                 'phone' => $guest['phone'] ?? null,
-                'identity' => $guest['identity'] ?? null,
+                'identity_id' => $guest['identity'] ?? null,
                 'gender' => $guest['gender'] ?? null,
                 'birthday' => $this->parseDate($guest['birthday'] ?? null),
                 'nationality' => $guest['nationality'] ?? 'Vietnam',
                 'visa_number' => $guest['identity'] ?? null,
                 'visa_expiry' => $this->parseDate($guest['visa_expiry'] ?? null),
+                'identity' => $guest['identity'] ?? null, // Keep for JSON compatibility
             ];
 
             if ($guestCustomer) {
