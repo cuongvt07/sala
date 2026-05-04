@@ -917,12 +917,12 @@
                                         
                                         <!-- Các dịch vụ đang chọn (chưa chốt) -->
                                         @foreach($all_services as $service)
-                                            <tr wire:key="summary-service-{{ $service->id }}">
-                                            @if(!empty($selected_services[$service->id]['selected']) && isset($service_inputs[$service->id]))
-                                                @php 
-                                                    $inp = $service_inputs[$service->id] ?? [];
-                                                    $up = (float)str_replace(['.',','],'', (string)($inp['unit_price'] ?? '0'));
-                                                    
+                                            @php 
+                                                $inp = $service_inputs[$service->id] ?? [];
+                                                $up = (float)str_replace(['.',','],'', (string)($inp['unit_price'] ?? '0'));
+                                                
+                                                $amount = 0;
+                                                if(!empty($selected_services[$service->id]['selected']) && isset($service_inputs[$service->id])) {
                                                     if($service->type === 'meter') {
                                                         $startIdx = (float)($inp['start_index'] ?? 0);
                                                         $endIdx = (float)($inp['end_index'] ?? 0);
@@ -930,9 +930,11 @@
                                                     } else {
                                                         $amount = ((float)($inp['quantity'] ?? 1)) * $up;
                                                     }
-                                                @endphp
-                                                @if($amount > 0)
-                                                <tr>
+                                                }
+                                            @endphp
+
+                                            @if($amount > 0)
+                                                <tr wire:key="summary-service-{{ $service->id }}">
                                                     <td class="px-3 py-2">
                                                         <div class="font-semibold text-gray-800">⚡ {{ $service->name }} (Đang nhập)</div>
                                                     </td>
@@ -946,7 +948,6 @@
                                                     </td>
                                                     <td class="px-3 py-2 text-right font-bold text-indigo-600">{{ number_format($amount, 0, ',', '.') }}đ</td>
                                                 </tr>
-                                                @endif
                                             @endif
                                         @endforeach
                                     </tbody>
