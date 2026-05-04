@@ -298,7 +298,17 @@
                                         </select>
                                         <input type="text" wire:model="new_customer_identity" placeholder="CMND/Passport" class="rounded border-gray-200 p-2 text-sm col-span-2">
                                         <div class="col-span-2">
-                                            <x-ui.select-date wire:model="new_customer_birthday" label="Ngày sinh" />
+                                            <label class="block text-[9px] text-gray-400 uppercase font-bold mb-1 block">Ngày sinh</label>
+                                            <input type="text" wire:model="new_customer_birthday" 
+                                                   @input="(e) => {
+                                                        let val = e.target.value.replace(/\D/g, '');
+                                                        if (val.length > 8) val = val.substring(0, 8);
+                                                        if (val.length > 4) val = val.substring(0, 2) + '/' + val.substring(2, 4) + '/' + val.substring(4);
+                                                        else if (val.length > 2) val = val.substring(0, 2) + '/' + val.substring(2);
+                                                        $wire.set('new_customer_birthday', val);
+                                                   }"
+                                                   placeholder="DD/MM/YYYY" 
+                                                   class="w-full rounded border-gray-200 p-2 text-sm font-semibold text-center tracking-widest">
                                         </div>
                                     </div>
                                     <div class="relative mt-2">
@@ -392,88 +402,30 @@
                                             <div class="grid grid-cols-2 gap-2">
                                                 <div>
                                                     <label class="block text-[9px] font-black text-gray-400 uppercase mb-1">Ngày sinh</label>
-                                                    <div class="flex gap-1" x-data="{ 
-                                                        day: '', 
-                                                        month: '', 
-                                                        year: '',
-                                                        init() {
-                                                            if (guest.birthday) {
-                                                                let parts = guest.birthday.split(/[\s\/]+/);
-                                                                if (parts.length >= 3) {
-                                                                    this.day = parseInt(parts[0]);
-                                                                    this.month = parseInt(parts[1]);
-                                                                    this.year = parts[2];
-                                                                }
-                                                            }
-                                                        },
-                                                        update() {
-                                                            if (this.day && this.month && this.year) {
-                                                                guest.birthday = `${this.day.toString().padStart(2, '0')} / ${this.month.toString().padStart(2, '0')} / ${this.year}`;
-                                                            } else { guest.birthday = ''; }
-                                                        }
-                                                    }">
-                                                        <div class="flex-1">
-                                                            <select x-model="day" @change="update()" class="w-full bg-white border-gray-200 rounded-lg text-[10px] p-1.5 text-center font-bold focus:ring-1 focus:ring-indigo-500 premium-select">
-                                                                <option value="">D</option>
-                                                                @foreach(range(1, 31) as $d)<option value="{{ $d }}">{{ str_pad($d, 2, '0', STR_PAD_LEFT) }}</option>@endforeach
-                                                            </select>
-                                                        </div>
-                                                        <div class="flex-1">
-                                                            <select x-model="month" @change="update()" class="w-full bg-white border-gray-200 rounded-lg text-[10px] p-1.5 text-center font-bold focus:ring-1 focus:ring-indigo-500 premium-select">
-                                                                <option value="">M</option>
-                                                                @foreach(range(1, 12) as $m)<option value="{{ $m }}">{{ str_pad($m, 2, '0', STR_PAD_LEFT) }}</option>@endforeach
-                                                            </select>
-                                                        </div>
-                                                        <div class="flex-[1.5]">
-                                                            <select x-model="year" @change="update()" class="w-full bg-white border-gray-200 rounded-lg text-[10px] p-1.5 text-center font-bold focus:ring-1 focus:ring-indigo-500 premium-select">
-                                                                <option value="">Y</option>
-                                                                @foreach(range(date('Y'), 1940) as $y)<option value="{{ $y }}">{{ $y }}</option>@endforeach
-                                                            </select>
-                                                        </div>
-                                                    </div>
+                                                    <input type="text" x-model="guest.birthday" 
+                                                           @input="(e) => {
+                                                                let val = e.target.value.replace(/\D/g, '');
+                                                                if (val.length > 8) val = val.substring(0, 8);
+                                                                if (val.length > 4) val = val.substring(0, 2) + '/' + val.substring(2, 4) + '/' + val.substring(4);
+                                                                else if (val.length > 2) val = val.substring(0, 2) + '/' + val.substring(2);
+                                                                guest.birthday = val;
+                                                           }"
+                                                           placeholder="DD/MM/YYYY" 
+                                                           class="w-full px-3 py-1.5 text-xs rounded-lg border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-white text-center font-bold">
                                                 </div>
                                                 
                                                 <div>
                                                     <label class="block text-[9px] font-black text-gray-400 uppercase mb-1">Hạn Visa</label>
-                                                    <div class="flex gap-1" x-data="{ 
-                                                        day: '', 
-                                                        month: '', 
-                                                        year: '',
-                                                        init() {
-                                                            if (guest.visa_expiry) {
-                                                                let parts = guest.visa_expiry.split(/[\s\/]+/);
-                                                                if (parts.length >= 3) {
-                                                                    this.day = parseInt(parts[0]);
-                                                                    this.month = parseInt(parts[1]);
-                                                                    this.year = parts[2];
-                                                                }
-                                                            }
-                                                        },
-                                                        update() {
-                                                            if (this.day && this.month && this.year) {
-                                                                guest.visa_expiry = `${this.day.toString().padStart(2, '0')} / ${this.month.toString().padStart(2, '0')} / ${this.year}`;
-                                                            } else { guest.visa_expiry = ''; }
-                                                        }
-                                                    }">
-                                                        <div class="flex-1">
-                                                            <select x-model="day" @change="update()" class="w-full bg-white border-gray-200 rounded-lg text-[10px] p-1.5 text-center font-bold focus:ring-1 focus:ring-indigo-500 premium-select">
-                                                                <option value="">D</option>
-                                                                @foreach(range(1, 31) as $d)<option value="{{ $d }}">{{ str_pad($d, 2, '0', STR_PAD_LEFT) }}</option>@endforeach
-                                                            </select>
-                                                        </div>
-                                                        <div class="flex-1">
-                                                            <select x-model="month" @change="update()" class="w-full bg-white border-gray-200 rounded-lg text-[10px] p-1.5 text-center font-bold focus:ring-1 focus:ring-indigo-500 premium-select">
-                                                                <option value="">M</option>
-                                                                @foreach(range(1, 12) as $m)<option value="{{ $m }}">{{ str_pad($m, 2, '0', STR_PAD_LEFT) }}</option>@endforeach
-                                                            </select>
-                                                        </div>
-                                                        <div class="flex-[1.5]">
-                                                            <select x-model="year" @change="update()" class="w-full bg-white border-gray-200 rounded-lg text-[10px] p-1.5 text-center font-bold focus:ring-1 focus:ring-indigo-500 premium-select">
-                                                                <option value="">Y</option>
-                                                                @foreach(range(date('Y') + 15, date('Y') - 5) as $y)<option value="{{ $y }}">{{ $y }}</option>@endforeach
-                                                            </select>
-                                                        </div>
-                                                    </div>
+                                                    <input type="text" x-model="guest.visa_expiry" 
+                                                           @input="(e) => {
+                                                                let val = e.target.value.replace(/\D/g, '');
+                                                                if (val.length > 8) val = val.substring(0, 8);
+                                                                if (val.length > 4) val = val.substring(0, 2) + '/' + val.substring(2, 4) + '/' + val.substring(4);
+                                                                else if (val.length > 2) val = val.substring(0, 2) + '/' + val.substring(2);
+                                                                guest.visa_expiry = val;
+                                                           }"
+                                                           placeholder="DD/MM/YYYY" 
+                                                           class="w-full px-3 py-1.5 text-xs rounded-lg border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-white text-center font-bold">
                                                 </div>
                                             </div>
 
