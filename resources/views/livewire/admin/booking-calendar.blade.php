@@ -278,7 +278,7 @@
                                     <span class="font-bold uppercase text-[10px] truncate flex items-center gap-1">
                                         {{ $booking->customer->name }}
                                         @if(!empty($booking->additional_guests))
-                                            <span class="bg-white/20 px-1 rounded text-[8px]">+{{ count($booking->additional_guests) }}</span>
+                                            <span class="bg-white/20 px-1 rounded text-[8px]">+{{ count($booking->additional_guests ?? []) }}</span>
                                         @endif
                                         @if($booking->source)
                                             ({{ $booking->source }})
@@ -697,9 +697,19 @@
                                                     <div>
                                                         <label class="block text-[10px] font-black text-indigo-300 uppercase mb-1.5 tracking-widest">Ngày sinh</label>
                                                         <div class="flex gap-1" x-data="{ 
-                                                            day: guest.birthday ? parseInt(guest.birthday.split(' / ')[0]) : '', 
-                                                            month: guest.birthday ? parseInt(guest.birthday.split(' / ')[1]) : '', 
-                                                            year: guest.birthday ? guest.birthday.split(' / ')[2] : '',
+                                                            day: '', 
+                                                            month: '', 
+                                                            year: '',
+                                                            init() {
+                                                                if (guest.birthday) {
+                                                                    let parts = guest.birthday.split(/[\s\/]+/);
+                                                                    if (parts.length >= 3) {
+                                                                        this.day = parseInt(parts[0]);
+                                                                        this.month = parseInt(parts[1]);
+                                                                        this.year = parts[2];
+                                                                    }
+                                                                }
+                                                            },
                                                             update() {
                                                                 if (this.day && this.month && this.year) {
                                                                     guest.birthday = `${this.day.toString().padStart(2, '0')} / ${this.month.toString().padStart(2, '0')} / ${this.year}`;
@@ -730,9 +740,19 @@
                                                     <div>
                                                         <label class="block text-[10px] font-black text-indigo-300 uppercase mb-1.5 tracking-widest">Hạn Visa</label>
                                                         <div class="flex gap-1" x-data="{ 
-                                                            day: guest.visa_expiry ? parseInt(guest.visa_expiry.split(' / ')[0]) : '', 
-                                                            month: guest.visa_expiry ? parseInt(guest.visa_expiry.split(' / ')[1]) : '', 
-                                                            year: guest.visa_expiry ? guest.visa_expiry.split(' / ')[2] : '',
+                                                            day: '', 
+                                                            month: '', 
+                                                            year: '',
+                                                            init() {
+                                                                if (guest.visa_expiry) {
+                                                                    let parts = guest.visa_expiry.split(/[\s\/]+/);
+                                                                    if (parts.length >= 3) {
+                                                                        this.day = parseInt(parts[0]);
+                                                                        this.month = parseInt(parts[1]);
+                                                                        this.year = parts[2];
+                                                                    }
+                                                                }
+                                                            },
                                                             update() {
                                                                 if (this.day && this.month && this.year) {
                                                                     guest.visa_expiry = `${this.day.toString().padStart(2, '0')} / ${this.month.toString().padStart(2, '0')} / ${this.year}`;
