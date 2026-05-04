@@ -51,7 +51,7 @@
                     class="w-full px-3 py-2 bg-gray-50/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-xs font-medium appearance-none">
                 <option value="">Tất cả</option>
                 @foreach(\App\Models\Area::all() as $area)
-                    <option value="{{ $area->id }}">{{ $area->name }}</option>
+                    <option wire:key="area-{{ $area->id }}" value="{{ $area->id }}">{{ $area->name }}</option>
                 @endforeach
             </select>
         </x-ui.filter-item>
@@ -74,7 +74,7 @@
             </thead>
             <tbody class="bg-white divide-y divide-gray-100">
                 @foreach ($bookings as $booking)
-                    <tr class="hover:bg-blue-50/30 transition-colors">
+                    <tr wire:key="booking-{{ $booking->id }}" class="hover:bg-blue-50/30 transition-colors">
                         <td class="px-3 py-3 whitespace-nowrap bg-gray-50/50">
                             <span class="text-[10px] font-black text-gray-400">#{{ $booking->id }}</span>
                         </td>
@@ -270,7 +270,12 @@
 
                     <div x-show="activeTab === 'existing'">
                         <div class="space-y-1.5">
-                            <select wire:model.live="customer_id" class="w-full rounded border-gray-200 p-2 text-sm font-semibold"><option value="">-- Chọn khách hàng --</option>@foreach($customers as $c)<option value="{{ $c->id }}">{{ $c->name }} ({{ $c->phone }})</option>@endforeach</select>
+                            <select wire:model.live="customer_id" class="w-full rounded border-gray-200 p-2 text-sm font-semibold">
+                                <option value="">-- Chọn khách hàng --</option>
+                                @foreach($customers as $c)
+                                    <option wire:key="customer-{{ $c->id }}" value="{{ $c->id }}">{{ $c->name }} ({{ $c->phone }})</option>
+                                @endforeach
+                            </select>
                             @error('customer_id')<span class="text-red-500 text-xs">{{ $message }}</span>@enderror
                             
                             <div x-show="$wire.customer_id" class="relative mt-2">
@@ -405,19 +410,19 @@
                                                         <div class="flex-1">
                                                             <select x-model="day" @change="update()" class="w-full bg-white border-gray-200 rounded-lg text-[10px] p-1 text-center font-bold focus:ring-1 focus:ring-indigo-500">
                                                                 <option value="">D</option>
-                                                                @foreach(range(1, 31) as $d)<option value="{{ $d }}">{{ str_pad($d, 2, '0', STR_PAD_LEFT) }}</option>@endforeach
+                                                                @foreach(range(1, 31) as $d)<option wire:key="bd-d-{{ $d }}" value="{{ $d }}">{{ str_pad($d, 2, '0', STR_PAD_LEFT) }}</option>@endforeach
                                                             </select>
                                                         </div>
                                                         <div class="flex-1">
                                                             <select x-model="month" @change="update()" class="w-full bg-white border-gray-200 rounded-lg text-[10px] p-1 text-center font-bold focus:ring-1 focus:ring-indigo-500">
                                                                 <option value="">M</option>
-                                                                @foreach(range(1, 12) as $m)<option value="{{ $m }}">{{ str_pad($m, 2, '0', STR_PAD_LEFT) }}</option>@endforeach
+                                                                @foreach(range(1, 12) as $m)<option wire:key="bd-m-{{ $m }}" value="{{ $m }}">{{ str_pad($m, 2, '0', STR_PAD_LEFT) }}</option>@endforeach
                                                             </select>
                                                         </div>
                                                         <div class="flex-[1.5]">
                                                             <select x-model="year" @change="update()" class="w-full bg-white border-gray-200 rounded-lg text-[10px] p-1 text-center font-bold focus:ring-1 focus:ring-indigo-500">
                                                                 <option value="">Y</option>
-                                                                @foreach(range(date('Y') + 10, 1940) as $y)<option value="{{ $y }}">{{ $y }}</option>@endforeach
+                                                                @foreach(range(date('Y') + 10, 1940) as $y)<option wire:key="bd-y-{{ $y }}" value="{{ $y }}">{{ $y }}</option>@endforeach
                                                             </select>
                                                         </div>
                                                     </div>
@@ -487,7 +492,12 @@
                         <div class="bg-white p-3 rounded-lg border border-gray-200">
                             <h4 class="text-[10px] font-black text-gray-400 uppercase mb-2">Phòng & Trạng thái</h4>
                             <div class="grid grid-cols-2 gap-2">
-                                <select wire:model.live="room_id" class="w-full rounded border-gray-200 p-2 text-sm font-bold"><option value="">-- Phòng --</option>@foreach($rooms as $r)<option value="{{ $r->id }}">{{ $r->code }}</option>@endforeach</select>
+                                <select wire:model.live="room_id" class="w-full rounded border-gray-200 p-2 text-sm font-bold">
+                                    <option value="">-- Phòng --</option>
+                                    @foreach($rooms as $r)
+                                        <option wire:key="room-{{ $r->id }}" value="{{ $r->id }}">{{ $r->code }}</option>
+                                    @endforeach
+                                </select>
                                 @php $statusBg = ['pending' => 'bg-yellow-100 border-yellow-300', 'checked_in' => 'bg-green-100 border-green-300', 'checked_out' => 'bg-gray-100 border-gray-300', 'cancelled' => 'bg-red-100 border-red-300']; @endphp
                                 <select wire:model="status" class="w-full rounded border-2 p-2 text-sm font-bold {{ $statusBg[$status] ?? 'border-gray-200' }}"><option value="pending">Chờ lấy</option><option value="checked_in">Nhận phòng</option><option value="checked_out">Trả phòng</option><option value="cancelled">Hủy</option></select>
                                 <div class="col-span-2">
@@ -576,8 +586,8 @@
                                 <thead class="bg-slate-700 text-white">
                                     <tr>
                                         <th class="border border-slate-600 px-3 py-2 text-left font-bold whitespace-nowrap">📅 Kỳ</th>
-                                        @foreach($allServiceNames as $serviceName)
-                                            <th class="border border-slate-600 px-2 py-2 text-center font-bold whitespace-nowrap">{{ $serviceName }}</th>
+                                        @foreach($allServiceNames as $index => $serviceName)
+                                            <th wire:key="h-svc-{{ $index }}" class="border border-slate-600 px-2 py-2 text-center font-bold whitespace-nowrap">{{ $serviceName }}</th>
                                         @endforeach
                                         <th class="border border-slate-600 px-2 py-2 text-center font-bold whitespace-nowrap bg-blue-900">💰 Phòng</th>
                                         <th class="border border-slate-600 px-3 py-2 text-center font-bold whitespace-nowrap bg-yellow-600">🧾 TỔNG</th>
@@ -586,7 +596,7 @@
                                 </thead>
                                 <tbody>
                                     @foreach($logsByPeriod as $period => $logs)
-                                        <tr class="hover:bg-gray-50">
+                                        <tr wire:key="period-{{ str_replace('/', '-', $period) }}" class="hover:bg-gray-50">
                                             <!-- Kỳ -->
                                             <td class="border border-gray-200 px-3 py-2 font-bold text-blue-700 whitespace-nowrap">
                                                 Tháng {{ explode('/', $period)[0] }}/{{ explode('/', $period)[1] }}
@@ -691,7 +701,8 @@
                         <h4 class="text-[10px] font-black text-gray-400 uppercase mb-2">Chọn dịch vụ</h4>
                         <div class="space-y-1 max-h-64 overflow-y-auto">
                             @foreach($all_services as $service)
-                                <div @click="toggleService({{ $service->id }}, '{{ $service->name }}', {{ $service->unit_price }})" 
+                                <div wire:key="svc-select-{{ $service->id }}"
+                                     @click="toggleService({{ $service->id }}, '{{ $service->name }}', {{ $service->unit_price }})" 
                                      :class="selectedServices[{{ $service->id }}] ? 'border-blue-500 bg-blue-50' : 'border-gray-100 hover:border-gray-300'"
                                      class="p-2 rounded border cursor-pointer transition-all flex items-center gap-2">
                                     <div :class="selectedServices[{{ $service->id }}] ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-300'"
@@ -749,8 +760,8 @@
                                 </tr>
 
                                 <!-- Liệt kê chi tiết các dịch vụ đã chốt trong lịch sử -->
-                                @foreach(collect($usage_logs)->where('type', '!=', 'deduction') as $log)
-                                    <tr class="bg-green-50/30 border-y border-green-100/50">
+                                @foreach(collect($usage_logs)->where('type', '!=', 'deduction') as $logIndex => $log)
+                                    <tr wire:key="log-{{ $log['id'] ?? $logIndex }}" class="bg-green-50/30 border-y border-green-100/50">
                                         <td class="px-3 py-2">
                                             <div class="font-bold text-green-700">✅ {{ $log['service_name'] }} (Đã chốt)</div>
                                             <div class="text-[9px] text-green-600 italic">Ngày chốt: {{ \Carbon\Carbon::parse($log['billing_date'])->format('d/m/Y') }}</div>
@@ -769,6 +780,7 @@
                                 
                                 <!-- Các dịch vụ đã chọn -->
                                 @foreach($all_services as $service)
+                                    <tr wire:key="svc-row-{{ $service->id }}">
                                     @if(!empty($selected_services[$service->id]['selected']) && isset($service_inputs[$service->id]))
                                         @php 
                                             $inp = $service_inputs[$service->id] ?? [];

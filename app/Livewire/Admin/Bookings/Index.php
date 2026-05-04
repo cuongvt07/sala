@@ -63,6 +63,11 @@ class Index extends Component
     public $new_customer_image;
 
     public $additional_guests = [];
+    public $confirmation_data = [];
+    public $invoice_data = [];
+    public $showConfirmationModal = false;
+    public $showInvoiceModal = false;
+    public $invoice_period = '';
 
     public function addGuest()
     {

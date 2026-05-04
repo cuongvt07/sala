@@ -64,6 +64,10 @@ class BookingCalendar extends Component
     public $new_customer_image;
 
     public $additional_guests = []; // Each guest: {name, identity}
+    public $confirmation_data = [];
+    public $invoice_data = [];
+    public $showConfirmationModal = false;
+    public $showInvoiceModal = false;
 
     public function addGuest()
     {
