@@ -769,8 +769,8 @@
                                 </tr>
 
                                 <!-- Liệt kê chi tiết các dịch vụ đã chốt trong lịch sử -->
-                                @foreach(collect($usage_logs)->where('type', '!=', 'deduction') as $log)
-                                    <tr class="bg-green-50/30 border-y border-green-100/50">
+                                @foreach(collect($usage_logs)->where('type', '!=', 'deduction') as $logIndex => $log)
+                                    <tr wire:key="usage-log-{{ $log['id'] ?? $logIndex }}" class="bg-green-50/30 border-y border-green-100/50">
                                         <td class="px-3 py-2">
                                             <div class="font-bold text-green-700">✅ {{ $log['service_name'] }} (Đã chốt)</div>
                                             <div class="text-[9px] text-green-600 italic">Ngày chốt: {{ \Carbon\Carbon::parse($log['billing_date'])->format('d/m/Y') }}</div>
@@ -808,7 +808,7 @@
                                                 $amount = $qty * $up;
                                             }
                                         @endphp
-                                        <tr wire:key="row-{{ $service->id }}">
+                                        <tr wire:key="service-row-{{ $service->id }}">
                                             <td class="px-3 py-2">
                                                 <div class="font-semibold text-gray-800">⚡ {{ $service->name }}</div>
                                                 @if($service->type === 'meter' && $suggestIndex > 0)

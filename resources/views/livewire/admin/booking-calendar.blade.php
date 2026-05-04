@@ -210,6 +210,7 @@
             @php $rowIndex = 2; @endphp
 
             @foreach($roomsData as $areaName => $rooms)
+                <div wire:key="area-{{ Str::slug($areaName) }}" class="contents">
                 {{-- Area Header --}}
                 <div class="area-header" style="grid-column: 1 / -1; grid-row: {{ $rowIndex }};">
                     {{ $areaName }}
@@ -217,6 +218,7 @@
                 @php $rowIndex++; @endphp
 
                 @foreach($rooms as $room)
+                    <div wire:key="room-row-{{ $room->id }}" class="contents group">
                     @php
                         // Single row layout, fixed height
                         $rowHeight = 52; 
@@ -269,7 +271,7 @@
                                 $bkClass = $statusClasses[$booking->status] ?? 'bg-gray-400 text-white';
                             @endphp
 
-                            <div wire:click="editBooking({{ $booking->id }})"
+                            <div wire:key="booking-bar-{{ $booking->id }}" wire:click="editBooking({{ $booking->id }})"
                                  class="booking-bar {{ $bkClass }} group absolute pointer-events-auto shadow-sm hover:brightness-110 hover:shadow-md hover:scale-[1.01] transition-all duration-200 ease-in-out cursor-pointer z-10 hover:z-20"
                                  style="left: {{ $left }}px; width: {{ $width }}px; top: {{ $top }}px; height: 28px;"
                                  title="{{ $booking->customer->name }} - {{ \Carbon\Carbon::parse($booking->check_in)->format('d/m H:i') }} bis {{ \Carbon\Carbon::parse($booking->check_out)->format('d/m H:i') }}">
@@ -849,7 +851,7 @@
                                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                     @foreach($all_services as $service)
                                         @if($service->type === 'meter')
-                                            <div class="bg-white border rounded p-3">
+                                            <div wire:key="service-meter-{{ $service->id }}" class="bg-white border rounded p-3">
                                                 <div class="text-xs font-bold mb-2">{{ $service->name }}</div>
                                                     <div class="grid grid-cols-2 gap-2">
                                                         <input type="text" wire:model.blur="service_inputs.{{ $service->id }}.start_index" placeholder="Số đầu" class="premium-input rounded p-1.5 text-xs text-center">
@@ -929,7 +931,7 @@
                                                     }
                                                 @endphp
                                                 @if($amount > 0)
-                                                <tr wire:key="summary-service-{{ $service->id }}">
+                                                <tr wire:key="summary-row-{{ $service->id }}">
                                                     <td class="px-3 py-2">
                                                         <div class="font-semibold text-gray-800">⚡ {{ $service->name }} (Đang nhập)</div>
                                                     </td>
