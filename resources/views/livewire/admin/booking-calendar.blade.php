@@ -194,7 +194,7 @@
                     $isToday = $day->isToday();
                     $isWeekend = $day->isWeekend();
                 @endphp
-                <div class="header-cell flex flex-col items-center justify-center 
+                <div wire:key="day-{{ $day->format('Y-m-d') }}" class="header-cell flex flex-col items-center justify-center 
                             {{ $isToday ? 'bg-blue-200' : '' }} 
                             {{ $isWeekend && !$isToday ? 'bg-amber-100' : '' }}"
                      style="grid-column: {{ $index + 2 }}; grid-row: 1; height: 50px;">
@@ -211,7 +211,7 @@
 
             @foreach($roomsData as $areaName => $rooms)
                 {{-- Area Header --}}
-                <div class="area-header" style="grid-column: 1 / -1; grid-row: {{ $rowIndex }};">
+                <div wire:key="area-{{ \Illuminate\Support\Str::slug($areaName) }}" class="area-header" style="grid-column: 1 / -1; grid-row: {{ $rowIndex }};">
                     {{ $areaName }}
                 </div>
                 @php $rowIndex++; @endphp
@@ -223,7 +223,7 @@
                     @endphp
 
                     {{-- Room Info Cell --}}
-                    <div class="room-cell room-info" style="grid-column: 1; grid-row: {{ $rowIndex }}; height: {{ $rowHeight }}px;">
+                    <div wire:key="room-info-{{ $room->id }}" class="room-cell room-info" style="grid-column: 1; grid-row: {{ $rowIndex }}; height: {{ $rowHeight }}px;">
                         <div class="flex items-center gap-1">
                             @php
                                 $statusColor = match($room->status) {
@@ -243,7 +243,8 @@
 
                     {{-- Day Cells Background --}}
                     @foreach($this->daysInMonth as $dayIndex => $day)
-                        <div wire:click="createBooking({{ $room->id }}, '{{ $day->format('Y-m-d') }}')"
+                        <div wire:key="cell-{{ $room->id }}-{{ $day->format('Y-m-d') }}"
+                             wire:click="createBooking({{ $room->id }}, '{{ $day->format('Y-m-d') }}')"
                              class="day-cell {{ $day->isWeekend() ? 'weekend' : '' }}"
                              style="grid-column: {{ $dayIndex + 2 }}; grid-row: {{ $rowIndex }}; height: {{ $rowHeight }}px;">
                         </div>
@@ -269,7 +270,8 @@
                                 $bkClass = $statusClasses[$booking->status] ?? 'bg-gray-400 text-white';
                             @endphp
 
-                            <div wire:click="editBooking({{ $booking->id }})"
+                            <div wire:key="booking-{{ $booking->id }}"
+                                 wire:click="editBooking({{ $booking->id }})"
                                  class="booking-bar {{ $bkClass }} group absolute pointer-events-auto shadow-sm hover:brightness-110 hover:shadow-md hover:scale-[1.01] transition-all duration-200 ease-in-out cursor-pointer z-10 hover:z-20"
                                  style="left: {{ $left }}px; width: {{ $width }}px; top: {{ $top }}px; height: 28px;"
                                  title="{{ $booking->customer->name }} - {{ \Carbon\Carbon::parse($booking->check_in)->format('d/m H:i') }} bis {{ \Carbon\Carbon::parse($booking->check_out)->format('d/m H:i') }}">
@@ -849,7 +851,7 @@
                                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                     @foreach($all_services as $service)
                                         @if($service->type === 'meter')
-                                            <div class="bg-white border rounded p-3">
+                                            <div wire:key="service-meter-{{ $service->id }}" class="bg-white border rounded p-3">
                                                 <div class="text-xs font-bold mb-2">{{ $service->name }}</div>
                                                     <div class="grid grid-cols-2 gap-2">
                                                         <input type="text" wire:model.blur="service_inputs.{{ $service->id }}.start_index" placeholder="Số đầu" class="premium-input rounded p-1.5 text-xs text-center">
@@ -915,6 +917,7 @@
                                         
                                         <!-- Các dịch vụ đang chọn (chưa chốt) -->
                                         @foreach($all_services as $service)
+                                            <tr wire:key="summary-service-{{ $service->id }}">
                                             @if(!empty($selected_services[$service->id]['selected']) && isset($service_inputs[$service->id]))
                                                 @php 
                                                     $inp = $service_inputs[$service->id] ?? [];
