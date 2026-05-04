@@ -66,6 +66,7 @@ class BookingCalendar extends Component
     public $additional_guests = []; // Each guest: {name, identity}
     public $confirmation_data = [];
     public $invoice_data = [];
+    public $invoice_period = '';
     public $showConfirmationModal = false;
     public $showInvoiceModal = false;
 
@@ -154,12 +155,7 @@ class BookingCalendar extends Component
         $this->new_customer_nationality = $this->handleNationalityUpdate($value);
     }
 
-    public $invoice_data = [];
-    public $invoice_period = '';
-    public $showInvoiceModal = false;
 
-    public $showConfirmationModal = false;
-    public $confirmation_data = [];
 
     private function parseDate($dateStr)
     {

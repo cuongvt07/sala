@@ -68,6 +68,7 @@ class Index extends Component
     public $showConfirmationModal = false;
     public $showInvoiceModal = false;
     public $invoice_period = '';
+    public $invoice_year;
 
     public function addGuest()
     {
@@ -104,13 +105,7 @@ class Index extends Component
     // Global billing date for all services in this period
     public $global_billing_date;
 
-    // Invoice Modal
-    public $showInvoiceModal = false;
-    public $invoice_year;
-    public $invoice_data = [];
 
-    public $showConfirmationModal = false;
-    public $confirmation_data = [];
 
     private function parseDate($dateStr)
     {
