@@ -392,18 +392,68 @@
                                             <div class="grid grid-cols-2 gap-2">
                                                 <div>
                                                     <label class="block text-[9px] font-black text-gray-400 uppercase mb-1">Ngày sinh</label>
-                                                    <input type="text" x-model="guest.birthday" 
-                                                           x-on:input="formatDate($el)"
-                                                           placeholder="DD / MM / YYYY" 
-                                                           class="w-full px-3 py-1.5 text-xs rounded-lg border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-white text-center font-bold">
+                                                    <div class="flex gap-1" x-data="{ 
+                                                        day: guest.birthday ? parseInt(guest.birthday.split(' / ')[0]) : '', 
+                                                        month: guest.birthday ? parseInt(guest.birthday.split(' / ')[1]) : '', 
+                                                        year: guest.birthday ? guest.birthday.split(' / ')[2] : '',
+                                                        update() {
+                                                            if (this.day && this.month && this.year) {
+                                                                guest.birthday = `${this.day.toString().padStart(2, '0')} / ${this.month.toString().padStart(2, '0')} / ${this.year}`;
+                                                            } else { guest.birthday = ''; }
+                                                        }
+                                                    }">
+                                                        <div class="flex-1">
+                                                            <select x-model="day" @change="update()" class="w-full bg-white border-gray-200 rounded-lg text-[10px] p-1 text-center font-bold focus:ring-1 focus:ring-indigo-500">
+                                                                <option value="">D</option>
+                                                                @foreach(range(1, 31) as $d)<option value="{{ $d }}">{{ str_pad($d, 2, '0', STR_PAD_LEFT) }}</option>@endforeach
+                                                            </select>
+                                                        </div>
+                                                        <div class="flex-1">
+                                                            <select x-model="month" @change="update()" class="w-full bg-white border-gray-200 rounded-lg text-[10px] p-1 text-center font-bold focus:ring-1 focus:ring-indigo-500">
+                                                                <option value="">M</option>
+                                                                @foreach(range(1, 12) as $m)<option value="{{ $m }}">{{ str_pad($m, 2, '0', STR_PAD_LEFT) }}</option>@endforeach
+                                                            </select>
+                                                        </div>
+                                                        <div class="flex-[1.5]">
+                                                            <select x-model="year" @change="update()" class="w-full bg-white border-gray-200 rounded-lg text-[10px] p-1 text-center font-bold focus:ring-1 focus:ring-indigo-500">
+                                                                <option value="">Y</option>
+                                                                @foreach(range(date('Y') + 10, 1940) as $y)<option value="{{ $y }}">{{ $y }}</option>@endforeach
+                                                            </select>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                                 
                                                 <div>
                                                     <label class="block text-[9px] font-black text-gray-400 uppercase mb-1">Hạn Visa</label>
-                                                    <input type="text" x-model="guest.visa_expiry" 
-                                                           x-on:input="formatDate($el)"
-                                                           placeholder="DD / MM / YYYY" 
-                                                           class="w-full px-3 py-1.5 text-xs rounded-lg border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-white text-center font-bold">
+                                                    <div class="flex gap-1" x-data="{ 
+                                                        day: guest.visa_expiry ? parseInt(guest.visa_expiry.split(' / ')[0]) : '', 
+                                                        month: guest.visa_expiry ? parseInt(guest.visa_expiry.split(' / ')[1]) : '', 
+                                                        year: guest.visa_expiry ? guest.visa_expiry.split(' / ')[2] : '',
+                                                        update() {
+                                                            if (this.day && this.month && this.year) {
+                                                                guest.visa_expiry = `${this.day.toString().padStart(2, '0')} / ${this.month.toString().padStart(2, '0')} / ${this.year}`;
+                                                            } else { guest.visa_expiry = ''; }
+                                                        }
+                                                    }">
+                                                        <div class="flex-1">
+                                                            <select x-model="day" @change="update()" class="w-full bg-white border-gray-200 rounded-lg text-[10px] p-1 text-center font-bold focus:ring-1 focus:ring-indigo-500">
+                                                                <option value="">D</option>
+                                                                @foreach(range(1, 31) as $d)<option value="{{ $d }}">{{ str_pad($d, 2, '0', STR_PAD_LEFT) }}</option>@endforeach
+                                                            </select>
+                                                        </div>
+                                                        <div class="flex-1">
+                                                            <select x-model="month" @change="update()" class="w-full bg-white border-gray-200 rounded-lg text-[10px] p-1 text-center font-bold focus:ring-1 focus:ring-indigo-500">
+                                                                <option value="">M</option>
+                                                                @foreach(range(1, 12) as $m)<option value="{{ $m }}">{{ str_pad($m, 2, '0', STR_PAD_LEFT) }}</option>@endforeach
+                                                            </select>
+                                                        </div>
+                                                        <div class="flex-[1.5]">
+                                                            <select x-model="year" @change="update()" class="w-full bg-white border-gray-200 rounded-lg text-[10px] p-1 text-center font-bold focus:ring-1 focus:ring-indigo-500">
+                                                                <option value="">Y</option>
+                                                                @foreach(range(date('Y') + 15, date('Y') - 5) as $y)<option value="{{ $y }}">{{ $y }}</option>@endforeach
+                                                            </select>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
 
