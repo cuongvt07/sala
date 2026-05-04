@@ -222,11 +222,11 @@ class Index extends Component
                 $this->new_customer_phone = $customer->phone;
                 $this->new_customer_email = $customer->email;
                 $this->new_customer_gender = $customer->gender;
-                $this->new_customer_birthday = $customer->birthday ? $customer->birthday->format('Y-m-d') : null;
+                $this->new_customer_birthday = $customer->birthday ? $customer->birthday->format('d/m/Y') : null;
                 $this->new_customer_identity = $customer->identity_id;
                 $this->new_customer_nationality = $customer->nationality;
                 $this->new_customer_visa_number = $customer->visa_number;
-                $this->new_customer_visa_expiry = $customer->visa_expiry ? $customer->visa_expiry->format('Y-m-d') : null;
+                $this->new_customer_visa_expiry = $customer->visa_expiry ? $customer->visa_expiry->format('d/m/Y') : null;
             }
         } else {
             $this->reset(['new_customer_name', 'new_customer_phone', 'new_customer_email', 'new_customer_gender', 'new_customer_birthday', 'new_customer_identity', 'new_customer_nationality', 'new_customer_visa_number', 'new_customer_visa_expiry']);
@@ -314,7 +314,15 @@ class Index extends Component
 
         $this->customer_id = $booking->customer_id;
         if ($booking->customer) {
+            $this->new_customer_name = $booking->customer->name;
+            $this->new_customer_phone = $booking->customer->phone;
+            $this->new_customer_email = $booking->customer->email;
+            $this->new_customer_gender = $booking->customer->gender;
+            $this->new_customer_birthday = $booking->customer->birthday ? $booking->customer->birthday->format('d/m/Y') : null;
+            $this->new_customer_identity = $booking->customer->identity_id;
             $this->new_customer_nationality = $booking->customer->nationality;
+            $this->new_customer_visa_number = $booking->customer->visa_number;
+            $this->new_customer_visa_expiry = $booking->customer->visa_expiry ? $booking->customer->visa_expiry->format('d/m/Y') : null;
         }
         $this->room_id = $booking->room_id; // Always default to existing for edit
         $this->price_type = ($booking->price_type === 'month') ? 'month' : 'day'; // Default to day, map legacy 'hour' to day

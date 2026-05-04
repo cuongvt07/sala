@@ -93,11 +93,11 @@ class BookingCalendar extends Component
                 $this->customer_phone = $customer->phone;
                 $this->customer_email = $customer->email;
                 $this->customer_gender = $customer->gender;
-                $this->customer_birthday = $customer->birthday ? $customer->birthday->format('Y-m-d') : null;
+                $this->customer_birthday = $customer->birthday ? $customer->birthday->format('d/m/Y') : null;
                 $this->customer_identity = $customer->identity_id;
                 $this->customer_nationality = $customer->nationality;
                 $this->customer_visa_number = $customer->visa_number;
-                $this->customer_visa_expiry = $customer->visa_expiry ? $customer->visa_expiry->format('Y-m-d') : null;
+                $this->customer_visa_expiry = $customer->visa_expiry ? $customer->visa_expiry->format('d/m/Y') : null;
             }
         } else {
             $this->reset(['customer_name', 'customer_phone', 'customer_email', 'customer_gender', 'customer_birthday', 'customer_identity', 'customer_nationality', 'customer_visa_number', 'customer_visa_expiry']);
@@ -526,11 +526,11 @@ class BookingCalendar extends Component
             $this->customer_phone = $booking->customer->phone;
             $this->customer_email = $booking->customer->email;
             $this->customer_gender = $booking->customer->gender;
-            $this->customer_birthday = $booking->customer->birthday ? $booking->customer->birthday->format('Y-m-d') : null;
+            $this->customer_birthday = $booking->customer->birthday ? $booking->customer->birthday->format('d/m/Y') : null;
             $this->customer_identity = $booking->customer->identity_id;
             $this->customer_nationality = $booking->customer->nationality;
             $this->customer_visa_number = $booking->customer->visa_number;
-            $this->customer_visa_expiry = $booking->customer->visa_expiry ? $booking->customer->visa_expiry->format('Y-m-d') : null;
+            $this->customer_visa_expiry = $booking->customer->visa_expiry ? $booking->customer->visa_expiry->format('d/m/Y') : null;
         }
 
         $this->additional_guests = collect($booking->additional_guests ?? [])->map(function($guest) {
