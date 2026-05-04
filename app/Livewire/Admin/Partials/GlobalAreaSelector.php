@@ -11,6 +11,7 @@ class GlobalAreaSelector extends Component
 
     public function mount()
     {
+        
         $this->selectedAreaId = session('admin_selected_area_id', '');
     }
 
