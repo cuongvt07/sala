@@ -951,6 +951,8 @@ class Index extends Component
             'deposit_3' => $this->deposit_3,
             'status' => $this->status,
             'notes' => $this->notes,
+        ];
+
         // Process Additional Guests as Customers
         $processedGuests = [];
         foreach ($this->additional_guests as $guest) {
