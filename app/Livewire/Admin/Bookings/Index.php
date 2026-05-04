@@ -111,7 +111,14 @@ class Index extends Component
     {
         if (empty($dateStr)) return null;
         try {
+            // Nếu đã là định dạng YYYY-MM-DD thì trả về luôn
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateStr)) {
+                return $dateStr;
+            }
+
             $clean = str_replace(' ', '', $dateStr);
+            // Thử format d/m/Y (có thể dùng / hoặc - hoặc .)
+            $clean = str_replace(['-', '.'], '/', $clean);
             return \Carbon\Carbon::createFromFormat('d/m/Y', $clean)->format('Y-m-d');
         } catch (\Exception $e) {
             return null;

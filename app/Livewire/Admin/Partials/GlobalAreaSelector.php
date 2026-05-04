@@ -28,8 +28,14 @@ class GlobalAreaSelector extends Component
 
     public function render()
     {
+        try {
+            $areas = Area::all();
+        } catch (\Exception $e) {
+            $areas = collect();
+        }
+
         return view('livewire.admin.partials.global-area-selector', [
-            'areas' => Area::all(),
+            'areas' => $areas,
         ]);
     }
 }
