@@ -314,22 +314,123 @@
                         </div>
 
                         {{-- Additional Guests --}}
-                        <div x-data="{ guests: @entangle('additional_guests') }" class="bg-white p-3 rounded-lg border border-gray-200">
-                            <div class="flex items-center justify-between mb-2">
-                                <h4 class="text-[10px] font-black text-gray-400 uppercase">Người ở cùng</h4>
-                                <button type="button" @click="guests.push({ name: '', identity: '' })" class="text-[9px] bg-slate-600 text-white px-2 py-0.5 rounded font-bold hover:bg-slate-700">+ Thêm</button>
+                        <div x-data="{ 
+                            guests: @entangle('additional_guests'),
+                            countries: {{ json_encode(array_values($this->getFormattedCountries())) }},
+                            formatDate(el) {
+                                let value = el.value.replace(/\D/g, '').slice(0, 8);
+                                if (value.length >= 2 && value.length < 4) {
+                                    value = value.slice(0, 2) + ' / ' + value.slice(2);
+                                } else if (value.length >= 4) {
+                                    value = value.slice(0, 2) + ' / ' + value.slice(2, 4) + ' / ' + value.slice(4);
+                                }
+                                el.value = value;
+                            }
+                        }" class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm col-span-2">
+                            <div class="flex items-center justify-between mb-4 border-b border-gray-50 pb-2">
+                                <div class="flex items-center gap-2">
+                                    <x-icon name="heroicon-o-users" class="h-4 w-4 text-indigo-500" />
+                                    <h4 class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Người ở cùng</h4>
+                                </div>
+                                <button type="button" @click="guests.push({ name: '', phone: '', identity: '', gender: '', nationality: 'Vietnam', birthday: '', visa_expiry: '' })" 
+                                        class="text-[9px] bg-indigo-600 text-white px-3 py-1 rounded-lg font-bold hover:bg-indigo-700 transition-all shadow-sm flex items-center gap-1">
+                                    <x-icon name="heroicon-o-plus" class="h-3 w-3" /> Thêm khách
+                                </button>
                             </div>
-                            <div class="space-y-1.5">
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <template x-for="(guest, index) in guests" :key="index">
-                                    <div class="flex items-center gap-2">
-                                        <input type="text" x-model="guest.name" placeholder="Tên" class="flex-1 rounded border-gray-200 p-1.5 text-xs">
-                                        <input type="text" x-model="guest.identity" placeholder="CMND" class="w-24 rounded border-gray-200 p-1.5 text-xs">
-                                        <button type="button" @click="guests.splice(index, 1)" class="text-red-500"><x-icon name="heroicon-o-trash" class="h-4 w-4" /></button>
+                                    <div class="bg-gray-50/50 p-4 rounded-xl border border-gray-100 relative group hover:border-indigo-200 transition-colors">
+                                        <button type="button" @click="guests.splice(index, 1)" 
+                                                class="absolute -top-2 -right-2 bg-white text-red-500 hover:bg-red-500 hover:text-white rounded-full p-1 shadow-md border border-red-50 transition-all opacity-0 group-hover:opacity-100">
+                                            <x-icon name="heroicon-o-x-mark" class="h-3 w-3" />
+                                        </button>
+                                        
+                                        <div class="space-y-3">
+                                            <div>
+                                                <label class="block text-[9px] font-black text-gray-400 uppercase mb-1">Họ tên *</label>
+                                                <input type="text" x-model="guest.name" placeholder="Nguyễn Văn A" 
+                                                       class="w-full px-3 py-1.5 text-xs rounded-lg border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-white">
+                                            </div>
+                                            
+                                            <div class="grid grid-cols-2 gap-2">
+                                                <div>
+                                                    <label class="block text-[9px] font-black text-gray-400 uppercase mb-1">CCCD / Passport</label>
+                                                    <input type="text" x-model="guest.identity" placeholder="..." 
+                                                           class="w-full px-3 py-1.5 text-xs rounded-lg border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-white">
+                                                </div>
+
+                                                <div x-data="{ open: false, search: '' }">
+                                                    <label class="block text-[9px] font-black text-gray-400 uppercase mb-1">Quốc tịch</label>
+                                                    <div class="relative">
+                                                        <button type="button" @click="open = !open" 
+                                                                class="w-full px-3 py-1.5 text-xs rounded-lg border border-gray-200 text-left bg-white flex justify-between items-center">
+                                                            <span class="truncate" x-text="guest.nationality || 'Chọn'" :class="!guest.nationality && 'text-gray-400'"></span>
+                                                            <x-icon name="heroicon-m-chevron-down" class="h-3 w-3 text-gray-300" />
+                                                        </button>
+                                                        
+                                                        <div x-show="open" @click.away="open = false" 
+                                                             class="absolute z-[100] mt-1 w-full bg-white rounded-lg shadow-xl border border-gray-100 py-1 overflow-hidden">
+                                                            <div class="p-2 border-b border-gray-50">
+                                                                <input type="text" x-model="search" placeholder="Tìm..." 
+                                                                       class="w-full px-2 py-1 text-[10px] rounded-md border-gray-100 focus:ring-0 focus:border-indigo-300">
+                                                            </div>
+                                                            <ul class="max-h-32 overflow-y-auto">
+                                                                <template x-for="country in countries.filter(c => c.toLowerCase().includes(search.toLowerCase()))" :key="country">
+                                                                    <li @click="guest.nationality = country; open = false; search = ''" 
+                                                                        class="px-3 py-1.5 text-[10px] hover:bg-indigo-50 cursor-pointer transition-colors"
+                                                                        :class="guest.nationality === country ? 'bg-indigo-50 text-indigo-600 font-bold' : 'text-gray-600'">
+                                                                        <span x-text="country"></span>
+                                                                    </li>
+                                                                </template>
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="grid grid-cols-2 gap-2">
+                                                <div>
+                                                    <label class="block text-[9px] font-black text-gray-400 uppercase mb-1">Ngày sinh</label>
+                                                    <input type="text" x-model="guest.birthday" 
+                                                           x-on:input="formatDate($el)"
+                                                           placeholder="DD / MM / YYYY" 
+                                                           class="w-full px-3 py-1.5 text-xs rounded-lg border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-white text-center font-bold">
+                                                </div>
+                                                
+                                                <div>
+                                                    <label class="block text-[9px] font-black text-gray-400 uppercase mb-1">Hạn Visa</label>
+                                                    <input type="text" x-model="guest.visa_expiry" 
+                                                           x-on:input="formatDate($el)"
+                                                           placeholder="DD / MM / YYYY" 
+                                                           class="w-full px-3 py-1.5 text-xs rounded-lg border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-white text-center font-bold">
+                                                </div>
+                                            </div>
+
+                                            <div class="grid grid-cols-2 gap-2">
+                                                <div>
+                                                    <label class="block text-[9px] font-black text-gray-400 uppercase mb-1">SĐT</label>
+                                                    <input type="text" x-model="guest.phone" placeholder="090..." 
+                                                           class="w-full px-3 py-1.5 text-xs rounded-lg border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-white">
+                                                </div>
+                                                <div>
+                                                    <label class="block text-[9px] font-black text-gray-400 uppercase mb-1">Giới tính</label>
+                                                    <select x-model="guest.gender" 
+                                                            class="w-full px-3 py-1.5 text-xs rounded-lg border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-white">
+                                                        <option value="">Chọn</option>
+                                                        <option value="male">Nam</option>
+                                                        <option value="female">Nữ</option>
+                                                        <option value="other">Khác</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </template>
-                                <div x-show="guests.length === 0">
-                                    <p class="text-[9px] text-gray-400 italic text-center">Không có người ở cùng</p>
-                                </div>
+                            </div>
+                            
+                            <div x-show="guests.length === 0" class="text-center py-6 bg-gray-50/30 border-2 border-dashed border-gray-100 rounded-xl">
+                                <p class="text-[10px] text-gray-400 italic">Không có người ở cùng</p>
                             </div>
                         </div>
 

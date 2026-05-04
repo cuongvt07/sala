@@ -67,7 +67,15 @@ class BookingCalendar extends Component
 
     public function addGuest()
     {
-        $this->additional_guests[] = ['name' => '', 'identity' => ''];
+        $this->additional_guests[] = [
+            'name' => '', 
+            'phone' => '', 
+            'identity' => '', 
+            'gender' => '', 
+            'nationality' => 'Vietnam', 
+            'birthday' => '', 
+            'visa_expiry' => ''
+        ];
     }
 
     public function removeGuest($index)
@@ -148,6 +156,17 @@ class BookingCalendar extends Component
 
     public $showConfirmationModal = false;
     public $confirmation_data = [];
+
+    private function parseDate($dateStr)
+    {
+        if (empty($dateStr)) return null;
+        try {
+            $clean = str_replace(' ', '', $dateStr);
+            return \Carbon\Carbon::createFromFormat('d/m/Y', $clean)->format('Y-m-d');
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
 
     public function nextMonth()
     {
@@ -507,7 +526,22 @@ class BookingCalendar extends Component
             $this->customer_visa_expiry = $booking->customer->visa_expiry ? $booking->customer->visa_expiry->format('Y-m-d') : null;
         }
 
-        $this->additional_guests = $booking->additional_guests ?? [];
+        $this->additional_guests = collect($booking->additional_guests ?? [])->map(function($guest) {
+            if (!empty($guest['birthday'])) {
+                try {
+                    $guest['birthday'] = \Carbon\Carbon::parse($guest['birthday'])->format('d / m / Y');
+                } catch (\Exception $e) {}
+            }
+            if (!empty($guest['visa_expiry'])) {
+                try {
+                    $guest['visa_expiry'] = \Carbon\Carbon::parse($guest['visa_expiry'])->format('d / m / Y');
+                } catch (\Exception $e) {}
+            }
+            if (isset($guest['identity_id']) && !isset($guest['identity'])) {
+                $guest['identity'] = $guest['identity_id'];
+            }
+            return $guest;
+        })->toArray();
 
         $this->selected_services = [];
         foreach ($booking->services as $service) {
@@ -848,12 +882,12 @@ class BookingCalendar extends Component
             $guestData = [
                 'name' => $guest['name'],
                 'phone' => $guest['phone'] ?? null,
-                'identity_id' => $guest['identity'] ?? null,
+                'identity' => $guest['identity'] ?? null,
                 'gender' => $guest['gender'] ?? null,
-                'birthday' => !empty($guest['birthday']) ? $guest['birthday'] : null,
+                'birthday' => $this->parseDate($guest['birthday'] ?? null),
                 'nationality' => $guest['nationality'] ?? 'Vietnam',
-                'visa_number' => $guest['visa_number'] ?? null,
-                'visa_expiry' => !empty($guest['visa_expiry']) ? $guest['visa_expiry'] : null,
+                'visa_number' => $guest['identity'] ?? null,
+                'visa_expiry' => $this->parseDate($guest['visa_expiry'] ?? null),
             ];
 
             if ($guestCustomer) {

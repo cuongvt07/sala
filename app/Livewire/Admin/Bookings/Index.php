@@ -66,7 +66,15 @@ class Index extends Component
 
     public function addGuest()
     {
-        $this->additional_guests[] = ['name' => '', 'identity' => ''];
+        $this->additional_guests[] = [
+            'name' => '', 
+            'phone' => '', 
+            'identity' => '', 
+            'gender' => '', 
+            'nationality' => 'Vietnam', 
+            'birthday' => '', 
+            'visa_expiry' => ''
+        ];
     }
 
     public function removeGuest($index)
@@ -98,6 +106,17 @@ class Index extends Component
 
     public $showConfirmationModal = false;
     public $confirmation_data = [];
+
+    private function parseDate($dateStr)
+    {
+        if (empty($dateStr)) return null;
+        try {
+            $clean = str_replace(' ', '', $dateStr);
+            return \Carbon\Carbon::createFromFormat('d/m/Y', $clean)->format('Y-m-d');
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
 
     public $deposits = []; // Stores state of deposits (1, 2, 3)
 
@@ -305,7 +324,22 @@ class Index extends Component
 
         $this->status = $booking->status;
         $this->notes = $booking->notes;
-        $this->additional_guests = $booking->additional_guests ?? [];
+        $this->additional_guests = collect($booking->additional_guests ?? [])->map(function($guest) {
+            if (!empty($guest['birthday'])) {
+                try {
+                    $guest['birthday'] = \Carbon\Carbon::parse($guest['birthday'])->format('d / m / Y');
+                } catch (\Exception $e) {}
+            }
+            if (!empty($guest['visa_expiry'])) {
+                try {
+                    $guest['visa_expiry'] = \Carbon\Carbon::parse($guest['visa_expiry'])->format('d / m / Y');
+                } catch (\Exception $e) {}
+            }
+            if (isset($guest['identity_id']) && !isset($guest['identity'])) {
+                $guest['identity'] = $guest['identity_id'];
+            }
+            return $guest;
+        })->toArray();
 
         // Load Usage Logs first so we can use them for suggestions
         $this->usage_logs = $booking->usageLogs->map(function ($log) {
@@ -917,7 +951,15 @@ class Index extends Component
             'deposit_3' => $this->deposit_3,
             'status' => $this->status,
             'notes' => $this->notes,
-            'additional_guests' => $this->additional_guests,
+            'additional_guests' => collect($this->additional_guests)->map(function($guest) {
+                $guest['birthday'] = $this->parseDate($guest['birthday'] ?? null);
+                $guest['visa_expiry'] = $this->parseDate($guest['visa_expiry'] ?? null);
+                // Ensure identity is always saved as 'identity' for consistency
+                if (isset($guest['identity'])) {
+                    $guest['identity_id'] = $guest['identity'];
+                }
+                return $guest;
+            })->toArray(),
         ];
 
         if ($this->editingBookingId) {

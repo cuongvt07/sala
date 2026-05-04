@@ -613,67 +613,128 @@
                                 </div>
 
                                 {{-- Additional Guests --}}
-                                <div x-data="{ guests: @entangle('additional_guests') }" class="mt-4 p-4 bg-indigo-50/50 rounded-xl border border-indigo-100">
-                                    <div class="flex items-center justify-between mb-4">
-                                        <div class="flex items-center gap-2">
-                                            <div class="bg-indigo-100 p-1.5 rounded-lg">
-                                                <x-icon name="heroicon-o-users" class="h-4 w-4 text-indigo-600" />
+                                <div x-data="{ 
+                                    guests: @entangle('additional_guests'),
+                                    countries: {{ json_encode(array_values($this->getFormattedCountries())) }},
+                                    formatDate(el) {
+                                        let value = el.value.replace(/\D/g, '').slice(0, 8);
+                                        if (value.length >= 2 && value.length < 4) {
+                                            value = value.slice(0, 2) + ' / ' + value.slice(2);
+                                        } else if (value.length >= 4) {
+                                            value = value.slice(0, 2) + ' / ' + value.slice(2, 4) + ' / ' + value.slice(4);
+                                        }
+                                        el.value = value;
+                                    }
+                                }" class="mt-6 p-5 bg-indigo-50/30 backdrop-blur-md rounded-2xl border border-indigo-100/50 shadow-inner">
+                                    <div class="flex items-center justify-between mb-5">
+                                        <div class="flex items-center gap-3">
+                                            <div class="bg-indigo-600 p-2 rounded-xl shadow-lg shadow-indigo-200">
+                                                <x-icon name="heroicon-o-users" class="h-4 w-4 text-white" />
                                             </div>
-                                            <h4 class="text-xs font-bold text-indigo-700 uppercase tracking-wider">Thông tin người ở cùng</h4>
+                                            <div>
+                                                <h4 class="text-xs font-black text-indigo-900 uppercase tracking-widest">Thông tin người ở cùng</h4>
+                                                <p class="text-[9px] text-indigo-400 font-bold uppercase mt-0.5">Additional Guests Information</p>
+                                            </div>
                                         </div>
-                                        <button type="button" @click="guests.push({ name: '', phone: '', identity: '', gender: '', nationality: 'Vietnam', birthday: '', visa_expiry: '' })" class="text-[10px] bg-indigo-600 text-white px-3 py-1 rounded-full font-bold hover:bg-indigo-700 transition-all shadow-sm">+ Thêm khách</button>
+                                        <button type="button" @click="guests.push({ name: '', phone: '', identity: '', gender: '', nationality: 'Vietnam', birthday: '', visa_expiry: '' })" 
+                                                class="text-[10px] bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1.5 rounded-xl font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 shadow-md shadow-indigo-200 flex items-center gap-2">
+                                            <x-icon name="heroicon-o-plus" class="h-3 w-3" /> Thêm khách
+                                        </button>
                                     </div>
                                     
-                                    <div class="space-y-4">
+                                    <div class="space-y-6">
                                         <template x-for="(guest, index) in guests" :key="index">
-                                            <div class="bg-white p-4 rounded-lg border border-indigo-100 shadow-sm relative group">
-                                                <button type="button" @click="guests.splice(index, 1)" class="absolute -top-2 -right-2 bg-white text-red-500 hover:text-red-700 rounded-full p-1 shadow-md border border-red-50 border-gray-100 transition-transform group-hover:scale-110">
+                                            <div class="bg-white/70 backdrop-blur-sm p-5 rounded-2xl border border-indigo-100 shadow-sm relative group hover:shadow-md transition-all duration-300">
+                                                <button type="button" @click="guests.splice(index, 1)" 
+                                                        class="absolute -top-2 -right-2 bg-white text-red-500 hover:bg-red-500 hover:text-white rounded-full p-1.5 shadow-lg border border-red-50 transition-all duration-200 hover:rotate-90">
                                                     <x-icon name="heroicon-o-trash" class="h-4 w-4" />
                                                 </button>
                                                 
-                                                <div class="grid grid-cols-2 gap-3">
+                                                <div class="grid grid-cols-2 gap-4">
                                                     <div class="col-span-2">
-                                                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Họ tên *</label>
-                                                        <input type="text" x-model="guest.name" placeholder="Nguyễn Văn A" class="w-full px-3 py-1.5 text-xs rounded-lg premium-input">
+                                                        <label class="block text-[10px] font-black text-indigo-300 uppercase mb-1.5 tracking-widest">Họ tên *</label>
+                                                        <input type="text" x-model="guest.name" placeholder="Nguyễn Văn A" 
+                                                               class="w-full px-4 py-2 text-xs rounded-xl border-indigo-50 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-white/50">
                                                     </div>
+                                                    
                                                     <div>
-                                                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Số điện thoại</label>
-                                                        <input type="text" x-model="guest.phone" placeholder="090..." class="w-full px-3 py-1.5 text-xs rounded-lg premium-input">
+                                                        <label class="block text-[10px] font-black text-indigo-300 uppercase mb-1.5 tracking-widest">CCCD / Passport</label>
+                                                        <input type="text" x-model="guest.identity" placeholder="..." 
+                                                               class="w-full px-4 py-2 text-xs rounded-xl border-indigo-50 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-white/50">
                                                     </div>
+
+                                                    <div x-data="{ open: false, search: '' }">
+                                                        <label class="block text-[10px] font-black text-indigo-300 uppercase mb-1.5 tracking-widest">Quốc tịch</label>
+                                                        <div class="relative">
+                                                            <button type="button" @click="open = !open" 
+                                                                    class="w-full px-4 py-2 text-xs rounded-xl border border-indigo-50 text-left bg-white/50 flex justify-between items-center group">
+                                                                <span x-text="guest.nationality || 'Chọn quốc tịch'" :class="!guest.nationality && 'text-gray-400'"></span>
+                                                                <x-icon name="heroicon-m-chevron-down" class="h-3 w-3 text-indigo-300 group-hover:text-indigo-500 transition-colors" />
+                                                            </button>
+                                                            
+                                                            <div x-show="open" @click.away="open = false" 
+                                                                 x-transition:enter="transition ease-out duration-100"
+                                                                 x-transition:enter-start="opacity-0 scale-95"
+                                                                 x-transition:enter-end="opacity-100 scale-100"
+                                                                 class="absolute z-[150] mt-1 w-full bg-white rounded-xl shadow-2xl border border-indigo-50 py-1 overflow-hidden">
+                                                                <div class="p-2 border-b border-indigo-50">
+                                                                    <input type="text" x-model="search" placeholder="Tìm kiếm..." 
+                                                                           class="w-full px-3 py-1.5 text-[10px] rounded-lg border-indigo-50 focus:ring-0 focus:border-indigo-300">
+                                                                </div>
+                                                                <ul class="max-h-40 overflow-y-auto">
+                                                                    <template x-for="country in countries.filter(c => c.toLowerCase().includes(search.toLowerCase()))" :key="country">
+                                                                        <li @click="guest.nationality = country; open = false; search = ''" 
+                                                                            class="px-4 py-2 text-xs hover:bg-indigo-50 cursor-pointer transition-colors"
+                                                                            :class="guest.nationality === country ? 'bg-indigo-50 text-indigo-600 font-bold' : 'text-gray-700'">
+                                                                            <span x-text="country"></span>
+                                                                        </li>
+                                                                    </template>
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
                                                     <div>
-                                                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Giới tính</label>
-                                                        <select x-model="guest.gender" class="w-full px-3 py-1.5 text-xs rounded-lg premium-input">
+                                                        <label class="block text-[10px] font-black text-indigo-300 uppercase mb-1.5 tracking-widest">Ngày sinh</label>
+                                                        <input type="text" x-model="guest.birthday" 
+                                                               x-on:input="formatDate($el)"
+                                                               placeholder="DD / MM / YYYY" 
+                                                               class="w-full px-4 py-2 text-xs rounded-xl border-indigo-50 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-white/50 text-center font-bold tracking-widest">
+                                                    </div>
+                                                    
+                                                    <div>
+                                                        <label class="block text-[10px] font-black text-indigo-300 uppercase mb-1.5 tracking-widest">Hạn Visa</label>
+                                                        <input type="text" x-model="guest.visa_expiry" 
+                                                               x-on:input="formatDate($el)"
+                                                               placeholder="DD / MM / YYYY" 
+                                                               class="w-full px-4 py-2 text-xs rounded-xl border-indigo-50 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-white/50 text-center font-bold tracking-widest">
+                                                    </div>
+
+                                                    <div>
+                                                        <label class="block text-[10px] font-black text-indigo-300 uppercase mb-1.5 tracking-widest">SĐT</label>
+                                                        <input type="text" x-model="guest.phone" placeholder="090..." 
+                                                               class="w-full px-4 py-2 text-xs rounded-xl border-indigo-50 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-white/50">
+                                                    </div>
+
+                                                    <div>
+                                                        <label class="block text-[10px] font-black text-indigo-300 uppercase mb-1.5 tracking-widest">Giới tính</label>
+                                                        <select x-model="guest.gender" 
+                                                                class="w-full px-4 py-2 text-xs rounded-xl border-indigo-50 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-white/50">
                                                             <option value="">Chọn</option>
                                                             <option value="male">Nam</option>
                                                             <option value="female">Nữ</option>
                                                             <option value="other">Khác</option>
                                                         </select>
                                                     </div>
-                                                    <div>
-                                                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">CCCD / Passport</label>
-                                                        <input type="text" x-model="guest.identity" class="w-full px-3 py-1.5 text-xs rounded-lg premium-input">
-                                                    </div>
-                                                    <div>
-                                                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Quốc tịch</label>
-                                                        <select x-model="guest.nationality" class="w-full px-3 py-1.5 text-xs rounded-lg premium-input">
-                                                            @foreach($this->getFormattedCountries() as $code => $name)
-                                                                <option value="{{ $name }}">{{ $name }}</option>
-                                                            @endforeach
-                                                        </select>
-                                                    </div>
-                                                    <div>
-                                                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Ngày sinh</label>
-                                                        <input type="date" x-model="guest.birthday" class="w-full px-3 py-1.5 text-xs rounded-lg premium-input">
-                                                    </div>
-                                                    <div>
-                                                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Hạn Visa</label>
-                                                        <input type="date" x-model="guest.visa_expiry" class="w-full px-3 py-1.5 text-xs rounded-lg premium-input">
-                                                    </div>
                                                 </div>
                                             </div>
                                         </template>
-                                        <div x-show="guests.length === 0" class="text-center py-6 border-2 border-dashed border-indigo-100 rounded-lg">
-                                            <p class="text-xs text-gray-400 italic">Chưa có người ở cùng</p>
+                                        
+                                        <div x-show="guests.length === 0" class="text-center py-10 border-2 border-dashed border-indigo-100 rounded-2xl bg-indigo-50/20">
+                                            <div class="mb-2 opacity-20">
+                                                <x-icon name="heroicon-o-user-plus" class="h-10 w-10 mx-auto text-indigo-900" />
+                                            </div>
+                                            <p class="text-[10px] text-indigo-300 font-black uppercase tracking-widest">Chưa có người ở cùng</p>
                                         </div>
                                     </div>
                                 </div>
