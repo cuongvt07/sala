@@ -165,40 +165,61 @@
         </div>
 
         <!-- Filters -->
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-wrap gap-6 items-end">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row gap-8 items-start md:items-center transition-all duration-300 hover:shadow-md">
             <!-- Khu vực/Toà nhà -->
-            <div class="flex-1 min-w-[300px]">
-                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Lọc Toà nhà</label>
+            <div class="flex-1 space-y-3">
+                <div class="flex items-center gap-2 text-gray-400">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-10V4m0 10V4m-4 10h4m-4 4h4m-4 4h4m-4 0V4"></path></svg>
+                    <label class="text-[10px] font-black uppercase tracking-widest">Lọc theo toà nhà</label>
+                </div>
                 <div class="flex flex-wrap gap-2">
                     @foreach($areas as $area)
-                        <label class="inline-flex items-center cursor-pointer bg-gray-50 px-3 py-1.5 rounded border border-gray-200 hover:bg-gray-100 transition-colors">
-                            <input type="checkbox" wire:model.live="filter_areas" value="{{ $area->id }}" class="rounded text-blue-600 focus:ring-blue-500 w-4 h-4 mr-2">
-                            <span class="text-sm font-medium text-gray-700">{{ $area->name }}</span>
+                        <label class="relative flex items-center group cursor-pointer select-none">
+                            <input type="checkbox" wire:model.live="filter_areas" value="{{ $area->id }}" class="sr-only peer">
+                            <div class="px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 border
+                                peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-600 peer-checked:shadow-lg peer-checked:shadow-blue-200
+                                bg-gray-50 text-gray-500 border-gray-100 group-hover:bg-gray-100 group-hover:border-gray-200
+                                flex items-center gap-2">
+                                <span class="hidden peer-checked:inline-block">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                                </span>
+                                {{ $area->name }}
+                            </div>
                         </label>
                     @endforeach
                 </div>
             </div>
 
-            <!-- Từ ngày -->
-            <div>
-                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Phòng trống từ ngày</label>
-                <input type="date" wire:model.live="filter_start_date" class="rounded-lg border-gray-300 text-sm focus:ring-blue-500 focus:border-blue-500 shadow-sm h-[38px]">
-            </div>
+            <!-- Dải phân cách (Desktop) -->
+            <div class="hidden md:block w-px h-12 bg-gray-100"></div>
 
-            <!-- Đến ngày -->
-            <div>
-                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Đến ngày</label>
-                <input type="date" wire:model.live="filter_end_date" class="rounded-lg border-gray-300 text-sm focus:ring-blue-500 focus:border-blue-500 shadow-sm h-[38px]">
+            <!-- Tìm phòng trống -->
+            <div class="flex flex-wrap items-center gap-4">
+                <div class="space-y-3">
+                    <div class="flex items-center gap-2 text-gray-400">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        <label class="text-[10px] font-black uppercase tracking-widest text-blue-600">Tìm phòng trống theo ngày</label>
+                    </div>
+                    <div class="flex items-center gap-2 bg-gray-50 p-1 rounded-xl border border-gray-100">
+                        <input type="date" wire:model.live="filter_start_date" 
+                               class="bg-transparent border-none text-xs font-bold text-gray-700 focus:ring-0 w-[140px] cursor-pointer"
+                               title="Từ ngày">
+                        <span class="text-gray-300 text-xs">→</span>
+                        <input type="date" wire:model.live="filter_end_date" 
+                               class="bg-transparent border-none text-xs font-bold text-gray-700 focus:ring-0 w-[140px] cursor-pointer"
+                               title="Đến ngày">
+                    </div>
+                </div>
+                
+                <!-- Xoá lọc -->
+                @if(!empty($filter_areas) || !empty($filter_start_date) || !empty($filter_end_date))
+                    <button wire:click="$set('filter_areas', []); $set('filter_start_date', ''); $set('filter_end_date', '');" 
+                            class="mt-6 p-2 text-red-500 hover:bg-red-50 rounded-xl transition-all duration-200 group"
+                            title="Xoá tất cả bộ lọc">
+                        <svg class="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                @endif
             </div>
-            
-            <!-- Xoá lọc -->
-            @if(!empty($filter_areas) || !empty($filter_start_date) || !empty($filter_end_date))
-            <div>
-                <button wire:click="$set('filter_areas', []); $set('filter_start_date', ''); $set('filter_end_date', '');" class="px-3 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors h-[38px]">
-                    Xoá lọc
-                </button>
-            </div>
-            @endif
         </div>
     </div>
 
