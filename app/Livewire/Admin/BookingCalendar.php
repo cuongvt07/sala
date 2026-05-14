@@ -20,6 +20,11 @@ class BookingCalendar extends Component
     public $startDate;
     public $selectedArea = '';
 
+    // Filters
+    public $filter_areas = [];
+    public $filter_start_date;
+    public $filter_end_date;
+
     // Modal & Form State
     public $showModal = false;
     public $editingBookingId = null;
@@ -1016,8 +1021,24 @@ class BookingCalendar extends Component
             $query->where('area_id', session('admin_selected_area_id'));
         }
 
-        if ($this->selectedArea) {
+        if (!empty($this->filter_areas)) {
+            $query->whereIn('area_id', $this->filter_areas);
+        } elseif ($this->selectedArea) {
             $query->where('area_id', $this->selectedArea);
+        }
+
+        if (!empty($this->filter_start_date) && !empty($this->filter_end_date)) {
+            $start = \Carbon\Carbon::parse($this->filter_start_date)->startOfDay();
+            $end = \Carbon\Carbon::parse($this->filter_end_date)->startOfDay();
+            
+            $query->whereDoesntHave('bookings', function($q) use ($start, $end) {
+                $q->whereIn('status', ['pending', 'checked_in'])
+                  ->where('check_in', '<', $end)
+                  ->where(function($sub) use ($start) {
+                      $sub->where('check_out', '>', $start)
+                          ->orWhereNull('check_out');
+                  });
+            });
         }
 
         return $query->get()->groupBy('area.name')->map(function ($rooms) {

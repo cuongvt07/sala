@@ -145,21 +145,60 @@
     </style>
 
     <!-- Header & Controls -->
-    <div class="flex flex-wrap justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100 gap-4">
-                <h2 class="text-2xl font-bold text-gray-800">
-                Từ {{ \Carbon\Carbon::parse($startDate ?? now())->format('d/m/Y') }} đến {{ \Carbon\Carbon::parse($startDate ?? now())->addDays(29)->format('d/m/Y') }}
-            </h2>
+    <div class="flex flex-col gap-4">
+        <div class="flex flex-wrap justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100 gap-4">
+                    <h2 class="text-2xl font-bold text-gray-800">
+                    Từ {{ \Carbon\Carbon::parse($startDate ?? now())->format('d/m/Y') }} đến {{ \Carbon\Carbon::parse($startDate ?? now())->addDays(29)->format('d/m/Y') }}
+                </h2>
 
-        <div class="flex gap-2">
-            <button wire:click="prevMonth" class="px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors">
-                ‹ 30 ngày trước
-            </button>
-            <button wire:click="goToToday" class="px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">
-                Hôm nay
-            </button>
-            <button wire:click="nextMonth" class="px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors">
-                30 ngày sau ›
-            </button>
+            <div class="flex gap-2">
+                <button wire:click="prevMonth" class="px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors">
+                    ‹ 30 ngày trước
+                </button>
+                <button wire:click="goToToday" class="px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">
+                    Hôm nay
+                </button>
+                <button wire:click="nextMonth" class="px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors">
+                    30 ngày sau ›
+                </button>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-wrap gap-6 items-end">
+            <!-- Khu vực/Toà nhà -->
+            <div class="flex-1 min-w-[300px]">
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Lọc Toà nhà</label>
+                <div class="flex flex-wrap gap-2">
+                    @foreach($areas as $area)
+                        <label class="inline-flex items-center cursor-pointer bg-gray-50 px-3 py-1.5 rounded border border-gray-200 hover:bg-gray-100 transition-colors">
+                            <input type="checkbox" wire:model.live="filter_areas" value="{{ $area->id }}" class="rounded text-blue-600 focus:ring-blue-500 w-4 h-4 mr-2">
+                            <span class="text-sm font-medium text-gray-700">{{ $area->name }}</span>
+                        </label>
+                    @endforeach
+                </div>
+            </div>
+
+            <!-- Từ ngày -->
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Phòng trống từ ngày</label>
+                <input type="date" wire:model.live="filter_start_date" class="rounded-lg border-gray-300 text-sm focus:ring-blue-500 focus:border-blue-500 shadow-sm h-[38px]">
+            </div>
+
+            <!-- Đến ngày -->
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Đến ngày</label>
+                <input type="date" wire:model.live="filter_end_date" class="rounded-lg border-gray-300 text-sm focus:ring-blue-500 focus:border-blue-500 shadow-sm h-[38px]">
+            </div>
+            
+            <!-- Xoá lọc -->
+            @if(!empty($filter_areas) || !empty($filter_start_date) || !empty($filter_end_date))
+            <div>
+                <button wire:click="$set('filter_areas', []); $set('filter_start_date', ''); $set('filter_end_date', '');" class="px-3 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors h-[38px]">
+                    Xoá lọc
+                </button>
+            </div>
+            @endif
         </div>
     </div>
 
