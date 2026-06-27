@@ -96,6 +96,23 @@ class Index extends Component
 
         $this->validate($rules);
 
+        // Phân quyền: chỉ Super Admin được tạo/sửa tài khoản quyền cao (super_admin/admin),
+        // tránh việc nhân viên tự nâng quyền cho mình hoặc người khác.
+        $isSuperAdmin = auth()->user() && auth()->user()->role === 'super_admin';
+
+        if (in_array($this->role, ['super_admin', 'admin']) && !$isSuperAdmin) {
+            $this->dispatch('toast', message: 'Bạn không có quyền gán vai trò Quản trị. Chỉ Super Admin mới được phép.', type: 'error');
+            return;
+        }
+
+        if ($this->userId && !$isSuperAdmin) {
+            $target = User::find($this->userId);
+            if ($target && in_array($target->role, ['super_admin', 'admin'])) {
+                $this->dispatch('toast', message: 'Bạn không có quyền chỉnh sửa tài khoản Quản trị.', type: 'error');
+                return;
+            }
+        }
+
         $data = [
             'name' => $this->name,
             'email' => $this->email,
@@ -126,7 +143,27 @@ class Index extends Component
             return;
         }
 
-        User::findOrFail($id)->delete();
+        $user = User::find($id);
+        if (!$user) {
+            $this->dispatch('toast', message: 'Không tìm thấy nhân sự.', type: 'error');
+            return;
+        }
+
+        $isSuperAdmin = auth()->user() && auth()->user()->role === 'super_admin';
+
+        // Chỉ Super Admin được xóa tài khoản quyền cao
+        if (in_array($user->role, ['super_admin', 'admin']) && !$isSuperAdmin) {
+            $this->dispatch('toast', message: 'Bạn không có quyền xóa tài khoản Quản trị.', type: 'error');
+            return;
+        }
+
+        // Không cho xóa Super Admin cuối cùng để tránh mất toàn bộ quyền quản trị hệ thống
+        if ($user->role === 'super_admin' && User::where('role', 'super_admin')->count() <= 1) {
+            $this->dispatch('toast', message: 'Không thể xóa Super Admin cuối cùng của hệ thống.', type: 'error');
+            return;
+        }
+
+        $user->delete();
         $this->dispatch('toast', message: 'Đã xóa nhân sự!');
     }
 }

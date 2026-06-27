@@ -81,7 +81,20 @@ class Index extends Component
 
     public function delete($id)
     {
-        Service::find($id)->delete();
+        $service = Service::find($id);
+        if (!$service) {
+            $this->dispatch('toast', message: 'Không tìm thấy dịch vụ.', type: 'error');
+            return;
+        }
+
+        // Chặn xóa khi dịch vụ đang được dùng ở booking để tránh mất dữ liệu hóa đơn/pivot.
+        // Khuyến nghị ngưng kích hoạt (is_active = false) thay vì xóa.
+        if ($service->bookings()->exists() || $service->usageLogs()->exists()) {
+            $this->dispatch('toast', message: 'Không thể xóa: dịch vụ đang được sử dụng trong booking. Hãy chuyển sang "Ngừng kích hoạt".', type: 'error');
+            return;
+        }
+
+        $service->delete();
         $this->dispatch('toast', message: 'Xóa dịch vụ thành công.', type: 'success');
     }
 

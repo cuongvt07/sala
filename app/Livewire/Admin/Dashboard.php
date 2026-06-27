@@ -81,9 +81,24 @@ class Dashboard extends Component
             ->orderBy('check_out')
             ->get();
 
+        // Chỉ tính khách ĐANG Ở (booking đã check-in và hôm nay nằm trong khoảng lưu trú).
+        // Loại bỏ khách đã check-out hoặc khách mới chỉ đang chờ check-in.
+        $stayingFilter = function ($q) use ($areaId) {
+            $q->where('status', 'checked_in')
+              ->where('check_in', '<=', now())
+              ->where('check_out', '>=', now());
+
+            if ($areaId) {
+                $q->whereHas('room', function ($r) use ($areaId) {
+                    $r->where('area_id', $areaId);
+                });
+            }
+        };
+
         $visaExpiries = Customer::whereBetween('visa_expiry', [$today, $threeDaysLater])
             ->where('visa_status', '!=', 3) // 3 is "Đã gia hạn"
             ->where('visa_expiry', '>=', $today)
+            ->whereHas('bookings', $stayingFilter)
             ->orderBy('visa_expiry')
             ->get();
 
@@ -94,7 +109,10 @@ class Dashboard extends Component
             'totalBookings' => $queryMonthBookings->count(),
             'activeBookings' => (clone $queryMonthBookings)->where('status', 'checked_in')->count(),
             'pendingBookings' => (clone $queryMonthBookings)->where('status', 'pending')->count(),
-            'birthdayCustomers' => Customer::whereMonth('birthday', date('m'))->whereDay('birthday', date('d'))->get(),
+            'birthdayCustomers' => Customer::whereMonth('birthday', date('m'))
+                ->whereDay('birthday', date('d'))
+                ->whereHas('bookings', $stayingFilter)
+                ->get(),
             'revenue' => $revenue,
             'totalCollected' => $totalCollected,
             'upcomingCheckins' => $upcomingCheckins,

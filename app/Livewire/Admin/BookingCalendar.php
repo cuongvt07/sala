@@ -520,7 +520,9 @@ class BookingCalendar extends Component
         $this->price = number_format($booking->price, 0, ',', '.');
         $this->deposit = $booking->deposit ? number_format($booking->deposit, 0, ',', '.') : 0;
         $this->deposit_2 = $booking->deposit_2 ? number_format($booking->deposit_2, 0, ',', '.') : 0;
-        $this->deposit_3 = 0; // Hide
+        // Giữ nguyên giá trị cọc đợt 3 (đã nhập từ màn Quản lý đặt phòng) để khi lưu trên
+        // lịch không vô tình xóa mất; lịch chỉ ẩn ô nhập chứ không reset dữ liệu.
+        $this->deposit_3 = $booking->deposit_3 ? number_format($booking->deposit_3, 0, ',', '.') : 0;
         $this->deposit_usd = (float)($booking->deposit_usd ?? 0);
         $this->deposit_2_usd = (float)($booking->deposit_2_usd ?? 0);
         $this->usd_rate = (float)($booking->usd_rate ?? 25400);
@@ -774,6 +776,37 @@ class BookingCalendar extends Component
             unset($this->service_inputs[$serviceId]);
     }
 
+    /**
+     * Kiểm tra phòng đang chọn có bị trùng lịch với booking khác đang hoạt động
+     * (pending / checked_in) trong khoảng check_in -> check_out hay không.
+     */
+    protected function roomHasConflict(): bool
+    {
+        if (!$this->room_id || !$this->check_in) {
+            return false;
+        }
+
+        try {
+            $start = \Carbon\Carbon::parse($this->check_in)->startOfDay();
+        } catch (\Exception $e) {
+            return false;
+        }
+
+        $end = !empty($this->check_out)
+            ? \Carbon\Carbon::parse($this->check_out)->endOfDay()
+            : \Carbon\Carbon::parse('2999-12-31')->endOfDay();
+
+        return \App\Models\Booking::where('room_id', $this->room_id)
+            ->when($this->editingBookingId, fn ($q) => $q->where('id', '!=', $this->editingBookingId))
+            ->whereIn('status', ['pending', 'checked_in'])
+            ->where('check_in', '<', $end)
+            ->where(function ($q) use ($start) {
+                $q->where('check_out', '>', $start)
+                  ->orWhereNull('check_out');
+            })
+            ->exists();
+    }
+
     public function saveBooking()
     {
         // Ensure source is set if empty
@@ -792,20 +825,20 @@ class BookingCalendar extends Component
         $cleanPrice = str_replace('.', '', $this->price);
         $cleanDeposit = str_replace('.', '', $this->deposit);
         $cleanDeposit2 = str_replace('.', '', $this->deposit_2);
-        $cleanDeposit3 = 0;
+        $cleanDeposit3 = str_replace('.', '', (string)$this->deposit_3);
         $cleanUnitPrice = str_replace('.', '', $this->unit_price);
-        
+
         // For USD fields, remove thousands separators (commas) but keep the decimal point.
         // If the user uses dots as thousands separators (VN style), we handle that too.
         $cleanDepositUsd = (float) str_replace(',', '', (string)$this->deposit_usd);
         $cleanDeposit2Usd = (float) str_replace(',', '', (string)$this->deposit_2_usd);
-        
-        // For usd_rate, it's VND/USD, so it's a large number. 
-        // We ensure it's a clean number by removing any non-numeric characters except the dot.
-        // But wait, if it's 25.400 (VND), we want 25400.
-        // Let's use a safer approach: if it's already numeric (float/int), use it.
-        // If it's a string from the DB with .00, the previous cast to float in editBooking fixed it.
-        $cleanUsdRate = is_numeric($this->usd_rate) ? $this->usd_rate : str_replace(['.', ','], '', $this->usd_rate);
+
+        // usd_rate là VND/USD (số lớn, dạng "25.400" hoặc "25400"). Bỏ mọi dấu phân cách
+        // nghìn (. và ,) để ra số nguyên đúng. "25.400" -> 25400 (không bị hiểu nhầm là 25.4).
+        $cleanUsdRate = (float) str_replace(['.', ','], '', (string)$this->usd_rate);
+        if ($cleanUsdRate <= 0) {
+            $cleanUsdRate = 25400; // tỷ giá mặc định, tránh chia/nhân cho 0
+        }
 
         // Ensure only one currency is saved per deposit round based on use_usd toggle
         if ($this->use_usd && $this->is_contract) {
@@ -842,6 +875,12 @@ class BookingCalendar extends Component
             \Illuminate\Support\Facades\Log::error('BookingCalendar Validation Failed', ['errors' => $e->errors()]);
             $this->dispatch('toast', message: 'Vui lòng kiểm tra lại thông tin nhập liệu.', type: 'error');
             throw $e;
+        }
+
+        // Chống trùng phòng: không cho 2 booking đang hoạt động đè lên nhau cùng phòng/khoảng ngày
+        if ($this->roomHasConflict()) {
+            $this->dispatch('toast', message: 'Phòng đã có khách trong khoảng thời gian này. Vui lòng chọn phòng/ngày khác.', type: 'error');
+            return;
         }
 
         $customerId = $this->customer_id;
@@ -954,8 +993,9 @@ class BookingCalendar extends Component
                 if ($service) {
                     $pivot = ['unit_price' => $service->unit_price, 'note' => $item['note'] ?? null];
                     if ($service->type === 'meter') {
-                        $pivot['start_index'] = $item['start_index'] ?? 0;
-                        $pivot['end_index'] = $item['end_index'] ?? 0;
+                        // Bỏ dấu phân cách nghìn để "1.250" không bị hiểu nhầm thành 1.25
+                        $pivot['start_index'] = (float) str_replace([',', '.'], '', (string)($item['start_index'] ?? 0));
+                        $pivot['end_index'] = (float) str_replace([',', '.'], '', (string)($item['end_index'] ?? 0));
                         $pivot['usage'] = max(0, $pivot['end_index'] - $pivot['start_index']);
                         $pivot['total_amount'] = $pivot['usage'] * $pivot['unit_price'];
                     } else {
@@ -1012,7 +1052,7 @@ class BookingCalendar extends Component
                     $startOfWindow = \Carbon\Carbon::parse($this->startDate ?? now()->format('Y-m-d'))->startOfDay();
                     $endOfWindow = $startOfWindow->copy()->addDays(29)->endOfDay();
                     // Eager load bookings for the displayed window
-                    $q->where('status', '!=', 'checked_out')
+                    $q->whereNotIn('status', ['checked_out', 'cancelled'])
                         ->where(function ($query) use ($startOfWindow, $endOfWindow) {
                         $query->where('check_in', '<=', $endOfWindow)
                             ->where(function ($sub) use ($startOfWindow) {

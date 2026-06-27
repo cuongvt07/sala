@@ -44,7 +44,7 @@ class Index extends Component
         return [
             'name' => 'required|string|max:255',
             'phone' => ['nullable', 'string', 'max:20', Rule::unique('customers', 'phone')->ignore($this->editingCustomerId)],
-            'email' => 'nullable|email|max:255',
+            'email' => ['nullable', 'email', 'max:255', Rule::unique('customers', 'email')->ignore($this->editingCustomerId)],
             'identity_id' => ['nullable', 'string', 'max:20', Rule::unique('customers', 'identity_id')->ignore($this->editingCustomerId)],
             'birthday' => 'nullable|date',
             'gender' => 'nullable|string|in:male,female,other',
@@ -124,7 +124,19 @@ class Index extends Component
 
     public function delete($id)
     {
-        Customer::find($id)->delete();
+        $customer = Customer::find($id);
+        if (!$customer) {
+            $this->dispatch('toast', message: 'Không tìm thấy khách hàng.', type: 'error');
+            return;
+        }
+
+        // Chặn xóa khi khách còn booking để tránh cascade xóa luôn lịch sử đặt phòng/thu tiền
+        if ($customer->bookings()->exists()) {
+            $this->dispatch('toast', message: 'Không thể xóa: khách hàng còn lịch đặt phòng. Vui lòng xử lý các booking trước.', type: 'error');
+            return;
+        }
+
+        $customer->delete();
         $this->dispatch('toast', message: 'Xóa khách hàng thành công.', type: 'success');
     }
 

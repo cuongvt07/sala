@@ -4,6 +4,7 @@ namespace App\Livewire\Admin\RoomMaintenances;
 
 use App\Models\RoomMaintenance;
 use App\Models\Room;
+use App\Models\Booking;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -112,6 +113,20 @@ class Index extends Component
 
         $this->showModal = false;
         $this->dispatch('toast', message: $message, type: 'success');
+
+        // Cảnh báo (không chặn) nếu phòng đang có khách vào đúng ngày bảo dưỡng
+        $hasBooking = Booking::where('room_id', $this->room_id)
+            ->whereIn('status', ['pending', 'checked_in'])
+            ->whereDate('check_in', '<=', $this->maintenance_date)
+            ->where(function ($q) {
+                $q->whereDate('check_out', '>=', $this->maintenance_date)
+                  ->orWhereNull('check_out');
+            })
+            ->exists();
+
+        if ($hasBooking) {
+            $this->dispatch('toast', message: 'Lưu ý: phòng đang có khách vào ngày bảo dưỡng này.', type: 'warning');
+        }
     }
 
     public function delete($id)

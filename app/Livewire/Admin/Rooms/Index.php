@@ -113,7 +113,19 @@ class Index extends Component
 
     public function delete($id)
     {
-        Room::find($id)->delete();
+        $room = Room::find($id);
+        if (!$room) {
+            $this->dispatch('toast', message: 'Không tìm thấy phòng.', type: 'error');
+            return;
+        }
+
+        // Chặn xóa khi phòng còn booking để tránh cascade xóa luôn toàn bộ lịch đặt phòng
+        if ($room->bookings()->exists()) {
+            $this->dispatch('toast', message: 'Không thể xóa: phòng còn lịch đặt. Vui lòng xử lý các booking trước.', type: 'error');
+            return;
+        }
+
+        $room->delete();
         $this->dispatch('toast', message: 'Xóa phòng thành công.', type: 'success');
     }
 

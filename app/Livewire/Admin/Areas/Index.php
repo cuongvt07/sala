@@ -70,7 +70,19 @@ class Index extends Component
 
     public function delete($id)
     {
-        Area::find($id)->delete();
+        $area = Area::withCount('rooms')->find($id);
+        if (!$area) {
+            $this->dispatch('toast', message: 'Không tìm thấy khu vực.', type: 'error');
+            return;
+        }
+
+        // Chặn xóa khi khu vực còn phòng để tránh cascade xóa luôn phòng + booking + bảo dưỡng
+        if ($area->rooms_count > 0) {
+            $this->dispatch('toast', message: 'Không thể xóa: khu vực còn ' . $area->rooms_count . ' phòng. Vui lòng xóa/chuyển các phòng trước.', type: 'error');
+            return;
+        }
+
+        $area->delete();
         $this->dispatch('toast', message: 'Xóa khu vực thành công.', type: 'success');
     }
 

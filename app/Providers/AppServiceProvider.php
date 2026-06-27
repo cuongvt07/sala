@@ -26,11 +26,21 @@ class AppServiceProvider extends ServiceProvider
         if (\Illuminate\Support\Facades\Schema::hasTable('settings')) {
             $settings = \App\Models\Setting::all()->pluck('value', 'key')->toArray();
 
+            // Mật khẩu SMTP được lưu mã hóa; giải mã an toàn (giá trị cũ dạng plaintext vẫn dùng được)
+            $mailPassword = $settings['mail_password'] ?? null;
+            if (!empty($mailPassword)) {
+                try {
+                    $mailPassword = \Illuminate\Support\Facades\Crypt::decryptString($mailPassword);
+                } catch (\Throwable $e) {
+                    // Giá trị cũ chưa mã hóa -> giữ nguyên
+                }
+            }
+
             config([
                 'mail.mailers.smtp.host' => $settings['mail_host'] ?? config('mail.mailers.smtp.host'),
                 'mail.mailers.smtp.port' => $settings['mail_port'] ?? config('mail.mailers.smtp.port'),
                 'mail.mailers.smtp.username' => $settings['mail_username'] ?? config('mail.mailers.smtp.username'),
-                'mail.mailers.smtp.password' => $settings['mail_password'] ?? config('mail.mailers.smtp.password'),
+                'mail.mailers.smtp.password' => $mailPassword ?: config('mail.mailers.smtp.password'),
                 'mail.mailers.smtp.encryption' => $settings['mail_encryption'] ?? config('mail.mailers.smtp.encryption'),
                 'mail.from.address' => $settings['mail_from_address'] ?? config('mail.from.address'),
                 'mail.from.name' => $settings['mail_from_name'] ?? config('mail.from.name'),

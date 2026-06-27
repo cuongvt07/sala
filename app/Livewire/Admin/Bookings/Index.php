@@ -871,6 +871,38 @@ class Index extends Component
         $this->edit($this->editingBookingId);
     }
 
+    /**
+     * Kiểm tra phòng đang chọn có bị trùng lịch với booking khác đang hoạt động
+     * (pending / checked_in) trong khoảng check_in -> check_out hay không.
+     */
+    protected function roomHasConflict(): bool
+    {
+        if (!$this->room_id || !$this->check_in) {
+            return false;
+        }
+
+        try {
+            $start = \Carbon\Carbon::parse($this->check_in)->startOfDay();
+        } catch (\Exception $e) {
+            return false;
+        }
+
+        // check_out rỗng (hợp đồng dài hạn) -> coi như mở vô thời hạn
+        $end = !empty($this->check_out)
+            ? \Carbon\Carbon::parse($this->check_out)->endOfDay()
+            : \Carbon\Carbon::parse('2999-12-31')->endOfDay();
+
+        return Booking::where('room_id', $this->room_id)
+            ->when($this->editingBookingId, fn ($q) => $q->where('id', '!=', $this->editingBookingId))
+            ->whereIn('status', ['pending', 'checked_in'])
+            ->where('check_in', '<', $end)
+            ->where(function ($q) use ($start) {
+                $q->where('check_out', '>', $start)
+                  ->orWhereNull('check_out');
+            })
+            ->exists();
+    }
+
     public function save()
     {
         // Sanitize money fields (remove dots)
@@ -888,6 +920,12 @@ class Index extends Component
         $this->unit_price = $this->unit_price === '' ? null : $this->unit_price;
 
         $this->validate();
+
+        // Chống trùng phòng: không cho 2 booking đang hoạt động đè lên nhau cùng phòng/khoảng ngày
+        if ($this->roomHasConflict()) {
+            $this->dispatch('toast', message: 'Phòng đã có khách trong khoảng thời gian này. Vui lòng chọn phòng/ngày khác.', type: 'error');
+            return;
+        }
 
         $customerId = $this->customer_id;
 
@@ -998,8 +1036,9 @@ class Index extends Component
                     ];
 
                     if ($service->type === 'meter') {
-                        $pivot['start_index'] = $item['start_index'] ?? 0;
-                        $pivot['end_index'] = $item['end_index'] ?? 0;
+                        // Bỏ dấu phân cách nghìn để "1.250" không bị hiểu nhầm thành 1.25
+                        $pivot['start_index'] = (float) str_replace([',', '.'], '', (string)($item['start_index'] ?? 0));
+                        $pivot['end_index'] = (float) str_replace([',', '.'], '', (string)($item['end_index'] ?? 0));
                         $pivot['usage'] = max(0, ($pivot['end_index'] - $pivot['start_index']));
                         $pivot['total_amount'] = $pivot['usage'] * $pivot['unit_price'];
                     } else {
