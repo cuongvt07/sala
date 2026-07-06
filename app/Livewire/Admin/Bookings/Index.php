@@ -1265,14 +1265,16 @@ class Index extends Component
             }
         }
 
-        // Chỉ nạp dữ liệu cho dropdown khi modal mở -> duyệt danh sách/phân trang nhẹ & nhanh hơn nhiều
+        // Chỉ nạp dữ liệu cho dropdown khi modal mở -> duyệt danh sách/phân trang nhẹ & nhanh hơn nhiều.
+        // Dùng Eloquent Collection rỗng (KHÔNG phải collect()) vì blade còn gọi ->find() trên các biến này.
         $modalOpen = $this->showModal;
+        $emptyEloquent = new \Illuminate\Database\Eloquent\Collection();
 
         return view('livewire.admin.bookings.index', [
             'bookings' => $query->paginate(10),
-            'customers' => $modalOpen ? Customer::orderBy('name')->get() : collect(),
-            'rooms' => $modalOpen ? Room::with('area')->orderBy('code')->get() : collect(),
-            'all_services' => $modalOpen ? Service::where('is_active', true)->orderBy('name')->get() : collect(),
+            'customers' => $modalOpen ? Customer::orderBy('name')->get() : $emptyEloquent,
+            'rooms' => $modalOpen ? Room::with('area')->orderBy('code')->get() : $emptyEloquent,
+            'all_services' => $modalOpen ? Service::where('is_active', true)->orderBy('name')->get() : $emptyEloquent,
             'contractPeriods' => $contractPeriods,
         ])->layout('components.layouts.admin');
     }
