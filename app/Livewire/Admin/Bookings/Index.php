@@ -978,6 +978,21 @@ class Index extends Component
             return false;
         }
 
+        // Đang sửa booking mà KHÔNG đổi phòng/ngày -> bỏ qua kiểm tra trùng
+        // (cho phép sửa tên khách, cọc, ghi chú... dù trong phòng có dữ liệu trùng cũ).
+        if ($this->editingBookingId) {
+            $original = Booking::find($this->editingBookingId);
+            if ($original) {
+                $formIn = \Carbon\Carbon::parse($this->check_in)->format('Y-m-d');
+                $formOut = !empty($this->check_out) ? \Carbon\Carbon::parse($this->check_out)->format('Y-m-d') : null;
+                $origIn = $original->check_in ? $original->check_in->format('Y-m-d') : null;
+                $origOut = $original->check_out ? $original->check_out->format('Y-m-d') : null;
+                if ((int) $original->room_id === (int) $this->room_id && $formIn === $origIn && $formOut === $origOut) {
+                    return false;
+                }
+            }
+        }
+
         // check_out rỗng (hợp đồng dài hạn) -> coi như mở vô thời hạn
         $end = !empty($this->check_out)
             ? \Carbon\Carbon::parse($this->check_out)->endOfDay()
