@@ -18,6 +18,11 @@
 </head>
 
 <body class="bg-gray-50 font-sans antialiased" x-data="{ sidebarOpen: true }">
+    {{-- Thanh tiến trình tải toàn cục: phản hồi tức thì cho mọi thao tác Livewire (kể cả mở popup) --}}
+    <div id="global-loading-bar"
+         style="position:fixed;top:0;left:0;height:3px;width:0;opacity:0;z-index:9999;
+                background:linear-gradient(90deg,#3b82f6,#6366f1,#8b5cf6);box-shadow:0 0 10px rgba(59,130,246,.6);
+                transition:width .25s ease,opacity .3s ease;pointer-events:none;"></div>
     <!-- Sidebar -->
     <aside class="fixed inset-y-0 left-0 z-50 bg-slate-900 transition-all duration-300 ease-in-out"
         :class="sidebarOpen ? 'w-64' : 'w-16'">
@@ -184,6 +189,24 @@
     @livewireScripts
     <x-ui.toast />
     <script>
+        // Global loading bar cho mọi request Livewire (mở modal, lưu, lọc, phân trang...)
+        document.addEventListener('livewire:init', () => {
+            const bar = document.getElementById('global-loading-bar');
+            if (!bar || typeof Livewire === 'undefined') return;
+            let hideTimer;
+            const start = () => {
+                clearTimeout(hideTimer);
+                bar.style.opacity = '1';
+                bar.style.width = '0';
+                requestAnimationFrame(() => { bar.style.width = '80%'; });
+            };
+            const done = () => {
+                bar.style.width = '100%';
+                hideTimer = setTimeout(() => { bar.style.opacity = '0'; bar.style.width = '0'; }, 250);
+            };
+            Livewire.hook('commit', ({ respond }) => { start(); respond(() => done()); });
+        });
+
         window.onerror = function (message, source, lineno, colno, error) {
             console.error('JS Error Captured:', message, 'at', source, ':', lineno, ':', colno);
             console.error(error);

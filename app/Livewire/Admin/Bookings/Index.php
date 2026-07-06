@@ -1265,11 +1265,14 @@ class Index extends Component
             }
         }
 
+        // Chỉ nạp dữ liệu cho dropdown khi modal mở -> duyệt danh sách/phân trang nhẹ & nhanh hơn nhiều
+        $modalOpen = $this->showModal;
+
         return view('livewire.admin.bookings.index', [
             'bookings' => $query->paginate(10),
-            'customers' => Customer::orderBy('name')->get(),
-            'rooms' => Room::with('area')->orderBy('code')->get(),
-            'all_services' => Service::where('is_active', true)->orderBy('name')->get(),
+            'customers' => $modalOpen ? Customer::orderBy('name')->get() : collect(),
+            'rooms' => $modalOpen ? Room::with('area')->orderBy('code')->get() : collect(),
+            'all_services' => $modalOpen ? Service::where('is_active', true)->orderBy('name')->get() : collect(),
             'contractPeriods' => $contractPeriods,
         ])->layout('components.layouts.admin');
     }

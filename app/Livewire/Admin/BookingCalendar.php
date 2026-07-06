@@ -1316,33 +1316,46 @@ class BookingCalendar extends Component
 
     public function render()
     {
-        // Tính toán các khoản tiền cho Bảng Tổng Chi Phí
-        $logTotal = collect($this->usage_logs)->sum('total_amount');
-        $basePrice = (float) str_replace(['.', ','], '', $this->price ?: 0);
-        
+        // Chỉ nạp dữ liệu modal + tính tổng khi modal đang mở -> chuyển tháng/lọc/tìm phòng nhẹ hơn nhiều
+        $modalOpen = $this->showModal;
+
+        $logTotal = 0;
+        $basePrice = 0;
         $pendingServiceTotal = 0;
-        $allServices = \App\Models\Service::where('is_active', true)->get();
-        foreach($allServices as $svc) {
-            if(!empty($this->selected_services[$svc->id]['selected']) && isset($this->service_inputs[$svc->id])) {
-                $inp = $this->service_inputs[$svc->id];
-                $up = (float)str_replace(['.',','],'', (string)($inp['unit_price'] ?? '0'));
-                if($svc->type === 'meter') {
-                    $pendingServiceTotal += max(0, ($this->parseMeterNumber($inp['end_index'] ?? 0) - $this->parseMeterNumber($inp['start_index'] ?? 0))) * $up;
-                } else {
-                    $pendingServiceTotal += ((float)($inp['quantity'] ?? 1)) * $up;
+        $allServices = collect();
+        $customers = collect();
+        $allRooms = collect();
+
+        if ($modalOpen) {
+            $logTotal = collect($this->usage_logs)->sum('total_amount');
+            $basePrice = (float) str_replace(['.', ','], '', $this->price ?: 0);
+
+            $allServices = \App\Models\Service::where('is_active', true)->get();
+            foreach($allServices as $svc) {
+                if(!empty($this->selected_services[$svc->id]['selected']) && isset($this->service_inputs[$svc->id])) {
+                    $inp = $this->service_inputs[$svc->id];
+                    $up = (float)str_replace(['.',','],'', (string)($inp['unit_price'] ?? '0'));
+                    if($svc->type === 'meter') {
+                        $pendingServiceTotal += max(0, ($this->parseMeterNumber($inp['end_index'] ?? 0) - $this->parseMeterNumber($inp['start_index'] ?? 0))) * $up;
+                    } else {
+                        $pendingServiceTotal += ((float)($inp['quantity'] ?? 1)) * $up;
+                    }
                 }
             }
+
+            $customers = \App\Models\Customer::orderBy('name')->get();
+            $allRooms = \App\Models\Room::with('area')->orderBy('code')->get();
         }
-        
+
         $grandTotal = $basePrice + $logTotal + $pendingServiceTotal;
 
         return view('livewire.admin.booking-calendar', [
             'areas' => \App\Models\Area::all(),
             'roomsData' => $this->rooms,
             'days' => $this->daysInMonth,
-            'customers' => \App\Models\Customer::orderBy('name')->get(),
+            'customers' => $customers,
             'all_services' => $allServices,
-            'all_rooms' => \App\Models\Room::with('area')->orderBy('code')->get(),
+            'all_rooms' => $allRooms,
             'logTotal' => $logTotal,
             'basePrice' => $basePrice,
             'pendingServiceTotal' => $pendingServiceTotal,
