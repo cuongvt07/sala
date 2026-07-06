@@ -395,7 +395,7 @@
     @if($showModal)
     <div class="fixed inset-0 z-[100] overflow-y-auto">
         <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div class="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity" wire:click="$set('showModal', false)"></div>
+            <div class="fixed inset-0 bg-black/50 transition-opacity" wire:click="$set('showModal', false)"></div>
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
             
             <div x-data="{ 
@@ -611,12 +611,14 @@
                                     <div x-show="customerTab === 'existing'">
                                         <div>
                                             <label class="block text-xs font-medium text-gray-500 mb-1">Chọn khách hàng</label>
+                                            <input type="text" wire:model.live.debounce.350ms="customer_search" placeholder="🔍 Tìm khách theo tên / SĐT..." class="w-full rounded premium-input py-2 text-xs mb-1.5">
                                             <select wire:model.live="customer_id" class="w-full rounded premium-input py-2 text-sm focus:ring-blue-500 focus:border-blue-500 font-bold">
                                                 <option value="">-- Chọn --</option>
                                                 @foreach($customers as $c)
                                                     <option value="{{ $c->id }}">{{ $c->name }} ({{ $c->phone }})</option>
                                                 @endforeach
                                             </select>
+                                            @if($customers->count() >= 50)<p class="text-[9px] text-gray-400 mt-1">Hiển thị 50 khách đầu — gõ để tìm chính xác hơn.</p>@endif
                                         </div>
 
                                         @if($customer_id)

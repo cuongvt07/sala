@@ -48,6 +48,7 @@ class Index extends Component
 
     // Existing Customer
     public $customer_id;
+    public $customer_search = ''; // lọc dropdown khách để không render toàn bộ danh sách (tránh giật)
 
     // New Customer
     public $new_customer_name;
@@ -337,7 +338,7 @@ class Index extends Component
     public function create()
     {
         $this->resetValidation();
-        $this->reset(['customer_id', 'new_customer_name', 'new_customer_phone', 'new_customer_email', 'new_customer_identity', 'new_customer_visa_number', 'new_customer_visa_expiry', 'new_customer_notes', 'new_customer_image', 'new_customer_gender', 'new_customer_birthday', 'new_customer_nationality', 'additional_guests', 'room_id', 'price_type', 'is_contract', 'unit_price', 'check_in', 'check_out', 'price', 'deposit', 'deposit_2', 'deposit_3', 'status', 'notes', 'editingBookingId', 'selected_services', 'usage_logs', 'service_inputs']);
+        $this->reset(['customer_id', 'customer_search', 'new_customer_name', 'new_customer_phone', 'new_customer_email', 'new_customer_identity', 'new_customer_visa_number', 'new_customer_visa_expiry', 'new_customer_notes', 'new_customer_image', 'new_customer_gender', 'new_customer_birthday', 'new_customer_nationality', 'additional_guests', 'room_id', 'price_type', 'is_contract', 'unit_price', 'check_in', 'check_out', 'price', 'deposit', 'deposit_2', 'deposit_3', 'status', 'notes', 'editingBookingId', 'selected_services', 'usage_logs', 'service_inputs']);
         $this->price_type = 'day';
         $this->activeTab = 'existing';
         $this->manual_fee_date = date('Y-m-d');
@@ -358,6 +359,7 @@ class Index extends Component
 
         $this->editingBookingId = $id;
 
+        $this->customer_search = '';
         $this->customer_id = $booking->customer_id;
         if ($booking->customer) {
             $this->new_customer_name = $booking->customer->name;
@@ -1270,9 +1272,32 @@ class Index extends Component
         $modalOpen = $this->showModal;
         $emptyEloquent = new \Illuminate\Database\Eloquent\Collection();
 
+        // Dropdown khách: chỉ lấy tối đa 50 kết quả (theo ô tìm kiếm) để DOM nhỏ, mở modal mượt.
+        // Luôn kèm khách đang chọn để hiển thị đúng tên dù không nằm trong 50 kết quả.
+        $customers = $emptyEloquent;
+        if ($modalOpen) {
+            $customers = Customer::query()
+                ->when($this->customer_search, function ($q) {
+                    $q->where(function ($sub) {
+                        $sub->where('name', 'like', '%' . $this->customer_search . '%')
+                            ->orWhere('phone', 'like', '%' . $this->customer_search . '%');
+                    });
+                })
+                ->orderBy('name')
+                ->limit(50)
+                ->get();
+
+            if ($this->customer_id && !$customers->contains('id', $this->customer_id)) {
+                $selected = Customer::find($this->customer_id);
+                if ($selected) {
+                    $customers->prepend($selected);
+                }
+            }
+        }
+
         return view('livewire.admin.bookings.index', [
             'bookings' => $query->paginate(10),
-            'customers' => $modalOpen ? Customer::orderBy('name')->get() : $emptyEloquent,
+            'customers' => $customers,
             'rooms' => $modalOpen ? Room::with('area')->orderBy('code')->get() : $emptyEloquent,
             'all_services' => $modalOpen ? Service::where('is_active', true)->orderBy('name')->get() : $emptyEloquent,
             'contractPeriods' => $contractPeriods,

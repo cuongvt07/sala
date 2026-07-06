@@ -274,7 +274,9 @@
 
                     <div x-show="activeTab === 'existing'">
                         <div class="space-y-1.5">
+                            <input type="text" wire:model.live.debounce.350ms="customer_search" placeholder="🔍 Tìm khách theo tên / SĐT..." class="w-full rounded border-gray-200 p-2 text-xs">
                             <select wire:model.live="customer_id" class="w-full rounded border-gray-200 p-2 text-sm font-semibold"><option value="">-- Chọn khách hàng --</option>@foreach($customers as $c)<option value="{{ $c->id }}">{{ $c->name }} ({{ $c->phone }})</option>@endforeach</select>
+                            @if($customers->count() >= 50)<p class="text-[9px] text-gray-400">Hiển thị 50 khách đầu — gõ để tìm chính xác hơn.</p>@endif
                             @error('customer_id')<span class="text-red-500 text-xs">{{ $message }}</span>@enderror
                             
                             <div x-show="$wire.customer_id" class="relative mt-2">

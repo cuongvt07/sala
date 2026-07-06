@@ -19,18 +19,18 @@
          x-transition:leave="transition ease-in duration-200"
          x-transition:leave-start="opacity-100"
          x-transition:leave-end="opacity-0"
-         class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm transition-opacity" 
+         class="fixed inset-0 bg-gray-900/60 transition-opacity"
          @click="show = false">
     </div>
 
     <!-- Modal Panel -->
     <div x-show="show"
-         x-transition:enter="transition ease-out duration-300"
-         x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+         x-transition:enter="transition ease-out duration-200 transform-gpu"
+         x-transition:enter-start="opacity-0 translate-y-2 sm:scale-95"
          x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
-         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave="transition ease-in duration-150 transform-gpu"
          x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
-         x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+         x-transition:leave-end="opacity-0 translate-y-2 sm:scale-95"
          class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
         
         <div class="relative transform overflow-hidden rounded-xl bg-white text-left text-[12px] shadow-xl transition-all w-full {{ $width }} sm:my-8 border border-gray-100">

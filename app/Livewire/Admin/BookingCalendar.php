@@ -46,6 +46,7 @@ class BookingCalendar extends Component
     ];
 
     public $customer_id;
+    public $customer_search = ''; // lọc dropdown khách để DOM nhỏ, mở modal mượt
     public $customer_name;
     public $customer_phone;
     public $customer_email;
@@ -505,7 +506,7 @@ class BookingCalendar extends Component
     {
         \Illuminate\Support\Facades\Log::info('BookingCalendar CreateBooking Triggered', ['room_id' => $roomId, 'date' => $date]);
         $this->resetValidation();
-        $this->reset(['customer_id', 'customer_name', 'customer_phone', 'customer_email', 'customer_gender', 'customer_birthday', 'new_customer_name', 'new_customer_phone', 'new_customer_email', 'new_customer_identity', 'new_customer_gender', 'new_customer_birthday', 'new_customer_nationality', 'new_customer_visa_number', 'new_customer_visa_expiry', 'new_customer_notes', 'new_customer_image', 'customer_identity', 'customer_nationality', 'customer_visa_number', 'customer_visa_expiry', 'additional_guests', 'room_id', 'price_type', 'is_contract', 'unit_price', 'check_in', 'check_out', 'price', 'deposit', 'deposit_2', 'deposit_3', 'deposit_usd', 'deposit_2_usd', 'usd_rate', 'use_usd', 'deposit_currency', 'deposit_2_currency', 'status', 'source', 'notes', 'editingBookingId', 'selected_services', 'usage_logs', 'service_inputs']);
+        $this->reset(['customer_id', 'customer_search', 'customer_name', 'customer_phone', 'customer_email', 'customer_gender', 'customer_birthday', 'new_customer_name', 'new_customer_phone', 'new_customer_email', 'new_customer_identity', 'new_customer_gender', 'new_customer_birthday', 'new_customer_nationality', 'new_customer_visa_number', 'new_customer_visa_expiry', 'new_customer_notes', 'new_customer_image', 'customer_identity', 'customer_nationality', 'customer_visa_number', 'customer_visa_expiry', 'additional_guests', 'room_id', 'price_type', 'is_contract', 'unit_price', 'check_in', 'check_out', 'price', 'deposit', 'deposit_2', 'deposit_3', 'deposit_usd', 'deposit_2_usd', 'usd_rate', 'use_usd', 'deposit_currency', 'deposit_2_currency', 'status', 'source', 'notes', 'editingBookingId', 'selected_services', 'usage_logs', 'service_inputs']);
         $this->usd_rate = 25400;
         $this->use_usd = false;
         $this->deposit_currency = 'VND';
@@ -540,6 +541,7 @@ class BookingCalendar extends Component
 
         $this->editingBookingId = $id;
 
+        $this->customer_search = '';
         $this->customer_id = $booking->customer_id;
         $this->activeTab = 'existing';
         $this->room_id = $booking->room_id;
@@ -1343,7 +1345,25 @@ class BookingCalendar extends Component
                 }
             }
 
-            $customers = \App\Models\Customer::orderBy('name')->get();
+            // Dropdown khách: tối đa 50 kết quả theo ô tìm kiếm, kèm khách đang chọn
+            $customers = \App\Models\Customer::query()
+                ->when($this->customer_search, function ($q) {
+                    $q->where(function ($sub) {
+                        $sub->where('name', 'like', '%' . $this->customer_search . '%')
+                            ->orWhere('phone', 'like', '%' . $this->customer_search . '%');
+                    });
+                })
+                ->orderBy('name')
+                ->limit(50)
+                ->get();
+
+            if ($this->customer_id && !$customers->contains('id', $this->customer_id)) {
+                $selected = \App\Models\Customer::find($this->customer_id);
+                if ($selected) {
+                    $customers->prepend($selected);
+                }
+            }
+
             $allRooms = \App\Models\Room::with('area')->orderBy('code')->get();
         }
 
