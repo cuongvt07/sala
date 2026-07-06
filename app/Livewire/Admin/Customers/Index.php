@@ -5,6 +5,7 @@ namespace App\Livewire\Admin\Customers;
 use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\Customer;
+use App\Models\Booking;
 
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Http;
@@ -148,6 +149,22 @@ class Index extends Component
             ->with(['bookings' => function($q) {
                 $q->latest()->whereIn('status', ['checked_in', 'pending'])->with('room');
             }])
+            // Cột phụ để sắp xếp: số phòng khách đang ở & ngày nhận phòng sắp tới gần nhất
+            ->select('customers.*')
+            ->addSelect(['staying_room_code' => Booking::query()
+                ->select('rooms.code')
+                ->join('rooms', 'rooms.id', '=', 'bookings.room_id')
+                ->whereColumn('bookings.customer_id', 'customers.id')
+                ->where('bookings.status', 'checked_in')
+                ->orderBy('rooms.code')
+                ->limit(1)])
+            ->addSelect(['next_checkin' => Booking::query()
+                ->select('check_in')
+                ->whereColumn('bookings.customer_id', 'customers.id')
+                ->where('bookings.status', 'pending')
+                ->where('check_in', '>=', now()->startOfDay())
+                ->orderBy('check_in')
+                ->limit(1)])
             ->when($this->search, function ($query) {
                 $query->where(function($q) {
                     $q->where('name', 'like', '%' . $this->search . '%')
@@ -159,6 +176,11 @@ class Index extends Component
             ->when($this->filterNationality, function ($query) {
                 $query->where('nationality', $this->filterNationality);
             })
+            // Khách đang ở lên đầu (theo số phòng tăng dần), rồi khách sắp tới theo ngày gần nhất
+            ->orderByRaw('staying_room_code IS NULL')
+            ->orderBy('staying_room_code')
+            ->orderByRaw('next_checkin IS NULL')
+            ->orderBy('next_checkin')
             ->latest()
             ->paginate(10);
 

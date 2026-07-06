@@ -166,6 +166,10 @@
         @php
             $logTotal = collect($usage_logs)->sum('total_amount');
             $basePrice = (float) str_replace(['.', ','], '', $price ?: 0);
+            // Tiền phòng cho MỘT kỳ (tháng): hợp đồng dùng đơn giá tháng; thuê ngày dùng tổng
+            $monthlyRoomPrice = ($price_type === 'month')
+                ? (float) str_replace(['.', ','], '', (string)($unit_price ?? '0'))
+                : $basePrice;
             $totalDeposit = (float)str_replace(['.', ','], '', $deposit ?: 0) + (float)str_replace(['.', ','], '', $deposit_2 ?: 0) + (float)str_replace(['.', ','], '', $deposit_3 ?: 0);
             $isEditing = !empty($editingBookingId);
             
@@ -503,11 +507,20 @@
                 @endif
 
                 {{-- ===== LỊCH SỬ CÁC KỲ ĐÃ CHỐT ===== --}}
-                @if(count($usage_logs) > 0)
+                @if(count($usage_logs) > 0 || count($contractPeriods ?? []) > 0)
                     @php
                         $logsByPeriod = collect($usage_logs)->groupBy(function($log) {
                             return \Carbon\Carbon::parse($log['billing_date'])->format('m/Y');
                         });
+                        // Gộp các kỳ có dịch vụ + các tháng hợp đồng (kể cả tháng chưa có dịch vụ)
+                        $periodKeys = $logsByPeriod->keys()
+                            ->merge($contractPeriods ?? [])
+                            ->unique()
+                            ->sortBy(function($p) {
+                                [$m, $y] = explode('/', $p);
+                                return $y . str_pad($m, 2, '0', STR_PAD_LEFT);
+                            })
+                            ->values();
                         // Get all unique service names
                         $allServiceNames = collect($usage_logs)->pluck('service_name')->unique()->values();
                     @endphp
@@ -515,7 +528,7 @@
                         <div class="flex items-center justify-between mb-2">
                             <h4 class="text-xs font-black text-blue-700 flex items-center gap-2">
                                 <x-icon name="heroicon-o-clock" class="h-4 w-4"/>
-                                📊 Lịch sử các kỳ đã chốt ({{ $logsByPeriod->count() }} kỳ)
+                                📊 Lịch sử các kỳ đã chốt ({{ $periodKeys->count() }} kỳ)
                             </h4>
                             {{-- Export Invoice Button --}}
                             @if($editingBookingId)
@@ -557,7 +570,8 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach($logsByPeriod as $period => $logs)
+                                    @foreach($periodKeys as $period)
+                                        @php $logs = $logsByPeriod[$period] ?? collect(); @endphp
                                         <tr class="hover:bg-gray-50">
                                             <!-- Kỳ -->
                                             <td class="border border-gray-200 px-3 py-2 font-bold text-blue-700 whitespace-nowrap">
@@ -596,16 +610,16 @@
                                                 </td>
                                             @endforeach
                                             
-                                            <!-- Tiền phòng -->
+                                            <!-- Tiền phòng (theo tháng nếu là hợp đồng) -->
                                             <td class="border border-gray-200 px-2 py-2 text-center bg-blue-50">
                                                 <div class="font-black text-blue-600">
-                                                    {{ number_format($basePrice, 0, ',', '.') }}đ
+                                                    {{ number_format($monthlyRoomPrice, 0, ',', '.') }}đ
                                                 </div>
                                             </td>
-                                            
+
                                             <!-- Tổng kỳ -->
                                             @php
-                                                $periodTotal = $logs->sum('total_amount') + $basePrice;
+                                                $periodTotal = $logs->sum('total_amount') + $monthlyRoomPrice;
                                             @endphp
                                             <td class="border border-gray-200 px-3 py-2 text-center bg-yellow-50">
                                                 <div class="font-black text-yellow-700 text-sm">
@@ -616,12 +630,20 @@
                                             <!-- Thao tác -->
                                             <td class="border border-gray-200 px-2 py-2 text-center">
                                                 <div class="flex items-center justify-center gap-2">
-                                                    <button type="button" wire:click="viewPeriodInvoice('{{ $period }}')" 
-                                                            class="text-blue-500 hover:text-blue-700 transition-colors" 
+                                                    <button type="button" wire:click="viewPeriodInvoice('{{ $period }}')"
+                                                            class="text-blue-500 hover:text-blue-700 transition-colors"
                                                             title="Xem hóa đơn kỳ {{ $period }}">
                                                         <x-icon name="heroicon-o-document-text" class="h-4 w-4 inline"/>
                                                     </button>
-                                                    <button type="button" wire:click="removePeriodLogs('{{ $period }}')" 
+                                                    @if($editingBookingId)
+                                                    <button type="button" wire:click="exportPeriodInvoice('{{ $period }}')"
+                                                            wire:loading.attr="disabled" wire:target="exportPeriodInvoice"
+                                                            class="text-emerald-500 hover:text-emerald-700 transition-colors"
+                                                            title="Gửi email hóa đơn kỳ {{ $period }}">
+                                                        <x-icon name="heroicon-o-paper-airplane" class="h-4 w-4 inline"/>
+                                                    </button>
+                                                    @endif
+                                                    <button type="button" wire:click="removePeriodLogs('{{ $period }}')"
                                                             class="text-red-400 hover:text-red-600 transition-colors" 
                                                             title="Xóa toàn bộ kỳ {{ $period }}">
                                                         <x-icon name="heroicon-o-trash" class="h-4 w-4 inline"/>

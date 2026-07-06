@@ -201,25 +201,54 @@
                         <label class="text-[10px] font-black uppercase tracking-widest text-blue-600">Tìm phòng trống theo ngày</label>
                     </div>
                     <div class="flex items-center gap-2 bg-gray-50 p-1 rounded-xl border border-gray-100">
-                        <input type="date" wire:model.live="filter_start_date" 
-                               class="bg-transparent border-none text-xs font-bold text-gray-700 focus:ring-0 w-[140px] cursor-pointer"
-                               title="Từ ngày">
+                        <input type="text" inputmode="numeric" wire:model.blur="filter_start_date" placeholder="dd/mm/yyyy"
+                               x-data
+                               x-on:input="let v=$el.value.replace(/\D/g,'').slice(0,8); $el.value = v.length>=5 ? v.slice(0,2)+'/'+v.slice(2,4)+'/'+v.slice(4) : (v.length>=3 ? v.slice(0,2)+'/'+v.slice(2) : v)"
+                               class="bg-transparent border-none text-xs font-bold text-gray-700 focus:ring-0 w-[110px] cursor-pointer text-center"
+                               title="Từ ngày (ngày/tháng/năm)">
                         <span class="text-gray-300 text-xs">→</span>
-                        <input type="date" wire:model.live="filter_end_date" 
-                               class="bg-transparent border-none text-xs font-bold text-gray-700 focus:ring-0 w-[140px] cursor-pointer"
-                               title="Đến ngày">
+                        <input type="text" inputmode="numeric" wire:model.blur="filter_end_date" placeholder="dd/mm/yyyy"
+                               x-data
+                               x-on:input="let v=$el.value.replace(/\D/g,'').slice(0,8); $el.value = v.length>=5 ? v.slice(0,2)+'/'+v.slice(2,4)+'/'+v.slice(4) : (v.length>=3 ? v.slice(0,2)+'/'+v.slice(2) : v)"
+                               class="bg-transparent border-none text-xs font-bold text-gray-700 focus:ring-0 w-[110px] cursor-pointer text-center"
+                               title="Đến ngày (ngày/tháng/năm)">
                     </div>
                 </div>
                 
                 <!-- Xoá lọc -->
                 @if(!empty($filter_areas) || !empty($filter_start_date) || !empty($filter_end_date))
-                    <button wire:click="$set('filter_areas', []); $set('filter_start_date', ''); $set('filter_end_date', '');" 
+                    <button wire:click="$set('filter_areas', []); $set('filter_start_date', ''); $set('filter_end_date', '');"
                             class="mt-6 p-2 text-red-500 hover:bg-red-50 rounded-xl transition-all duration-200 group"
                             title="Xoá tất cả bộ lọc">
                         <svg class="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>
                 @endif
             </div>
+
+            {{-- ===== GỢI Ý NỐI PHÒNG (khi không có phòng trống suốt kỳ) ===== --}}
+            @if(!empty($roomChain) && !$roomChain['single'] && count($roomChain['segments']) > 0)
+                <div class="mt-3 rounded-xl border p-3 {{ $roomChain['possible'] ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200' }}">
+                    @if($roomChain['possible'])
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="text-[11px] font-black uppercase tracking-widest text-amber-700">🔗 Gợi ý nối phòng</span>
+                            <span class="text-[10px] text-amber-600">Không có phòng trống suốt kỳ, nhưng có thể ghép:</span>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            @foreach($roomChain['segments'] as $i => $seg)
+                                @if($i > 0)<span class="text-amber-400 font-black">→</span>@endif
+                                <button type="button" wire:click="createBooking('{{ $seg['room_id'] }}', '{{ $seg['from'] }}')"
+                                        class="px-3 py-1.5 bg-white border border-amber-300 rounded-lg hover:bg-amber-100 transition-all shadow-sm text-left"
+                                        title="Đặt phòng {{ $seg['room_code'] }} cho đoạn này">
+                                    <span class="block text-xs font-black text-gray-800">Phòng {{ $seg['room_code'] }}</span>
+                                    <span class="block text-[10px] text-gray-500">{{ $seg['from_label'] }} → {{ $seg['to_label'] }} · {{ $seg['nights'] }} đêm @if($seg['area']) · {{ $seg['area'] }}@endif</span>
+                                </button>
+                            @endforeach
+                        </div>
+                    @else
+                        <span class="text-[11px] font-bold text-red-600">Không tìm được cách ghép phòng phủ kín khoảng ngày này (kể cả nối phòng).</span>
+                    @endif
+                </div>
+            @endif
         </div>
     </div>
 
@@ -433,22 +462,24 @@
                     </button>
                 </div>
 
-                {{-- Tabs --}}
+                {{-- Tabs: lịch chỉ xem/nhập thông tin cơ bản. Tính tiền (dịch vụ/hoá đơn) chuyển
+                     sang trang Quản lý đặt phòng qua nút "Tính tiền" để gom về 1 nhánh, tránh rối. --}}
                 <div class="flex border-b border-gray-200 bg-white px-6">
                     @php
                         $tabs = [
                             'overview' => 'Tổng quan',
-                            'services' => 'Dịch vụ',
-                            'invoice' => 'Hoá đơn'
                         ];
                     @endphp
                     @foreach($tabs as $key => $label)
-                        <button @click="activeTab = '{{ $key }}'" 
+                        <button @click="activeTab = '{{ $key }}'"
                                 :class="activeTab === '{{ $key }}' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'"
                                 class="px-5 py-3 text-sm font-medium transition-all relative">
                             {{ $label }}
                         </button>
                     @endforeach
+                    <div class="ml-auto flex items-center text-[11px] text-gray-400 italic">
+                        Tính tiền / dịch vụ → dùng nút "Tính tiền" bên dưới
+                    </div>
                 </div>
 
                 {{-- Body --}}
@@ -1104,6 +1135,11 @@
                         @endif
                         <button wire:click="$set('showModal', false)" class="text-sm font-bold text-gray-400 hover:text-gray-600">Đóng</button>
                         @if($editingBookingId)
+                            <a href="{{ route('admin.bookings.index', ['open' => $editingBookingId, 'bill' => 1]) }}"
+                               class="px-4 py-2 bg-emerald-600 text-white rounded font-bold text-xs uppercase shadow-md hover:bg-emerald-700 flex items-center gap-1"
+                               title="Sang trang Quản lý đặt phòng để tính tiền / xuất hóa đơn">
+                                <x-icon name="heroicon-o-calculator" class="h-4 w-4" /> Tính tiền
+                            </a>
                             <button wire:click="viewConfirmation" class="px-4 py-2 bg-indigo-600 text-white rounded font-bold text-xs uppercase shadow-md hover:bg-indigo-700 flex items-center gap-1">
                                 <x-icon name="heroicon-o-printer" class="h-4 w-4" /> In xác nhận
                             </button>

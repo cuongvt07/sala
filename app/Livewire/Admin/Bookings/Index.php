@@ -125,6 +125,31 @@ class Index extends Component
         }
     }
 
+    /**
+     * Parse số theo định dạng Việt Nam cho CHỈ SỐ điện/nước (cho phép số lẻ):
+     * '.' = phân cách nghìn, ',' = dấu thập phân.
+     * "50,3" -> 50.3 ; "1.250,5" -> 1250.5 ; "1.250" -> 1250.
+     */
+    protected function parseMeterNumber($value): float
+    {
+        $clean = str_replace('.', '', (string) $value); // bỏ phân cách nghìn
+        $clean = str_replace(',', '.', $clean);         // dấu phẩy -> dấu thập phân
+        return is_numeric($clean) ? (float) $clean : 0.0;
+    }
+
+    /**
+     * Tiền phòng tính cho MỘT kỳ (tháng).
+     * - Hợp đồng: dùng đơn giá tháng (unit_price) -> mỗi tháng thu 1 tháng tiền phòng.
+     * - Thuê ngày: dùng tổng tiền phòng của booking.
+     */
+    protected function periodRoomPrice(): float
+    {
+        if ($this->price_type === 'month') {
+            return (float) str_replace(['.', ',', 'đ'], '', (string) ($this->unit_price ?: '0'));
+        }
+        return (float) str_replace(['.', ',', 'đ'], '', (string) ($this->price ?: '0'));
+    }
+
     public $deposits = []; // Stores state of deposits (1, 2, 3)
 
     // Manual Fee Input
@@ -141,6 +166,18 @@ class Index extends Component
     protected $listeners = ['area-selected' => '$refresh'];
 
     use \App\Traits\HasCountryData;
+
+    public function mount()
+    {
+        // Deep-link từ Lịch đặt phòng: mở thẳng booking để tính tiền (?open=<id>&bill=1)
+        $openId = request()->query('open');
+        if ($openId && Booking::find($openId)) {
+            $this->edit($openId);
+            if (request()->query('bill')) {
+                $this->activeModalTab = 'billing';
+            }
+        }
+    }
 
     public function updatedNewCustomerNationality($value)
     {
@@ -177,8 +214,9 @@ class Index extends Component
             $rules['new_customer_identity'] = 'nullable|string|max:255';
             $rules['new_customer_nationality'] = 'nullable|string|max:255';
             $rules['new_customer_visa_number'] = 'nullable|string|max:255';
-            $rules['new_customer_birthday'] = 'nullable|date';
-            $rules['new_customer_visa_expiry'] = 'nullable|date';
+            // Nhập theo d/m/Y (dd/mm/yyyy) nên không dùng rule |date (rule date hiểu nhầm là m/d/Y)
+            $rules['new_customer_birthday'] = 'nullable|string';
+            $rules['new_customer_visa_expiry'] = 'nullable|string';
             $rules['new_customer_image'] = 'nullable|image|max:10240'; // 10MB
         }
 
@@ -284,7 +322,8 @@ class Index extends Component
         } elseif ($this->price_type === 'day') {
             $this->unit_price = $room->price_day ?? 0;
         } elseif ($this->price_type === 'month') {
-            $this->unit_price = $room->price_month ?? 0;
+            // Thuê hợp đồng/tháng: ưu tiên giá tháng, thiếu thì tạm lấy giá ngày
+            $this->unit_price = $room->price_month ?: ($room->price_day ?? 0);
         }
 
         $this->extra_night_price = number_format((float)str_replace(['.', ','], '', $this->unit_price), 0, ',', '.');
@@ -298,7 +337,7 @@ class Index extends Component
     public function create()
     {
         $this->resetValidation();
-        $this->reset(['customer_id', 'new_customer_name', 'new_customer_phone', 'new_customer_email', 'new_customer_identity', 'new_customer_visa_number', 'new_customer_visa_expiry', 'new_customer_notes', 'new_customer_image', 'room_id', 'price_type', 'is_contract', 'unit_price', 'check_in', 'check_out', 'price', 'deposit', 'deposit_2', 'deposit_3', 'status', 'notes', 'editingBookingId', 'selected_services', 'usage_logs']);
+        $this->reset(['customer_id', 'new_customer_name', 'new_customer_phone', 'new_customer_email', 'new_customer_identity', 'new_customer_visa_number', 'new_customer_visa_expiry', 'new_customer_notes', 'new_customer_image', 'new_customer_gender', 'new_customer_birthday', 'new_customer_nationality', 'additional_guests', 'room_id', 'price_type', 'is_contract', 'unit_price', 'check_in', 'check_out', 'price', 'deposit', 'deposit_2', 'deposit_3', 'status', 'notes', 'editingBookingId', 'selected_services', 'usage_logs', 'service_inputs']);
         $this->price_type = 'day';
         $this->activeTab = 'existing';
         $this->manual_fee_date = date('Y-m-d');
@@ -309,7 +348,14 @@ class Index extends Component
     public function edit($id)
     {
         $this->resetValidation();
-        $booking = Booking::with(['services', 'usageLogs.service'])->findOrFail($id);
+        $booking = Booking::with(['services', 'usageLogs.service', 'room'])->findOrFail($id);
+
+        // Phân quyền toà: chặn mở booking của toà khác (kể cả qua deep-link ?open=)
+        if ($booking->room && !auth()->user()->canAccessArea($booking->room->area_id)) {
+            $this->dispatch('toast', message: 'Bạn không có quyền xem booking của toà nhà này.', type: 'error');
+            return;
+        }
+
         $this->editingBookingId = $id;
 
         $this->customer_id = $booking->customer_id;
@@ -468,7 +514,7 @@ class Index extends Component
 
         $total = 0;
         if ($this->new_log['type'] === 'meter') {
-            $usage = max(0, ($this->new_log['end_index'] ?? 0) - ($this->new_log['start_index'] ?? 0));
+            $usage = max(0, $this->parseMeterNumber($this->new_log['end_index'] ?? 0) - $this->parseMeterNumber($this->new_log['start_index'] ?? 0));
             $total = $usage * $price;
         } else {
             $total = $quantity * $price;
@@ -555,8 +601,8 @@ class Index extends Component
             return \Carbon\Carbon::parse($log['billing_date'])->format('m/Y') === $period;
         });
 
-        // Convert price to numeric (remove dots and đ)
-        $roomPrice = (float) str_replace(['.', 'đ', ','], '', $this->price ?? '0');
+        // Tiền phòng cho MỘT kỳ (tháng): hợp đồng dùng đơn giá tháng, thuê ngày dùng tổng
+        $roomPrice = $this->periodRoomPrice();
 
         $this->invoice_data = [
             'period' => $period,
@@ -658,9 +704,9 @@ class Index extends Component
 
         $total = 0;
         if ($service->type === 'meter') {
-            // Ensure indices are treated as numbers, cleaning any accidental dots/commas
-            $start = (float) str_replace([',', '.'], '', $input['start_index'] ?? '0');
-            $end = (float) str_replace([',', '.'], '', $input['end_index'] ?? '0');
+            // Chỉ số cho phép số lẻ: '.' = nghìn, ',' = thập phân
+            $start = $this->parseMeterNumber($input['start_index'] ?? '0');
+            $end = $this->parseMeterNumber($input['end_index'] ?? '0');
             $usage = max(0, $end - $start);
             $total = $usage * $price;
         } else {
@@ -872,6 +918,49 @@ class Index extends Component
     }
 
     /**
+     * Xuất & gửi hóa đơn cho RIÊNG một kỳ (tháng) — dùng cho hợp đồng dài hạn.
+     * Chỉ gồm tiền phòng 1 tháng + các dịch vụ có billing_date thuộc kỳ đó.
+     */
+    public function exportPeriodInvoice($period)
+    {
+        if (!$this->editingBookingId) {
+            $this->dispatch('toast', message: 'Vui lòng lưu booking trước khi xuất hoá đơn.', type: 'error');
+            return;
+        }
+
+        $booking = Booking::with(['customer', 'room', 'usageLogs.service'])->find($this->editingBookingId);
+        if (!$booking) return;
+
+        // Lọc log không phải khấu trừ cọc, thuộc đúng kỳ (m/Y)
+        $logs = $booking->usageLogs()
+            ->where('type', '!=', 'deduction')
+            ->orderBy('billing_date')
+            ->get()
+            ->filter(function ($log) use ($period) {
+                return $log->billing_date && $log->billing_date->format('m/Y') === $period;
+            })
+            ->values();
+
+        $customerEmail = $booking->customer->email ?? null;
+        if (!$customerEmail) {
+            $this->dispatch('toast', message: 'Khách hàng không có email. Không thể gửi hoá đơn.', type: 'warning');
+            return;
+        }
+
+        try {
+            Mail::to($customerEmail)->send(new InvoiceMail($booking, $logs, $this->periodRoomPrice(), $period));
+            $logs->each(function ($log) {
+                $log->update(['email_sent_at' => now()]);
+            });
+            $this->dispatch('toast', message: 'Đã gửi hoá đơn kỳ ' . $period . ' đến ' . $customerEmail . ' thành công!', type: 'success');
+        } catch (\Exception $e) {
+            $this->dispatch('toast', message: 'Gửi email thất bại: ' . $e->getMessage(), type: 'error');
+        }
+
+        $this->edit($this->editingBookingId);
+    }
+
+    /**
      * Kiểm tra phòng đang chọn có bị trùng lịch với booking khác đang hoạt động
      * (pending / checked_in) trong khoảng check_in -> check_out hay không.
      */
@@ -927,6 +1016,13 @@ class Index extends Component
             return;
         }
 
+        // Phân quyền toà: nhân viên không được đặt/sửa booking cho phòng thuộc toà khác
+        $roomForArea = Room::find($this->room_id);
+        if ($roomForArea && !auth()->user()->canAccessArea($roomForArea->area_id)) {
+            $this->dispatch('toast', message: 'Bạn không có quyền thao tác booking của toà nhà này.', type: 'error');
+            return;
+        }
+
         $customerId = $this->customer_id;
 
         // Create new customer if tab is new
@@ -965,11 +1061,11 @@ class Index extends Component
                 'phone' => $this->new_customer_phone,
                 'email' => $this->new_customer_email,
                 'gender' => $this->new_customer_gender,
-                'birthday' => $this->new_customer_birthday,
+                'birthday' => $this->parseDate($this->new_customer_birthday),
                 'identity_id' => $this->new_customer_identity,
                 'nationality' => $this->new_customer_nationality ?: 'Vietnam',
                 'visa_number' => $this->new_customer_visa_number,
-                'visa_expiry' => $this->new_customer_visa_expiry,
+                'visa_expiry' => $this->parseDate($this->new_customer_visa_expiry),
                 'notes' => $this->new_customer_notes,
                 'images' => $imagePath,
             ]);
@@ -983,7 +1079,7 @@ class Index extends Component
                     'phone' => $this->new_customer_phone ?: $customer->phone,
                     'email' => $this->new_customer_email ?: $customer->email,
                     'gender' => $this->new_customer_gender ?: $customer->gender,
-                    'birthday' => $this->new_customer_birthday ?: $customer->birthday,
+                    'birthday' => $this->parseDate($this->new_customer_birthday) ?: $customer->birthday,
                     'identity_id' => $this->new_customer_identity ?: $customer->identity_id,
                     'nationality' => $this->new_customer_nationality ?: $customer->nationality,
                 ]);
@@ -1036,9 +1132,9 @@ class Index extends Component
                     ];
 
                     if ($service->type === 'meter') {
-                        // Bỏ dấu phân cách nghìn để "1.250" không bị hiểu nhầm thành 1.25
-                        $pivot['start_index'] = (float) str_replace([',', '.'], '', (string)($item['start_index'] ?? 0));
-                        $pivot['end_index'] = (float) str_replace([',', '.'], '', (string)($item['end_index'] ?? 0));
+                        // Chỉ số cho phép số lẻ: '.' = nghìn, ',' = thập phân
+                        $pivot['start_index'] = $this->parseMeterNumber($item['start_index'] ?? 0);
+                        $pivot['end_index'] = $this->parseMeterNumber($item['end_index'] ?? 0);
                         $pivot['usage'] = max(0, ($pivot['end_index'] - $pivot['start_index']));
                         $pivot['total_amount'] = $pivot['usage'] * $pivot['unit_price'];
                     } else {
@@ -1082,7 +1178,19 @@ class Index extends Component
 
     public function delete($id)
     {
-        Booking::find($id)->delete();
+        $booking = Booking::with('room')->find($id);
+        if (!$booking) {
+            $this->dispatch('toast', message: 'Không tìm thấy booking.', type: 'error');
+            return;
+        }
+
+        // Phân quyền toà: chặn xóa booking của toà khác
+        if ($booking->room && !auth()->user()->canAccessArea($booking->room->area_id)) {
+            $this->dispatch('toast', message: 'Bạn không có quyền xóa booking của toà nhà này.', type: 'error');
+            return;
+        }
+
+        $booking->delete();
         $this->dispatch('toast', message: 'Xóa booking thành công.', type: 'success');
     }
 
@@ -1094,9 +1202,22 @@ class Index extends Component
 
     public function render()
     {
-        $query = Booking::with(['customer', 'room.area'])->latest();
+        $query = Booking::with(['customer', 'room.area'])
+            // Ưu tiên: khách đang ở (checked_in) trước, sắp theo số phòng tăng dần (101 -> ...);
+            // rồi tới các booking sắp tới (pending) theo ngày nhận gần nhất; còn lại xếp cuối.
+            ->orderByRaw("CASE WHEN bookings.status = 'checked_in' THEN 0 WHEN bookings.status = 'pending' THEN 1 ELSE 2 END")
+            ->orderByRaw("CASE WHEN bookings.status = 'checked_in' THEN (SELECT code FROM rooms WHERE rooms.id = bookings.room_id) END ASC")
+            ->orderByRaw("CASE WHEN bookings.status = 'pending' THEN bookings.check_in END ASC")
+            ->orderBy('bookings.check_in', 'desc');
 
-        if ($this->filterArea) {
+        // Nhân viên bị khóa toà: luôn giới hạn theo toà của họ, bỏ qua bộ lọc thủ công
+        $restrictedAreaId = (auth()->check() && auth()->user()->isAreaRestricted()) ? auth()->user()->area_id : null;
+
+        if ($restrictedAreaId) {
+            $query->whereHas('room', function ($q) use ($restrictedAreaId) {
+                $q->where('area_id', $restrictedAreaId);
+            });
+        } elseif ($this->filterArea) {
             $query->whereHas('room', function ($q) {
                 $q->where('area_id', $this->filterArea);
             });
@@ -1126,11 +1247,30 @@ class Index extends Component
             });
         }
 
+        // Với booking hợp đồng đang mở: liệt kê đủ các tháng từ ngày vào -> ngày ra (hoặc hiện tại),
+        // để tháng chưa phát sinh dịch vụ vẫn xuất được bill "chỉ tiền phòng".
+        $contractPeriods = [];
+        if ($this->editingBookingId && $this->price_type === 'month' && $this->check_in) {
+            try {
+                $cursor = \Carbon\Carbon::parse($this->check_in)->startOfMonth();
+                $limit = ($this->check_out ? \Carbon\Carbon::parse($this->check_out) : now())->startOfMonth();
+                $guard = 0;
+                while ($cursor->lte($limit) && $guard < 60) {
+                    $contractPeriods[] = $cursor->format('m/Y');
+                    $cursor->addMonth();
+                    $guard++;
+                }
+            } catch (\Exception $e) {
+                $contractPeriods = [];
+            }
+        }
+
         return view('livewire.admin.bookings.index', [
             'bookings' => $query->paginate(10),
             'customers' => Customer::orderBy('name')->get(),
             'rooms' => Room::with('area')->orderBy('code')->get(),
             'all_services' => Service::where('is_active', true)->orderBy('name')->get(),
+            'contractPeriods' => $contractPeriods,
         ])->layout('components.layouts.admin');
     }
 }

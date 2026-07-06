@@ -63,4 +63,29 @@ class User extends Authenticatable
 
         return in_array($route, $this->permissions ?? []);
     }
+
+    /** Quản trị cấp cao: xem/sửa được mọi toà nhà. */
+    public function isAdminLevel(): bool
+    {
+        return in_array($this->role, ['super_admin', 'admin']);
+    }
+
+    /** Nhân viên bị khóa vào 1 toà nhà cụ thể. */
+    public function isAreaRestricted(): bool
+    {
+        return !$this->isAdminLevel() && !empty($this->area_id);
+    }
+
+    /** Được phép thao tác dữ liệu thuộc toà $areaId hay không. */
+    public function canAccessArea($areaId): bool
+    {
+        if ($this->isAdminLevel()) {
+            return true;
+        }
+        // Nhân viên không gán toà -> giữ hành vi cũ (xem tất cả)
+        if (!$this->isAreaRestricted()) {
+            return true;
+        }
+        return (int) $this->area_id === (int) $areaId;
+    }
 }

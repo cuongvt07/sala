@@ -81,9 +81,9 @@
                                     <tr>
                                         <td style="padding:10px 10px; font-size:13px; color:#0f172a; font-weight:700; border-bottom:1px solid #f1f5f9;">Tiền phòng</td>
                                         <td style="padding:10px 10px; font-size:12px; color:#64748b; text-align:center; border-bottom:1px solid #f1f5f9;">
-                                            {{ $booking->price_type === 'month' ? 'Hợp đồng' : 'Ngày' }}
+                                            {{ $booking->price_type === 'month' ? ($periodLabel ? 'Tháng ' . $periodLabel : 'Hợp đồng / tháng') : 'Ngày' }}
                                         </td>
-                                        <td style="padding:10px 10px; font-size:13px; color:#0f172a; font-weight:800; text-align:right; border-bottom:1px solid #f1f5f9;">{{ number_format($booking->price, 0, ',', '.') }}đ</td>
+                                        <td style="padding:10px 10px; font-size:13px; color:#0f172a; font-weight:800; text-align:right; border-bottom:1px solid #f1f5f9;">{{ number_format($roomPrice, 0, ',', '.') }}đ</td>
                                     </tr>
 
                                     {{-- Usage logs --}}

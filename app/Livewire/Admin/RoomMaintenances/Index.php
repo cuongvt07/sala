@@ -93,6 +93,13 @@ class Index extends Component
     {
         $this->validate();
 
+        // Phân quyền toà: chỉ được lên lịch bảo dưỡng cho phòng thuộc toà mình quản lý
+        $roomForArea = Room::find($this->room_id);
+        if ($roomForArea && !auth()->user()->canAccessArea($roomForArea->area_id)) {
+            $this->dispatch('toast', message: 'Bạn không có quyền thao tác bảo dưỡng cho toà nhà này.', type: 'error');
+            return;
+        }
+
         $cleanCost = str_replace('.', '', $this->cost);
 
         $data = [
@@ -131,15 +138,32 @@ class Index extends Component
 
     public function delete($id)
     {
-        RoomMaintenance::find($id)?->delete();
+        $record = RoomMaintenance::with('room')->find($id);
+        if (!$record) {
+            $this->dispatch('toast', message: 'Không tìm thấy lịch bảo dưỡng.', type: 'error');
+            return;
+        }
+
+        // Phân quyền toà: chặn xóa bảo dưỡng của toà khác
+        if ($record->room && !auth()->user()->canAccessArea($record->room->area_id)) {
+            $this->dispatch('toast', message: 'Bạn không có quyền xóa bảo dưỡng của toà nhà này.', type: 'error');
+            return;
+        }
+
+        $record->delete();
         $this->dispatch('toast', message: 'Xóa lịch bảo dưỡng thành công.', type: 'success');
     }
 
     public function render()
     {
         $query = Room::with('area');
-        
-        if ($this->selectedAreaId) {
+
+        // Nhân viên bị khóa toà: luôn giới hạn theo toà của họ
+        $restrictedAreaId = (auth()->check() && auth()->user()->isAreaRestricted()) ? auth()->user()->area_id : null;
+
+        if ($restrictedAreaId) {
+            $query->where('area_id', $restrictedAreaId);
+        } elseif ($this->selectedAreaId) {
             $query->where('area_id', $this->selectedAreaId);
         }
 

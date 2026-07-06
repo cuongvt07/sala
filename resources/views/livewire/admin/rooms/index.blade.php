@@ -64,8 +64,8 @@
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Mã Phòng</th>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Loại</th>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Khu vực</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Đơn giá</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Tiền phòng</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Giá ngày</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Giá HĐ/tháng</th>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Trạng thái</th>
                     <th class="px-6 py-4 text-right text-xs font-semibold text-gray-900 uppercase tracking-wider">Hành động</th>
                 </tr>
@@ -85,8 +85,8 @@
                         <td class="px-6 py-4 whitespace-nowrap text-[13px] font-bold text-gray-900">
                             {{ number_format($room->price_day, 0, ',', '.') }}đ
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-[13px] font-bold text-gray-500">
-                            {{ $room->price_hour ? number_format($room->price_hour, 0, ',', '.') . 'đ' : '-' }}
+                        <td class="px-6 py-4 whitespace-nowrap text-[13px] font-bold text-emerald-600">
+                            {{ $room->price_month ? number_format($room->price_month, 0, ',', '.') . 'đ' : '-' }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             @php
@@ -183,7 +183,7 @@
                 {{-- Col 3: Pricing --}}
                 <div class="space-y-4">
                     <div class="space-y-1" x-data>
-                        <label for="price_day" class="block font-semibold text-gray-700 text-[11px] uppercase">Đơn giá (VNĐ) <span class="text-red-500">*</span></label>
+                        <label for="price_day" class="block font-semibold text-gray-700 text-[11px] uppercase">Giá ngày (VNĐ) <span class="text-red-500">*</span></label>
                         <input type="text" id="price_day" wire:model="price_day" required
                                class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm font-bold text-blue-600 focus:ring-blue-500 focus:border-blue-500"
                                x-on:input="$el.value = $el.value.replace(/\D/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')">
@@ -191,7 +191,15 @@
                     </div>
 
                     <div class="space-y-1" x-data>
-                        <label for="price_hour" class="block font-semibold text-gray-700 text-[11px] uppercase">Tiền phòng (VNĐ)</label>
+                        <label for="price_month" class="block font-semibold text-gray-700 text-[11px] uppercase">Giá hợp đồng / tháng (VNĐ)</label>
+                        <input type="text" id="price_month" wire:model="price_month"
+                               class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm font-bold text-emerald-600 focus:ring-blue-500 focus:border-blue-500"
+                               x-on:input="$el.value = $el.value.replace(/\D/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')">
+                        @error('price_month') <p class="text-[10px] text-red-500">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div class="space-y-1" x-data>
+                        <label for="price_hour" class="block font-semibold text-gray-700 text-[11px] uppercase">Giá giờ (VNĐ)</label>
                         <input type="text" id="price_hour" wire:model="price_hour"
                                class="block w-full rounded border-gray-300 bg-gray-50 py-1.5 text-sm font-bold text-gray-600 focus:ring-blue-500 focus:border-blue-500"
                                x-on:input="$el.value = $el.value.replace(/\D/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')">

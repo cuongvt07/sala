@@ -27,6 +27,7 @@ class Index extends Component
     public $type = 'Studio';
     public $price_day;
     public $price_hour;
+    public $price_month;
     public $status = 'active';
     public $description;
 
@@ -40,6 +41,7 @@ class Index extends Component
             'type' => 'required|string',
             'price_day' => 'required|numeric|min:0',
             'price_hour' => 'nullable|numeric|min:0',
+            'price_month' => 'nullable|numeric|min:0',
             'status' => 'required|in:active,maintenance',
             'description' => 'nullable|string',
         ];
@@ -48,8 +50,8 @@ class Index extends Component
     public function create()
     {
         $this->resetValidation();
-        $this->reset(['area_id', 'code', 'type', 'price_day', 'price_hour', 'status', 'description', 'editingRoomId']);
-        
+        $this->reset(['area_id', 'code', 'type', 'price_day', 'price_hour', 'price_month', 'status', 'description', 'editingRoomId']);
+
         // Auto-select area if filter is active
         if (session('admin_selected_area_id')) {
             $this->area_id = session('admin_selected_area_id');
@@ -62,13 +64,21 @@ class Index extends Component
     {
         $this->resetValidation();
         $room = Room::findOrFail($id);
+
+        // Phân quyền toà: chặn sửa phòng của toà khác
+        if (!auth()->user()->canAccessArea($room->area_id)) {
+            $this->dispatch('toast', message: 'Bạn không có quyền sửa phòng của toà nhà này.', type: 'error');
+            return;
+        }
+
         $this->editingRoomId = $id;
-        
+
         $this->area_id = $room->area_id;
         $this->code = $room->code;
         $this->type = $room->type;
         $this->price_day = $room->price_day ? number_format($room->price_day, 0, '', '.') : '';
         $this->price_hour = $room->price_hour ? number_format($room->price_hour, 0, '', '.') : '';
+        $this->price_month = $room->price_month ? number_format($room->price_month, 0, '', '.') : '';
         $this->status = $room->status;
         $this->description = $room->description;
         
@@ -80,12 +90,20 @@ class Index extends Component
         // Sanitize currency inputs
         $this->price_day = str_replace(['.', ','], '', $this->price_day);
         $this->price_hour = str_replace(['.', ','], '', $this->price_hour);
+        $this->price_month = str_replace(['.', ','], '', $this->price_month);
 
         // Convert empty strings to null for decimal columns
         $this->price_day = $this->price_day === '' ? null : $this->price_day;
         $this->price_hour = $this->price_hour === '' ? null : $this->price_hour;
+        $this->price_month = $this->price_month === '' ? null : $this->price_month;
 
         $this->validate();
+
+        // Phân quyền toà: chỉ được tạo/sửa phòng thuộc toà mình quản lý
+        if (!auth()->user()->canAccessArea($this->area_id)) {
+            $this->dispatch('toast', message: 'Bạn không có quyền tạo/sửa phòng cho toà nhà này.', type: 'error');
+            return;
+        }
 
         $data = [
             'area_id' => $this->area_id,
@@ -93,6 +111,7 @@ class Index extends Component
             'type' => $this->type,
             'price_day' => $this->price_day,
             'price_hour' => $this->price_hour,
+            'price_month' => $this->price_month,
             'status' => $this->status,
             'description' => $this->description,
         ];
@@ -108,7 +127,7 @@ class Index extends Component
 
         $this->showModal = false;
         $this->dispatch('toast', message: $message, type: 'success');
-        $this->reset(['area_id', 'code', 'type', 'price_day', 'price_hour', 'status', 'description', 'editingRoomId']);
+        $this->reset(['area_id', 'code', 'type', 'price_day', 'price_hour', 'price_month', 'status', 'description', 'editingRoomId']);
     }
 
     public function delete($id)
@@ -116,6 +135,12 @@ class Index extends Component
         $room = Room::find($id);
         if (!$room) {
             $this->dispatch('toast', message: 'Không tìm thấy phòng.', type: 'error');
+            return;
+        }
+
+        // Phân quyền toà: chặn xóa phòng của toà khác
+        if (!auth()->user()->canAccessArea($room->area_id)) {
+            $this->dispatch('toast', message: 'Bạn không có quyền xóa phòng của toà nhà này.', type: 'error');
             return;
         }
 
@@ -145,7 +170,12 @@ class Index extends Component
             $query->where('status', $this->filterStatus);
         }
 
-        if ($this->filterArea) {
+        // Nhân viên bị khóa toà: luôn giới hạn theo toà của họ, bỏ qua bộ lọc thủ công
+        $restrictedAreaId = (auth()->check() && auth()->user()->isAreaRestricted()) ? auth()->user()->area_id : null;
+
+        if ($restrictedAreaId) {
+            $query->where('area_id', $restrictedAreaId);
+        } elseif ($this->filterArea) {
             $query->where('area_id', $this->filterArea);
         } elseif (session('admin_selected_area_id')) {
             $query->where('area_id', session('admin_selected_area_id'));

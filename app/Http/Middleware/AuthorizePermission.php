@@ -21,6 +21,12 @@ class AuthorizePermission
             return redirect()->route('login');
         }
 
+        // Nhân viên bị khóa toà: ép vùng dữ liệu về đúng toà của họ trên mọi request,
+        // để không thể tự chuyển sang xem/sửa dữ liệu toà khác qua session.
+        if ($user->isAreaRestricted()) {
+            session(['admin_selected_area_id' => $user->area_id]);
+        }
+
         // super_admin has all permissions
         if ($user->role === 'super_admin') {
             return $next($request);

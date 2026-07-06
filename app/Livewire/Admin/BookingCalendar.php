@@ -147,9 +147,16 @@ class BookingCalendar extends Component
 
     public function updatedFilterStartDate($value)
     {
-        if ($value) {
-            $this->startDate = $value;
+        // Ô tìm kiếm nhập theo dd/mm/yyyy -> chuyển sang Y-m-d để dịch chuyển lịch
+        $normalized = $this->parseDate($value);
+        if ($normalized) {
+            $this->startDate = $normalized;
         }
+    }
+
+    public function updatedFilterEndDate($value)
+    {
+        // Giữ chỗ để Livewire nhận diện; việc parse xử lý ở getRoomsProperty
     }
 
     public function updatedCustomerNationality($value)
@@ -177,7 +184,7 @@ class BookingCalendar extends Component
             if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateStr)) {
                 return $dateStr;
             }
-            
+
             $clean = str_replace(' ', '', $dateStr);
             // Thử format d/m/Y (có thể dùng / hoặc - hoặc .)
             $clean = str_replace(['-', '.'], '/', $clean);
@@ -185,6 +192,18 @@ class BookingCalendar extends Component
         } catch (\Exception $e) {
             return null;
         }
+    }
+
+    /**
+     * Parse số theo định dạng Việt Nam cho CHỈ SỐ điện/nước (cho phép số lẻ):
+     * '.' = phân cách nghìn, ',' = dấu thập phân.
+     * "50,3" -> 50.3 ; "1.250,5" -> 1250.5 ; "1.250" -> 1250.
+     */
+    protected function parseMeterNumber($value): float
+    {
+        $clean = str_replace('.', '', (string) $value); // bỏ phân cách nghìn
+        $clean = str_replace(',', '.', $clean);         // dấu phẩy -> dấu thập phân
+        return is_numeric($clean) ? (float) $clean : 0.0;
     }
 
     public function nextMonth()
@@ -468,7 +487,12 @@ class BookingCalendar extends Component
         if (!$room)
             return;
 
-        $priceVal = $room->price_day ?? 0;
+        // Thuê hợp đồng/tháng dùng giá tháng; thuê ngày dùng giá ngày
+        if ($this->price_type === 'month') {
+            $priceVal = $room->price_month ?: ($room->price_day ?? 0);
+        } else {
+            $priceVal = $room->price_day ?? 0;
+        }
         $this->unit_price = number_format($priceVal, 0, ',', '.');
     }
 
@@ -481,7 +505,7 @@ class BookingCalendar extends Component
     {
         \Illuminate\Support\Facades\Log::info('BookingCalendar CreateBooking Triggered', ['room_id' => $roomId, 'date' => $date]);
         $this->resetValidation();
-        $this->reset(['customer_id', 'new_customer_name', 'new_customer_phone', 'new_customer_email', 'new_customer_identity', 'new_customer_nationality', 'new_customer_visa_number', 'new_customer_visa_expiry', 'new_customer_notes', 'new_customer_image', 'customer_identity', 'customer_nationality', 'customer_visa_number', 'customer_visa_expiry', 'room_id', 'price_type', 'is_contract', 'unit_price', 'check_in', 'check_out', 'price', 'deposit', 'deposit_2', 'deposit_3', 'deposit_usd', 'deposit_2_usd', 'usd_rate', 'use_usd', 'deposit_currency', 'deposit_2_currency', 'status', 'source', 'notes', 'editingBookingId', 'selected_services', 'usage_logs']);
+        $this->reset(['customer_id', 'customer_name', 'customer_phone', 'customer_email', 'customer_gender', 'customer_birthday', 'new_customer_name', 'new_customer_phone', 'new_customer_email', 'new_customer_identity', 'new_customer_gender', 'new_customer_birthday', 'new_customer_nationality', 'new_customer_visa_number', 'new_customer_visa_expiry', 'new_customer_notes', 'new_customer_image', 'customer_identity', 'customer_nationality', 'customer_visa_number', 'customer_visa_expiry', 'additional_guests', 'room_id', 'price_type', 'is_contract', 'unit_price', 'check_in', 'check_out', 'price', 'deposit', 'deposit_2', 'deposit_3', 'deposit_usd', 'deposit_2_usd', 'usd_rate', 'use_usd', 'deposit_currency', 'deposit_2_currency', 'status', 'source', 'notes', 'editingBookingId', 'selected_services', 'usage_logs', 'service_inputs']);
         $this->usd_rate = 25400;
         $this->use_usd = false;
         $this->deposit_currency = 'VND';
@@ -507,6 +531,13 @@ class BookingCalendar extends Component
         \Illuminate\Support\Facades\Log::info('BookingCalendar EditBooking Triggered', ['id' => $id]);
         $this->resetValidation();
         $booking = \App\Models\Booking::with(['services', 'usageLogs.service', 'room', 'customer'])->findOrFail($id);
+
+        // Phân quyền toà: chặn mở booking của toà khác
+        if ($booking->room && !auth()->user()->canAccessArea($booking->room->area_id)) {
+            $this->dispatch('toast', message: 'Bạn không có quyền xem booking của toà nhà này.', type: 'error');
+            return;
+        }
+
         $this->editingBookingId = $id;
 
         $this->customer_id = $booking->customer_id;
@@ -638,8 +669,8 @@ class BookingCalendar extends Component
         $total = 0;
         $qty = 0;
         if ($service->type === 'meter') {
-            $start = (float) str_replace([',', '.'], '', $input['start_index'] ?? '0');
-            $end = (float) str_replace([',', '.'], '', $input['end_index'] ?? '0');
+            $start = $this->parseMeterNumber($input['start_index'] ?? '0');
+            $end = $this->parseMeterNumber($input['end_index'] ?? '0');
             $qty = max(0, $end - $start);
             $total = $qty * $price;
         } else {
@@ -883,6 +914,13 @@ class BookingCalendar extends Component
             return;
         }
 
+        // Phân quyền toà: nhân viên không được đặt/sửa booking cho phòng thuộc toà khác
+        $roomForArea = \App\Models\Room::find($this->room_id);
+        if ($roomForArea && !auth()->user()->canAccessArea($roomForArea->area_id)) {
+            $this->dispatch('toast', message: 'Bạn không có quyền thao tác booking của toà nhà này.', type: 'error');
+            return;
+        }
+
         $customerId = $this->customer_id;
 
         if ($this->activeTab === 'new') {
@@ -892,7 +930,7 @@ class BookingCalendar extends Component
                 'phone' => $this->new_customer_phone,
                 'email' => $this->new_customer_email,
                 'gender' => $this->new_customer_gender,
-                'birthday' => $this->new_customer_birthday,
+                'birthday' => $this->parseDate($this->new_customer_birthday),
                 'identity_id' => $this->new_customer_identity,
             ];
 
@@ -902,7 +940,7 @@ class BookingCalendar extends Component
                 $newCustomerData['identity_id'] = $identityValue;
                 $newCustomerData['nationality'] = $this->customer_nationality ?: 'Vietnam';
                 $newCustomerData['visa_number'] = $identityValue; // Lưu cùng giá trị với identity_id
-                $newCustomerData['visa_expiry'] = $this->customer_visa_expiry;
+                $newCustomerData['visa_expiry'] = $this->parseDate($this->customer_visa_expiry);
             }
             $customer = \App\Models\Customer::create($newCustomerData);
             $customerId = $customer->id;
@@ -915,11 +953,11 @@ class BookingCalendar extends Component
                     'phone' => $this->customer_phone ?: $customer->phone,
                     'email' => $this->customer_email ?: $customer->email,
                     'gender' => $this->customer_gender ?: $customer->gender,
-                    'birthday' => $this->customer_birthday ?: $customer->birthday,
+                    'birthday' => $this->parseDate($this->customer_birthday) ?: $customer->birthday,
                     'identity_id' => $this->customer_identity ?: $customer->identity_id,
                     'nationality' => $this->customer_nationality ?: $customer->nationality,
                     'visa_number' => $this->customer_identity ?: $customer->visa_number,
-                    'visa_expiry' => $this->customer_visa_expiry ?: $customer->visa_expiry,
+                    'visa_expiry' => $this->parseDate($this->customer_visa_expiry) ?: $customer->visa_expiry,
                 ];
                 $customer->update($customerDataToUpdate);
             }
@@ -940,7 +978,8 @@ class BookingCalendar extends Component
             $guestData = [
                 'name' => $guest['name'],
                 'phone' => $guest['phone'] ?? null,
-                'identity' => $guest['identity'] ?? null,
+                // Cột fillable là identity_id (không phải 'identity') nên trước đây CMND không được lưu
+                'identity_id' => $guest['identity'] ?? null,
                 'gender' => $guest['gender'] ?? null,
                 'birthday' => $this->parseDate($guest['birthday'] ?? null),
                 'nationality' => $guest['nationality'] ?? 'Vietnam',
@@ -993,9 +1032,9 @@ class BookingCalendar extends Component
                 if ($service) {
                     $pivot = ['unit_price' => $service->unit_price, 'note' => $item['note'] ?? null];
                     if ($service->type === 'meter') {
-                        // Bỏ dấu phân cách nghìn để "1.250" không bị hiểu nhầm thành 1.25
-                        $pivot['start_index'] = (float) str_replace([',', '.'], '', (string)($item['start_index'] ?? 0));
-                        $pivot['end_index'] = (float) str_replace([',', '.'], '', (string)($item['end_index'] ?? 0));
+                        // Chỉ số cho phép số lẻ: '.' = nghìn, ',' = thập phân
+                        $pivot['start_index'] = $this->parseMeterNumber($item['start_index'] ?? 0);
+                        $pivot['end_index'] = $this->parseMeterNumber($item['end_index'] ?? 0);
                         $pivot['usage'] = max(0, $pivot['end_index'] - $pivot['start_index']);
                         $pivot['total_amount'] = $pivot['usage'] * $pivot['unit_price'];
                     } else {
@@ -1029,6 +1068,90 @@ class BookingCalendar extends Component
 
         $this->reset(['editingBookingId', 'showModal']);
         $this->dispatch('refreshView');
+    }
+
+    /**
+     * Gợi ý NỐI PHÒNG: khi không có phòng nào trống suốt khoảng tìm kiếm,
+     * tìm chuỗi phòng mà các đoạn trống của chúng ghép lại phủ kín khoảng ngày.
+     * VD: cần 5→7, phòng 101 trống 5→6, phòng 201 trống 6→7 => gợi ý ghép 101 + 201.
+     * Phạm vi phòng tuân theo bộ lọc toà nhà hiện tại (chọn 1 hoặc nhiều toà đều được).
+     */
+    public function getRoomChainProperty()
+    {
+        $startStr = $this->parseDate($this->filter_start_date);
+        $endStr = $this->parseDate($this->filter_end_date);
+        if (!$startStr || !$endStr) return null;
+
+        $reqStart = \Carbon\Carbon::parse($startStr)->startOfDay();
+        $reqEnd = \Carbon\Carbon::parse($endStr)->startOfDay();
+        if ($reqEnd->lte($reqStart)) return null;
+
+        // Phòng trong phạm vi lọc + booking đang chiếm (pending/checked_in) giao với khoảng tìm
+        $query = \App\Models\Room::query()->with(['area', 'bookings' => function ($q) use ($reqStart, $reqEnd) {
+            $q->whereIn('status', ['pending', 'checked_in'])
+              ->where('check_in', '<', $reqEnd)
+              ->where(function ($sub) use ($reqStart) {
+                  $sub->where('check_out', '>', $reqStart)->orWhereNull('check_out');
+              });
+        }]);
+        if (session('admin_selected_area_id')) $query->where('area_id', session('admin_selected_area_id'));
+        if (!empty($this->filter_areas)) $query->whereIn('area_id', $this->filter_areas);
+        elseif ($this->selectedArea) $query->where('area_id', $this->selectedArea);
+
+        $rooms = $query->get();
+
+        // Phòng có trống đêm $d không, và nếu trống thì trống được tới ngày nào (reach)
+        $freeInfo = function ($room, $d) use ($reqEnd) {
+            foreach ($room->bookings as $b) {
+                $ci = \Carbon\Carbon::parse($b->check_in)->startOfDay();
+                $co = $b->check_out ? \Carbon\Carbon::parse($b->check_out)->startOfDay() : null;
+                if ($ci->lte($d) && ($co === null || $co->gt($d))) {
+                    return [false, null]; // đêm $d đã bị chiếm
+                }
+            }
+            $reach = $reqEnd->copy();
+            foreach ($room->bookings as $b) {
+                $ci = \Carbon\Carbon::parse($b->check_in)->startOfDay();
+                if ($ci->gt($d) && $ci->lt($reach)) $reach = $ci->copy();
+            }
+            return [true, $reach];
+        };
+
+        // Tham lam: mỗi bước chọn phòng trống từ mốc hiện tại và kéo dài xa nhất
+        $segments = [];
+        $current = $reqStart->copy();
+        $guard = 0;
+        while ($current->lt($reqEnd) && $guard < 400) {
+            $guard++;
+            $best = null; $bestReach = null;
+            foreach ($rooms as $room) {
+                [$free, $reach] = $freeInfo($room, $current);
+                if ($free && $reach->gt($current) && ($bestReach === null || $reach->gt($bestReach))) {
+                    $bestReach = $reach->copy();
+                    $best = $room;
+                }
+            }
+            if (!$best) {
+                return ['possible' => false, 'segments' => $segments, 'single' => false];
+            }
+            $segments[] = [
+                'room_id' => $best->id,
+                'room_code' => $best->code,
+                'area' => $best->area->name ?? '',
+                'from' => $current->format('Y-m-d'),
+                'to' => $bestReach->format('Y-m-d'),
+                'from_label' => $current->format('d/m'),
+                'to_label' => $bestReach->format('d/m'),
+                'nights' => $current->diffInDays($bestReach),
+            ];
+            $current = $bestReach->copy();
+        }
+
+        return [
+            'possible' => $current->gte($reqEnd),
+            'segments' => $segments,
+            'single' => count($segments) === 1,
+        ];
     }
 
     public function getDaysInMonthProperty()
@@ -1073,10 +1196,13 @@ class BookingCalendar extends Component
             $query->where('area_id', $this->selectedArea);
         }
 
-        if (!empty($this->filter_start_date) && !empty($this->filter_end_date)) {
-            $start = \Carbon\Carbon::parse($this->filter_start_date)->startOfDay();
-            $end = \Carbon\Carbon::parse($this->filter_end_date)->startOfDay();
-            
+        $filterStartStr = $this->parseDate($this->filter_start_date);
+        $filterEndStr = $this->parseDate($this->filter_end_date);
+
+        if (!empty($filterStartStr) && !empty($filterEndStr)) {
+            $start = \Carbon\Carbon::parse($filterStartStr)->startOfDay();
+            $end = \Carbon\Carbon::parse($filterEndStr)->startOfDay();
+
             $query->whereDoesntHave('bookings', function($q) use ($start, $end) {
                 $q->whereIn('status', ['pending', 'checked_in'])
                   ->where('check_in', '<', $end)
@@ -1167,7 +1293,17 @@ class BookingCalendar extends Component
     {
         \Illuminate\Support\Facades\Log::info('BookingCalendar DeleteBooking Triggered', ['id' => $id]);
         try {
-            \App\Models\Booking::find($id)?->delete();
+            $booking = \App\Models\Booking::with('room')->find($id);
+            if (!$booking) {
+                $this->dispatch('toast', message: 'Không tìm thấy đặt phòng.', type: 'error');
+                return;
+            }
+            // Phân quyền toà: chặn xóa booking của toà khác
+            if ($booking->room && !auth()->user()->canAccessArea($booking->room->area_id)) {
+                $this->dispatch('toast', message: 'Bạn không có quyền xóa booking của toà nhà này.', type: 'error');
+                return;
+            }
+            $booking->delete();
             $this->dispatch('toast', message: 'Đã xóa đặt phòng thành công.', type: 'success');
             $this->showModal = false;
             $this->editingBookingId = null;
@@ -1191,7 +1327,7 @@ class BookingCalendar extends Component
                 $inp = $this->service_inputs[$svc->id];
                 $up = (float)str_replace(['.',','],'', (string)($inp['unit_price'] ?? '0'));
                 if($svc->type === 'meter') {
-                    $pendingServiceTotal += max(0, ((float)($inp['end_index'] ?? 0) - (float)($inp['start_index'] ?? 0))) * $up;
+                    $pendingServiceTotal += max(0, ($this->parseMeterNumber($inp['end_index'] ?? 0) - $this->parseMeterNumber($inp['start_index'] ?? 0))) * $up;
                 } else {
                     $pendingServiceTotal += ((float)($inp['quantity'] ?? 1)) * $up;
                 }
@@ -1211,6 +1347,7 @@ class BookingCalendar extends Component
             'basePrice' => $basePrice,
             'pendingServiceTotal' => $pendingServiceTotal,
             'grandTotal' => $grandTotal,
+            'roomChain' => $this->roomChain,
         ])->layout('components.layouts.admin');
     }
 }

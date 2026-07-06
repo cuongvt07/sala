@@ -9,7 +9,7 @@ use App\Traits\LogsActivity;
 class Room extends Model
 {
     use HasFactory, LogsActivity;
-    protected $fillable = ['area_id', 'code', 'type', 'price_day', 'price_hour', 'status', 'description'];
+    protected $fillable = ['area_id', 'code', 'type', 'price_day', 'price_hour', 'price_month', 'status', 'description'];
 
     public function area()
     {
