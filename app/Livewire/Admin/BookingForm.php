@@ -733,7 +733,9 @@ class BookingForm extends Component
         }
         $txn = Transaction::where('booking_id', $booking->id)->find($txnId);
         if ($txn) {
-            $txn->delete(); // các dịch vụ gắn với phiếu này tự trở về "chưa thu"
+            // Các dịch vụ gắn với phiếu này trở về "chưa thu"
+            BookingUsageLog::where('transaction_id', $txn->id)->update(['transaction_id' => null]);
+            $txn->delete();
             $this->dispatch('booking-saved');
             $this->dispatch('toast', message: 'Đã huỷ phiếu.', type: 'success');
         }

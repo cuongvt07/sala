@@ -166,6 +166,7 @@ class Index extends Component
             $this->dispatch('toast', message: 'Chỉ quản lý mới được xoá phiếu.', type: 'error');
             return;
         }
+        \App\Models\BookingUsageLog::where('transaction_id', $id)->update(['transaction_id' => null]);
         Transaction::whereKey($id)->delete();
         $this->dispatch('toast', message: 'Đã xoá phiếu.', type: 'success');
     }

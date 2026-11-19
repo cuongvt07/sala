@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\ActivityLog;
 use App\Models\Booking;
 use App\Models\Customer;
+use App\Models\Transaction;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
@@ -28,11 +29,14 @@ class BookingPurger
 
             $bookingId = $booking->id;
 
+            // Sổ thu chi giữ lại, chỉ gỡ liên kết tới booking sắp xoá
+            Transaction::where('booking_id', $bookingId)->update(['booking_id' => null]);
+
             // withoutEvents: không ghi thêm nhật ký chứa thông tin khách vừa bị xoá
             Booking::withoutEvents(function () use ($booking) {
                 $booking->services()->detach();
                 $booking->usageLogs()->delete();
-                $booking->delete(); // transactions.booking_id tự về NULL (nullOnDelete)
+                $booking->delete();
             });
 
             $deletedCustomerIds = [];
