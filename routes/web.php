@@ -30,6 +30,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'permission'])->grou
     // Bookings
     Route::get('/bookings', \App\Livewire\Admin\Bookings\Index::class)->name('bookings.index');
 
+    // Finance (Sổ thu chi)
+    Route::get('/finance', \App\Livewire\Admin\Finance\Index::class)->name('finance.index');
+
     // Services
     Route::get('/services', \App\Livewire\Admin\Services\Index::class)->name('services.index');
 

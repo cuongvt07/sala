@@ -2,219 +2,49 @@
 
 namespace App\Livewire\Admin;
 
-use Livewire\Component;
-use App\Models\Room;
-use App\Models\Booking;
 use App\Models\Area;
-use App\Models\Service;
-use App\Models\Customer;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Cache;
+use App\Models\Booking;
+use App\Models\Room;
 use Carbon\Carbon;
+use Livewire\Attributes\Computed;
+use Livewire\Component;
 
+/**
+ * Lịch đặt phòng (30 ngày). Thêm/sửa đặt phòng dùng chung component BookingForm.
+ */
 class BookingCalendar extends Component
 {
-    use \Livewire\WithFileUploads;
-    use \App\Traits\HasCountryData;
-
     public $startDate;
-    public $selectedArea = '';
 
     // Filters
     public $filter_areas = [];
     public $filter_start_date;
     public $filter_end_date;
 
-    // Modal & Form State
-    public $showModal = false;
-    public $editingBookingId = null;
-    public $activeModalTab = 'overview';
-    public $activeTab = 'existing';
-    public $selected_services = [];
-    public $service_inputs = [];
-    public $usage_logs = [];
-    public $new_log = [
-        'service_id' => '',
-        'type' => 'fixed',
-        'billing_unit' => 'quantity',
-        'start_index' => '',
-        'end_index' => '',
-        'quantity' => 1,
-        'unit_price' => 0,
-        'billing_date' => '',
-        'notes' => '',
-    ];
-
-    public $customer_id;
-    public $customer_search = ''; // lọc dropdown khách để DOM nhỏ, mở modal mượt
-    public $customer_name;
-    public $customer_phone;
-    public $customer_email;
-    public $customer_identity;
-    public $customer_gender;
-    public $customer_nationality;
-    public $customer_birthday;
-    public $customer_visa_number;
-    public $customer_visa_expiry;
-
-    public $new_customer_name;
-    public $new_customer_phone;
-    public $new_customer_email;
-    public $new_customer_identity;
-    public $new_customer_gender;
-    public $new_customer_birthday;
-    public $new_customer_nationality;
-    public $new_customer_visa_number;
-    public $new_customer_visa_expiry;
-    public $new_customer_notes;
-    public $new_customer_image;
-
-    public $additional_guests = []; // Each guest: {name, identity}
-
-    public function addGuest()
-    {
-        $this->additional_guests[] = [
-            'name' => '', 
-            'phone' => '', 
-            'identity' => '', 
-            'gender' => '', 
-            'nationality' => 'Vietnam', 
-            'birthday' => '', 
-            'visa_expiry' => ''
-        ];
-    }
-
-    public function removeGuest($index)
-    {
-        $this->additional_guests = array_values(array_filter($this->additional_guests, fn($i) => $i !== $index, ARRAY_FILTER_USE_KEY));
-    }
-
-    public function updatedCustomerId($value)
-    {
-        if ($value) {
-            $customer = Customer::find($value);
-            if ($customer) {
-                // Pre-fill check-in info from existing customer
-                $this->customer_name = $customer->name;
-                $this->customer_phone = $customer->phone;
-                $this->customer_email = $customer->email;
-                $this->customer_gender = $customer->gender;
-                $this->customer_birthday = $customer->birthday ? $customer->birthday->format('d/m/Y') : null;
-                $this->customer_identity = $customer->identity_id;
-                $this->customer_nationality = $customer->nationality;
-                $this->customer_visa_number = $customer->visa_number;
-                $this->customer_visa_expiry = $customer->visa_expiry ? $customer->visa_expiry->format('d/m/Y') : null;
-            }
-        } else {
-            $this->reset(['customer_name', 'customer_phone', 'customer_email', 'customer_gender', 'customer_birthday', 'customer_identity', 'customer_nationality', 'customer_visa_number', 'customer_visa_expiry']);
-        }
-    }
-
-    public $room_id;
-    public $price_type = 'day';
-    public $is_contract = false;
-    public $unit_price = 0;
-    public $check_in;
-    public $check_out;
-    public $price;
-    public $deposit = 0;
-    public $deposit_2 = 0;
-    public $deposit_3 = 0;
-    public $status = 'pending';
-    public $notes;
-    public $source;
-
-    public $manual_fee_amount;
-    public $manual_fee_notes;
-    public $manual_fee_date;
-    
-    public $deposit_usd = 0;
-    public $deposit_2_usd = 0;
-    public $usd_rate = 25400;
-    public $use_usd = false;
-    
-    public $deposit_currency = 'VND';
-    public $deposit_2_currency = 'VND';
-
-    public $countries = [];
-
-    protected $listeners = ['area-selected' => '$refresh', 'refreshView' => '$refresh'];
+    protected $listeners = ['area-selected' => '$refresh', 'booking-saved' => '$refresh'];
 
     public function mount()
     {
         $this->startDate = now()->format('Y-m-d');
-        $this->countries = $this->getFormattedCountries();
     }
 
     public function updatedFilterStartDate($value)
     {
-        // Ô tìm kiếm nhập theo dd/mm/yyyy -> chuyển sang Y-m-d để dịch chuyển lịch
+        // Ô tìm kiếm nhập dd/mm/yyyy -> dịch lịch tới ngày đó
         $normalized = $this->parseDate($value);
         if ($normalized) {
             $this->startDate = $normalized;
         }
     }
 
-    public function updatedFilterEndDate($value)
-    {
-        // Giữ chỗ để Livewire nhận diện; việc parse xử lý ở getRoomsProperty
-    }
-
-    public function updatedCustomerNationality($value)
-    {
-        $this->customer_nationality = $this->handleNationalityUpdate($value);
-    }
-
-    public function updatedNewCustomerNationality($value)
-    {
-        $this->new_customer_nationality = $this->handleNationalityUpdate($value);
-    }
-
-    public $invoice_data = [];
-    public $invoice_period = '';
-    public $showInvoiceModal = false;
-
-    public $showConfirmationModal = false;
-    public $confirmation_data = [];
-
-    private function parseDate($dateStr)
-    {
-        if (empty($dateStr)) return null;
-        try {
-            // Nếu đã là định dạng YYYY-MM-DD thì trả về luôn
-            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateStr)) {
-                return $dateStr;
-            }
-
-            $clean = str_replace(' ', '', $dateStr);
-            // Thử format d/m/Y (có thể dùng / hoặc - hoặc .)
-            $clean = str_replace(['-', '.'], '/', $clean);
-            return \Carbon\Carbon::createFromFormat('d/m/Y', $clean)->format('Y-m-d');
-        } catch (\Exception $e) {
-            return null;
-        }
-    }
-
-    /**
-     * Parse số theo định dạng Việt Nam cho CHỈ SỐ điện/nước (cho phép số lẻ):
-     * '.' = phân cách nghìn, ',' = dấu thập phân.
-     * "50,3" -> 50.3 ; "1.250,5" -> 1250.5 ; "1.250" -> 1250.
-     */
-    protected function parseMeterNumber($value): float
-    {
-        $clean = str_replace('.', '', (string) $value); // bỏ phân cách nghìn
-        $clean = str_replace(',', '.', $clean);         // dấu phẩy -> dấu thập phân
-        return is_numeric($clean) ? (float) $clean : 0.0;
-    }
-
     public function nextMonth()
     {
-        $this->startDate = \Carbon\Carbon::parse($this->startDate ?? now()->format('Y-m-d'))->addDays(30)->format('Y-m-d');
+        $this->startDate = Carbon::parse($this->startDate)->addDays(30)->format('Y-m-d');
     }
 
     public function prevMonth()
     {
-        $this->startDate = \Carbon\Carbon::parse($this->startDate ?? now()->format('Y-m-d'))->subDays(30)->format('Y-m-d');
+        $this->startDate = Carbon::parse($this->startDate)->subDays(30)->format('Y-m-d');
     }
 
     public function goToToday()
@@ -222,925 +52,89 @@ class BookingCalendar extends Component
         $this->startDate = now()->format('Y-m-d');
     }
 
-    public function viewPeriodInvoice($period)
+    private function parseDate($dateStr): ?string
     {
-        $this->invoice_period = $period;
-
-        // Get booking data from database
-        $booking = null;
-        if ($this->editingBookingId) {
-            $booking = Booking::with('customer', 'room')->find($this->editingBookingId);
+        if (empty($dateStr)) {
+            return null;
         }
-
-        // Gather all logs for this period
-        $periodLogs = collect($this->usage_logs)->filter(function ($log) use ($period) {
-            return \Carbon\Carbon::parse($log['billing_date'])->format('m/Y') === $period;
-        });
-
-        // Convert price to numeric (remove dots and đ)
-        $roomPrice = (float) str_replace(['.', 'đ', ','], '', $this->price ?? '0');
-
-        $this->invoice_data = [
-            'period' => $period,
-            'logs' => $periodLogs->values()->toArray(),
-            'room_price' => $roomPrice,
-            'total' => $periodLogs->sum('total_amount') + $roomPrice,
-            'booking' => [
-                'customer_name' => $booking?->customer?->name ?? '-',
-                'customer_phone' => $booking?->customer?->phone ?? '-',
-                'room_code' => $booking?->room?->code ?? '-',
-                'check_in' => $booking?->check_in?->format('d/m/Y') ?? '-',
-            ]
-        ];
-
-        $this->showInvoiceModal = true;
-    }
-
-    public function closeInvoiceModal()
-    {
-        $this->showInvoiceModal = false;
-        $this->invoice_data = [];
-    }
-
-    public function viewConfirmation()
-    {
-        if (!$this->editingBookingId) {
-            $this->dispatch('toast', message: 'Vui lòng lưu booking trước khi in xác nhận.', type: 'error');
-            return;
-        }
-
-        $booking = Booking::with(['customer', 'room'])->find($this->editingBookingId);
-        if (!$booking) return;
-
-        $roomPrice = (float) str_replace(['.', 'đ', ','], '', $this->price ?? '0');
-        $dep1 = (float) str_replace(['.', 'đ', ','], '', $this->deposit ?? '0');
-        $dep2 = (float) str_replace(['.', 'đ', ','], '', $this->deposit_2 ?? '0');
-        $dep3 = (float) str_replace(['.', 'đ', ','], '', $this->deposit_3 ?? '0');
-        $totalDeposit = $dep1 + $dep2 + $dep3;
-
-        $this->confirmation_data = [
-            'booking_id' => $booking->id,
-            'customer_name' => $booking->customer->name ?? '-',
-            'customer_phone' => $booking->customer->phone ?? '-',
-            'room_code' => $booking->room->code ?? '-',
-            'check_in' => $booking->check_in ? $booking->check_in->format('d / m / Y') : '-',
-            'check_out' => $booking->check_out ? $booking->check_out->format('d / m / Y') : 'Hợp đồng',
-            'term_of_stay' => $booking->check_in && $booking->check_out ? $booking->check_in->diff($booking->check_out)->format('%a đêm') : 'Dài hạn',
-            'unit_price' => number_format((float)str_replace(['.',','],'',$this->unit_price ?: 0), 0, ',', '.'),
-            'price_type' => $this->price_type === 'month' ? 'tháng' : 'ngày',
-            'room_price' => $roomPrice,
-            'total_deposit' => $totalDeposit,
-            'remaining' => $this->is_contract ? $roomPrice : ($roomPrice - $totalDeposit),
-            'notes' => $this->notes,
-            'additional_guests' => $this->additional_guests,
-            'created_at' => now()->format('d/m/Y H:i')
-        ];
-
-        $this->showConfirmationModal = true;
-    }
-
-    public function closeConfirmationModal()
-    {
-        $this->showConfirmationModal = false;
-        $this->confirmation_data = [];
-    }
-    public function exportInvoice()
-    {
-        if (!$this->editingBookingId) {
-            $this->dispatch('toast', message: 'Vui lòng lưu booking trước khi xuất hoá đơn.', type: 'error');
-            return;
-        }
-
-        $booking = Booking::with(['customer', 'room', 'usageLogs.service'])->find($this->editingBookingId);
-        if (!$booking) return;
-
-        // Get all logs that are not deductions (deposits)
-        $logs = $booking->usageLogs()
-            ->where('type', '!=', 'deduction')
-            ->orderBy('billing_date')
-            ->get();
-
-        if ($logs->isEmpty()) {
-            $this->dispatch('toast', message: 'Không có khoản phí dịch vụ nào để xuất hoá đơn.', type: 'info');
-        }
-
-        $customerEmail = $booking->customer->email ?? null;
-
-        if ($customerEmail) {
-            try {
-                \Illuminate\Support\Facades\Mail::to($customerEmail)->send(new \App\Mail\InvoiceMail($booking, $logs));
-
-                // Mark logs as email sent (optional, but keep for tracking)
-                $logs->each(function ($log) {
-                    $log->update(['email_sent_at' => now()]);
-                });
-
-                $this->dispatch('toast', message: 'Đã gửi hoá đơn đến ' . $customerEmail . ' thành công!', type: 'success');
-            } catch (\Exception $e) {
-                $this->dispatch('toast', message: 'Gửi email thất bại: ' . $e->getMessage(), type: 'error');
-            }
-        } else {
-            $this->dispatch('toast', message: 'Khách hàng không có email. Không thể gửi hoá đơn.', type: 'warning');
-        }
-    }
-
-    public function rules()
-    {
-        return [
-            'room_id' => 'required|exists:rooms,id',
-            'price_type' => 'required|in:day,month',
-            'is_contract' => 'boolean',
-            'unit_price' => 'required',
-            'check_in' => 'required',
-            'check_out' => [
-                $this->price_type === 'month' ? 'nullable' : 'required',
-                function ($attribute, $value, $fail) {
-                    if ($this->price_type !== 'month' && $value && $this->check_in) {
-                        try {
-                            $start = \Carbon\Carbon::parse($this->check_in);
-                            $end = \Carbon\Carbon::parse($value);
-                            if ($end->lte($start)) {
-                                $fail('Ngày trả phải sau ngày nhận.');
-                            }
-                        } catch (\Exception $e) {}
-                    }
-                },
-            ],
-            'price' => 'required',
-            'deposit' => 'nullable',
-            'deposit_2' => 'nullable',
-            'deposit_3' => 'nullable',
-            'status' => 'required|in:pending,checked_in,checked_out,cancelled',
-            'source' => 'required|string',
-            'notes' => 'nullable|string',
-            'customer_id' => $this->activeTab === 'existing' ? 'required' : 'nullable',
-            'new_customer_name' => $this->activeTab === 'new' ? 'required|string|max:255' : 'nullable',
-            'new_customer_phone' => 'nullable',
-            'new_customer_identity' => 'nullable',
-            'new_customer_nationality' => 'nullable',
-        ];
-    }
-
-    public function updatedRoomId()
-    {
-        $this->updatePricing();
-    }
-
-    public function updatedUnitPrice()
-    {
-        $this->calculateTotal();
-    }
-
-    public function updatedPrice()
-    {
-        $this->calculateUnitPrice();
-    }
-
-    public function updatedPriceType()
-    {
-        $this->is_contract = ($this->price_type === 'month');
-        if ($this->price_type === 'month') {
-            $this->check_out = '';
-            $this->resetValidation('check_out');
-        } else {
-            $this->use_usd = false;
-        }
-        $this->updatePricing();
-        $this->calculateTotal();
-    }
-
-    public function updatedCheckIn()
-    {
-        $this->calculateTotal();
-    }
-
-    public function updatedCheckOut()
-    {
-        $this->calculateTotal();
-    }
-
-    public function calculateTotal()
-    {
-        if (!$this->check_in || !$this->check_out || !$this->unit_price)
-            return;
-
         try {
-            $start = Carbon::parse($this->check_in);
-            $end = Carbon::parse($this->check_out);
-
-            if ($end->lte($start))
-                return;
-
-            $unitPrice = (float) str_replace(['.', ','], '', $this->unit_price);
-            $diff = abs($start->diffInDays($end));
-
-            if ($this->price_type === 'day') {
-                $days = max(1, $diff);
-                $total = $days * $unitPrice;
-            } else {
-                // Contract (formerly Month)
-                $nights = $diff;
-                $total = ($unitPrice / 30) * $nights;
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateStr)) {
+                return $dateStr;
             }
-
-            $this->price = number_format($total, 0, ',', '.');
-
-        } catch (\Exception $e) {}
-    }
-
-    public function calculateUnitPrice()
-    {
-        if (!$this->check_in || !$this->check_out || !$this->price)
-            return;
-
-        try {
-            $start = Carbon::parse($this->check_in);
-            $end = Carbon::parse($this->check_out);
-
-            if ($end->lte($start))
-                return;
-
-            $totalPrice = (float) str_replace(['.', ','], '', $this->price);
-            $diff = abs($start->diffInDays($end));
-            $unitPrice = 0;
-
-            if ($this->price_type === 'day') {
-                $days = max(1, $diff);
-                $unitPrice = $totalPrice / $days;
-            } else {
-                // Contract (formerly Month)
-                $nights = $diff;
-                if ($nights > 0) {
-                    $unitPrice = ($totalPrice * 30) / $nights;
-                }
-            }
-
-            $this->unit_price = number_format($unitPrice, 0, ',', '.');
-
-        } catch (\Exception $e) {}
-    }
-
-    protected function updatePricing()
-    {
-        if (!$this->room_id)
-            return;
-        $room = \App\Models\Room::find($this->room_id);
-        if (!$room)
-            return;
-
-        // Thuê hợp đồng/tháng dùng giá tháng; thuê ngày dùng giá ngày
-        if ($this->price_type === 'month') {
-            $priceVal = $room->price_month ?: ($room->price_day ?? 0);
-        } else {
-            $priceVal = $room->price_day ?? 0;
-        }
-        $this->unit_price = number_format($priceVal, 0, ',', '.');
-    }
-
-    public function setTab($tab)
-    {
-        $this->activeModalTab = $tab;
-    }
-
-    public function createBooking($roomId, $date)
-    {
-        \Illuminate\Support\Facades\Log::info('BookingCalendar CreateBooking Triggered', ['room_id' => $roomId, 'date' => $date]);
-        $this->resetValidation();
-        $this->reset(['customer_id', 'customer_search', 'customer_name', 'customer_phone', 'customer_email', 'customer_gender', 'customer_birthday', 'new_customer_name', 'new_customer_phone', 'new_customer_email', 'new_customer_identity', 'new_customer_gender', 'new_customer_birthday', 'new_customer_nationality', 'new_customer_visa_number', 'new_customer_visa_expiry', 'new_customer_notes', 'new_customer_image', 'customer_identity', 'customer_nationality', 'customer_visa_number', 'customer_visa_expiry', 'additional_guests', 'room_id', 'price_type', 'is_contract', 'unit_price', 'check_in', 'check_out', 'price', 'deposit', 'deposit_2', 'deposit_3', 'deposit_usd', 'deposit_2_usd', 'usd_rate', 'use_usd', 'deposit_currency', 'deposit_2_currency', 'status', 'source', 'notes', 'editingBookingId', 'selected_services', 'usage_logs', 'service_inputs']);
-        $this->usd_rate = 25400;
-        $this->use_usd = false;
-        $this->deposit_currency = 'VND';
-        $this->deposit_2_currency = 'VND';
-
-        $this->room_id = $roomId;
-        $this->check_in = $date;
-        $this->check_out = \Carbon\Carbon::parse($date)->addDay()->format('Y-m-d');
-        $this->price_type = 'day';
-        $this->status = 'pending';
-        $this->source = 'Hotline';
-        $this->activeTab = 'existing';
-        $this->manual_fee_date = date('Y-m-d');
-        $this->activeModalTab = 'overview';
-        $this->showModal = true;
-
-        $this->updatePricing();
-        $this->calculateTotal();
-    }
-
-    public function editBooking($id)
-    {
-        \Illuminate\Support\Facades\Log::info('BookingCalendar EditBooking Triggered', ['id' => $id]);
-        $this->resetValidation();
-        $booking = \App\Models\Booking::with(['services', 'usageLogs.service', 'room', 'customer'])->findOrFail($id);
-
-        // Phân quyền toà: chặn mở booking của toà khác
-        if ($booking->room && !auth()->user()->canAccessArea($booking->room->area_id)) {
-            $this->dispatch('toast', message: 'Bạn không có quyền xem booking của toà nhà này.', type: 'error');
-            return;
-        }
-
-        $this->editingBookingId = $id;
-
-        $this->customer_search = '';
-        $this->customer_id = $booking->customer_id;
-        $this->activeTab = 'existing';
-        $this->room_id = $booking->room_id;
-        $this->price_type = ($booking->price_type === 'month') ? 'month' : 'day';
-        $this->is_contract = (bool)$booking->is_contract;
-        $this->unit_price = number_format($booking->unit_price ?? 0, 0, ',', '.');
-        $this->check_in = $booking->check_in ? $booking->check_in->format('Y-m-d') : null;
-        $this->check_out = $booking->check_out ? $booking->check_out->format('Y-m-d') : null;
-        $this->price = number_format($booking->price, 0, ',', '.');
-        $this->deposit = $booking->deposit ? number_format($booking->deposit, 0, ',', '.') : 0;
-        $this->deposit_2 = $booking->deposit_2 ? number_format($booking->deposit_2, 0, ',', '.') : 0;
-        // Giữ nguyên giá trị cọc đợt 3 (đã nhập từ màn Quản lý đặt phòng) để khi lưu trên
-        // lịch không vô tình xóa mất; lịch chỉ ẩn ô nhập chứ không reset dữ liệu.
-        $this->deposit_3 = $booking->deposit_3 ? number_format($booking->deposit_3, 0, ',', '.') : 0;
-        $this->deposit_usd = (float)($booking->deposit_usd ?? 0);
-        $this->deposit_2_usd = (float)($booking->deposit_2_usd ?? 0);
-        $this->usd_rate = (float)($booking->usd_rate ?? 25400);
-        $this->use_usd = ($this->deposit_usd > 0 || $this->deposit_2_usd > 0);
-        
-        $this->deposit_currency = ($this->deposit_usd > 0) ? 'USD' : 'VND';
-        $this->deposit_2_currency = ($this->deposit_2_usd > 0) ? 'USD' : 'VND';
-        $this->status = $booking->status;
-        $this->source = $booking->source ?: 'Hotline';
-        $this->notes = $booking->notes;
-
-        // Load Customer Check-in Info
-        if ($booking->customer) {
-            $this->customer_name = $booking->customer->name;
-            $this->customer_phone = $booking->customer->phone;
-            $this->customer_email = $booking->customer->email;
-            $this->customer_gender = $booking->customer->gender;
-            $this->customer_birthday = $booking->customer->birthday ? $booking->customer->birthday->format('d/m/Y') : null;
-            $this->customer_identity = $booking->customer->identity_id;
-            $this->customer_nationality = $booking->customer->nationality;
-            $this->customer_visa_number = $booking->customer->visa_number;
-            $this->customer_visa_expiry = $booking->customer->visa_expiry ? $booking->customer->visa_expiry->format('d/m/Y') : null;
-        }
-
-        $this->additional_guests = collect($booking->additional_guests ?? [])->map(function($guest) {
-            if (!empty($guest['birthday'])) {
-                try {
-                    $guest['birthday'] = \Carbon\Carbon::parse($guest['birthday'])->format('d / m / Y');
-                } catch (\Exception $e) {}
-            }
-            if (!empty($guest['visa_expiry'])) {
-                try {
-                    $guest['visa_expiry'] = \Carbon\Carbon::parse($guest['visa_expiry'])->format('d / m / Y');
-                } catch (\Exception $e) {}
-            }
-            if (isset($guest['identity_id']) && !isset($guest['identity'])) {
-                $guest['identity'] = $guest['identity_id'];
-            }
-            return $guest;
-        })->toArray();
-
-        $this->selected_services = [];
-        foreach ($booking->services as $service) {
-            $this->selected_services[$service->id] = [
-                'selected' => true,
-                'start_index' => $service->pivot->start_index,
-                'end_index' => $service->pivot->end_index,
-                'quantity' => $service->pivot->quantity,
-                'note' => $service->pivot->note,
-            ];
-            $this->initServiceInput($service->id);
-        }
-
-        $this->usage_logs = $booking->usageLogs->map(function ($log) {
-            return [
-                'id' => $log->id,
-                'service_name' => $log->service->name ?? 'Phí phòng/Khác',
-                'type' => $log->type,
-                'billing_unit' => $log->billing_unit,
-                'start_index' => $log->start_index,
-                'end_index' => $log->end_index,
-                'quantity' => $log->quantity,
-                'unit_price' => $log->unit_price,
-                'total_amount' => $log->total_amount,
-                'billing_date' => $log->billing_date ? $log->billing_date->format('Y-m-d') : null,
-                'notes' => $log->notes,
-            ];
-        })->toArray();
-
-        $this->manual_fee_date = date('Y-m-d');
-        $this->activeModalTab = 'overview';
-        $this->showModal = true;
-    }
-
-    public function initServiceInput($serviceId)
-    {
-        $service = \App\Models\Service::find($serviceId);
-        if (!$service)
-            return;
-
-        $startIndex = 0;
-        $logs = collect($this->usage_logs)->where('service_id', $serviceId)->sortByDesc('billing_date');
-        if ($logs->isNotEmpty()) {
-            $startIndex = $logs->first()['end_index'] ?? 0;
-        }
-
-        $this->service_inputs[$serviceId] = [
-            'start_index' => $startIndex,
-            'end_index' => '',
-            'quantity' => 1,
-            'unit_price' => number_format($service->unit_price, 0, ',', '.'),
-            'billing_date' => date('Y-m-d'),
-            'notes' => '',
-        ];
-    }
-
-    public function addServiceLog($serviceId)
-    {
-        $input = $this->service_inputs[$serviceId] ?? null;
-        if (!$input)
-            return;
-        $service = \App\Models\Service::find($serviceId);
-        if (!$service)
-            return;
-
-        // Lấy đơn giá từ input, nếu không có hoặc bằng 0 thì lấy đơn giá mặc định của dịch vụ
-        $priceStr = $input['unit_price'] ?? '';
-        if (empty($priceStr) || $priceStr == '0') {
-            $price = (float)$service->unit_price;
-        } else {
-            $price = (float) str_replace([',', '.'], '', $priceStr);
-        }
-        $total = 0;
-        $qty = 0;
-        if ($service->type === 'meter') {
-            $start = $this->parseMeterNumber($input['start_index'] ?? '0');
-            $end = $this->parseMeterNumber($input['end_index'] ?? '0');
-            $qty = max(0, $end - $start);
-            $total = $qty * $price;
-        } else {
-            $qty = (float) ($input['quantity'] ?? 1);
-            $total = $qty * $price;
-        }
-
-        $logData = [
-            'service_id' => $serviceId,
-            'service_name' => $service->name,
-            'type' => $service->type,
-            'billing_unit' => $service->unit_name,
-            'start_index' => $input['start_index'] ?? 0,
-            'end_index' => $input['end_index'] ?? 0,
-            'quantity' => $qty,
-            'unit_price' => $price,
-            'total_amount' => $total,
-            'billing_date' => $input['billing_date'] ?? date('Y-m-d'),
-            'notes' => $input['notes'] ?? '',
-        ];
-
-        if ($this->editingBookingId) {
-            $booking = \App\Models\Booking::find($this->editingBookingId);
-            if ($booking) {
-                $newDbLog = $booking->usageLogs()->create([
-                    'service_id' => $logData['service_id'],
-                    'type' => $logData['type'],
-                    'billing_unit' => $logData['billing_unit'],
-                    'start_index' => $logData['start_index'] ?: 0,
-                    'end_index' => $logData['end_index'] ?: 0,
-                    'quantity' => $logData['quantity'],
-                    'unit_price' => $logData['unit_price'],
-                    'total_amount' => $logData['total_amount'],
-                    'billing_date' => $logData['billing_date'],
-                    'notes' => $logData['notes'],
-                ]);
-
-                // ĐỒNG BỘ: Thêm vào danh sách dịch vụ đang sử dụng (Pivot)
-                if ($logData['service_id']) {
-                    $booking->services()->syncWithoutDetaching([
-                        $logData['service_id'] => [
-                            'unit_price' => $logData['unit_price'],
-                            'start_index' => $logData['end_index'] ?: 0, // Số cuối kỳ này là số đầu kỳ sau
-                            'end_index' => 0,
-                            'usage' => 0,
-                            'quantity' => 1,
-                            'total_amount' => 0,
-                        ]
-                    ]);
-                }
-
-                $this->dispatch('toast', message: 'Đã chốt dịch vụ: ' . ($logData['service_name']), type: 'success');
-
-                $logData['id'] = $newDbLog->id;
-            }
-        }
-        $this->usage_logs[] = $logData;
-        if ($service->type === 'meter') {
-            $this->service_inputs[$serviceId]['start_index'] = $input['end_index'];
-            $this->service_inputs[$serviceId]['end_index'] = '';
-        }
-    }
-
-    public function addAllServiceLogs()
-    {
-        foreach ($this->service_inputs as $serviceId => $input) {
-            // Chốt nếu có số cuối (điện nước) HOẶC là dịch vụ cố định đang được chọn
-            $isMeter = !empty($input['end_index']);
-            $isSelected = !empty($this->selected_services[$serviceId]['selected']);
-            
-            if ($isMeter || $isSelected) {
-                $this->addServiceLog($serviceId);
-            }
-        }
-        $this->dispatch('toast', message: 'Đã cập nhật chỉ số dịch vụ.', type: 'success');
-    }
-
-    public function addManualSurcharge()
-    {
-        if (!$this->manual_fee_amount)
-            return;
-        $amount = (float) str_replace([',', '.'], '', $this->manual_fee_amount);
-        $logData = [
-            'service_id' => null,
-            'service_name' => 'Phí phụ thu khác',
-            'type' => 'manual',
-            'billing_unit' => 'Lần',
-            'start_index' => 0,
-            'end_index' => 0,
-            'quantity' => 1,
-            'unit_price' => $amount,
-            'total_amount' => $amount,
-            'billing_date' => $this->manual_fee_date ?: date('Y-m-d'),
-            'notes' => $this->manual_fee_notes,
-        ];
-        if ($this->editingBookingId) {
-            $booking = \App\Models\Booking::find($this->editingBookingId);
-            if ($booking) {
-                $newDbLog = $booking->usageLogs()->create([
-                    'type' => 'manual',
-                    'billing_unit' => 'Lần',
-                    'unit_price' => $amount,
-                    'total_amount' => $amount,
-                    'billing_date' => $logData['billing_date'],
-                    'notes' => $logData['notes'],
-                ]);
-                $logData['id'] = $newDbLog->id;
-            }
-        }
-        $this->usage_logs[] = $logData;
-        $this->manual_fee_amount = '';
-        $this->manual_fee_notes = '';
-    }
-
-    public function removeUsageLog($index)
-    {
-        $log = $this->usage_logs[$index] ?? null;
-        if ($log && isset($log['id'])) {
-            \App\Models\BookingUsageLog::find($log['id'])?->delete();
-        }
-        unset($this->usage_logs[$index]);
-        $this->usage_logs = array_values($this->usage_logs);
-    }
-
-    public function toggleService($serviceId)
-    {
-        if (!isset($this->selected_services[$serviceId])) {
-            $this->selected_services[$serviceId] = ['selected' => false, 'start_index' => 0, 'end_index' => 0, 'quantity' => 1, 'note' => ''];
-        }
-        $this->selected_services[$serviceId]['selected'] = !($this->selected_services[$serviceId]['selected'] ?? false);
-        if ($this->selected_services[$serviceId]['selected'])
-            $this->initServiceInput($serviceId);
-        else
-            unset($this->service_inputs[$serviceId]);
-    }
-
-    /**
-     * Kiểm tra phòng đang chọn có bị trùng lịch với booking khác đang hoạt động
-     * (pending / checked_in) trong khoảng check_in -> check_out hay không.
-     */
-    protected function roomHasConflict(): bool
-    {
-        if (!$this->room_id || !$this->check_in) {
-            return false;
-        }
-
-        try {
-            $start = \Carbon\Carbon::parse($this->check_in)->startOfDay();
+            $clean = str_replace([' ', '-', '.'], ['', '/', '/'], $dateStr);
+            return Carbon::createFromFormat('d/m/Y', $clean)->format('Y-m-d');
         } catch (\Exception $e) {
-            return false;
+            return null;
         }
-
-        // Đang sửa booking mà KHÔNG đổi phòng/ngày -> bỏ qua kiểm tra trùng
-        // (cho phép sửa tên khách, cọc, ghi chú... dù trong phòng có dữ liệu trùng cũ).
-        if ($this->editingBookingId) {
-            $original = \App\Models\Booking::find($this->editingBookingId);
-            if ($original) {
-                $formIn = \Carbon\Carbon::parse($this->check_in)->format('Y-m-d');
-                $formOut = !empty($this->check_out) ? \Carbon\Carbon::parse($this->check_out)->format('Y-m-d') : null;
-                $origIn = $original->check_in ? $original->check_in->format('Y-m-d') : null;
-                $origOut = $original->check_out ? $original->check_out->format('Y-m-d') : null;
-                if ((int) $original->room_id === (int) $this->room_id && $formIn === $origIn && $formOut === $origOut) {
-                    return false;
-                }
-            }
-        }
-
-        $end = !empty($this->check_out)
-            ? \Carbon\Carbon::parse($this->check_out)->endOfDay()
-            : \Carbon\Carbon::parse('2999-12-31')->endOfDay();
-
-        return \App\Models\Booking::where('room_id', $this->room_id)
-            ->when($this->editingBookingId, fn ($q) => $q->where('id', '!=', $this->editingBookingId))
-            ->whereIn('status', ['pending', 'checked_in'])
-            ->where('check_in', '<', $end)
-            ->where(function ($q) use ($start) {
-                $q->where('check_out', '>', $start)
-                  ->orWhereNull('check_out');
-            })
-            ->exists();
     }
 
-    public function saveBooking()
+    /** Phạm vi phòng theo toà (session toàn cục + bộ lọc trên lịch + phân quyền nhân viên). */
+    protected function roomScope()
     {
-        // Ensure source is set if empty
-        if (empty($this->source)) {
-            $this->source = 'Hotline';
+        $query = Room::query();
+        $user = auth()->user();
+
+        if ($user->isAreaRestricted()) {
+            $query->where('area_id', $user->area_id);
+        } elseif (session('admin_selected_area_id')) {
+            $query->where('area_id', session('admin_selected_area_id'));
+        }
+        if (!empty($this->filter_areas)) {
+            $query->whereIn('area_id', $this->filter_areas);
         }
 
-        \Illuminate\Support\Facades\Log::info('BookingCalendar Save Started', [
-            'editingBookingId' => $this->editingBookingId,
-            'status' => $this->status,
-            'customer_id' => $this->customer_id,
-            'source' => $this->source,
-            'activeTab' => $this->activeTab
-        ]);
-
-        $cleanPrice = str_replace('.', '', $this->price);
-        $cleanDeposit = str_replace('.', '', $this->deposit);
-        $cleanDeposit2 = str_replace('.', '', $this->deposit_2);
-        $cleanDeposit3 = str_replace('.', '', (string)$this->deposit_3);
-        $cleanUnitPrice = str_replace('.', '', $this->unit_price);
-
-        // For USD fields, remove thousands separators (commas) but keep the decimal point.
-        // If the user uses dots as thousands separators (VN style), we handle that too.
-        $cleanDepositUsd = (float) str_replace(',', '', (string)$this->deposit_usd);
-        $cleanDeposit2Usd = (float) str_replace(',', '', (string)$this->deposit_2_usd);
-
-        // usd_rate là VND/USD (số lớn, dạng "25.400" hoặc "25400"). Bỏ mọi dấu phân cách
-        // nghìn (. và ,) để ra số nguyên đúng. "25.400" -> 25400 (không bị hiểu nhầm là 25.4).
-        $cleanUsdRate = (float) str_replace(['.', ','], '', (string)$this->usd_rate);
-        if ($cleanUsdRate <= 0) {
-            $cleanUsdRate = 25400; // tỷ giá mặc định, tránh chia/nhân cho 0
-        }
-
-        // Ensure only one currency is saved per deposit round based on use_usd toggle
-        if ($this->use_usd && $this->is_contract) {
-            $cleanDeposit = 0;
-            $cleanDeposit2 = 0;
-        } else {
-            $cleanDepositUsd = 0;
-            $cleanDeposit2Usd = 0;
-            $this->use_usd = false; // Force false if not contract
-        }
-
-        // Convert empty strings to null for decimal columns
-        $cleanPrice = $cleanPrice === '' ? null : $cleanPrice;
-        $cleanDeposit = $cleanDeposit === '' ? null : $cleanDeposit;
-        $cleanDeposit2 = $cleanDeposit2 === '' ? null : $cleanDeposit2;
-        $cleanDeposit3 = $cleanDeposit3 === '' ? null : $cleanDeposit3;
-        $cleanUnitPrice = $cleanUnitPrice === '' ? null : $cleanUnitPrice;
-
-        // Check-in Requirement Validation
-        if ($this->status === 'checked_in') {
-            $this->validate([
-                'customer_identity' => 'required',
-                'customer_nationality' => 'required',
-            ], [
-                'customer_identity.required' => 'Vui lòng nhập CMT/CCCD/Passport khi nhận phòng.',
-                'customer_nationality.required' => 'Vui lòng nhập quốc tịch khi nhận phòng.',
-            ]);
-        }
-
-        try {
-            $this->validate();
-            \Illuminate\Support\Facades\Log::info('BookingCalendar Validation Passed');
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            \Illuminate\Support\Facades\Log::error('BookingCalendar Validation Failed', ['errors' => $e->errors()]);
-            $this->dispatch('toast', message: 'Vui lòng kiểm tra lại thông tin nhập liệu.', type: 'error');
-            throw $e;
-        }
-
-        // Chống trùng phòng: không cho 2 booking đang hoạt động đè lên nhau cùng phòng/khoảng ngày
-        if ($this->roomHasConflict()) {
-            $this->dispatch('toast', message: 'Phòng đã có khách trong khoảng thời gian này. Vui lòng chọn phòng/ngày khác.', type: 'error');
-            return;
-        }
-
-        // Phân quyền toà: nhân viên không được đặt/sửa booking cho phòng thuộc toà khác
-        $roomForArea = \App\Models\Room::find($this->room_id);
-        if ($roomForArea && !auth()->user()->canAccessArea($roomForArea->area_id)) {
-            $this->dispatch('toast', message: 'Bạn không có quyền thao tác booking của toà nhà này.', type: 'error');
-            return;
-        }
-
-        $customerId = $this->customer_id;
-
-        if ($this->activeTab === 'new') {
-            // Tạo khách hàng mới - chỉ lưu thông tin cơ bản
-            $newCustomerData = [
-                'name' => $this->new_customer_name,
-                'phone' => $this->new_customer_phone,
-                'email' => $this->new_customer_email,
-                'gender' => $this->new_customer_gender,
-                'birthday' => $this->parseDate($this->new_customer_birthday),
-                'identity_id' => $this->new_customer_identity,
-            ];
-
-            // Chỉ thêm thông tin check-in nếu trạng thái là 'checked_in'
-            if ($this->status === 'checked_in') {
-                $identityValue = $this->customer_identity ?: $this->new_customer_identity;
-                $newCustomerData['identity_id'] = $identityValue;
-                $newCustomerData['nationality'] = $this->customer_nationality ?: 'Vietnam';
-                $newCustomerData['visa_number'] = $identityValue; // Lưu cùng giá trị với identity_id
-                $newCustomerData['visa_expiry'] = $this->parseDate($this->customer_visa_expiry);
-            }
-            $customer = \App\Models\Customer::create($newCustomerData);
-            $customerId = $customer->id;
-        } elseif ($customerId) {
-            // ĐỒNG BỘ: Luôn cập nhật thông tin khách hàng nếu có thay đổi từ form
-            $customer = \App\Models\Customer::find($customerId);
-            if ($customer) {
-                $customerDataToUpdate = [
-                    'name' => $this->customer_name ?: $customer->name,
-                    'phone' => $this->customer_phone ?: $customer->phone,
-                    'email' => $this->customer_email ?: $customer->email,
-                    'gender' => $this->customer_gender ?: $customer->gender,
-                    'birthday' => $this->parseDate($this->customer_birthday) ?: $customer->birthday,
-                    'identity_id' => $this->customer_identity ?: $customer->identity_id,
-                    'nationality' => $this->customer_nationality ?: $customer->nationality,
-                    'visa_number' => $this->customer_identity ?: $customer->visa_number,
-                    'visa_expiry' => $this->parseDate($this->customer_visa_expiry) ?: $customer->visa_expiry,
-                ];
-                $customer->update($customerDataToUpdate);
-            }
-        }
-
-        // Process Additional Guests as Customers
-        $processedGuests = [];
-        foreach ($this->additional_guests as $guest) {
-            if (empty($guest['name'])) continue;
-
-            $guestCustomer = null;
-            if (!empty($guest['identity'])) {
-                $guestCustomer = \App\Models\Customer::where('identity_id', $guest['identity'])->first();
-            } elseif (!empty($guest['phone'])) {
-                $guestCustomer = \App\Models\Customer::where('phone', $guest['phone'])->first();
-            }
-
-            $guestData = [
-                'name' => $guest['name'],
-                'phone' => $guest['phone'] ?? null,
-                // Cột fillable là identity_id (không phải 'identity') nên trước đây CMND không được lưu
-                'identity_id' => $guest['identity'] ?? null,
-                'gender' => $guest['gender'] ?? null,
-                'birthday' => $this->parseDate($guest['birthday'] ?? null),
-                'nationality' => $guest['nationality'] ?? 'Vietnam',
-                'visa_number' => $guest['identity'] ?? null,
-                'visa_expiry' => $this->parseDate($guest['visa_expiry'] ?? null),
-            ];
-
-            if ($guestCustomer) {
-                $guestCustomer->update(array_filter($guestData));
-            } else {
-                $guestCustomer = \App\Models\Customer::create($guestData);
-            }
-
-            $guestData['customer_id'] = $guestCustomer->id;
-            $processedGuests[] = $guestData;
-        }
-
-        $data = [
-            'customer_id' => $customerId,
-            'room_id' => $this->room_id,
-            'price_type' => $this->price_type,
-            'is_contract' => $this->is_contract,
-            'unit_price' => $cleanUnitPrice,
-            'check_in' => $this->check_in,
-            'check_out' => ($this->price_type === 'month' && empty($this->check_out)) ? null : $this->check_out,
-            'price' => $cleanPrice,
-            'deposit' => $cleanDeposit,
-            'deposit_2' => $cleanDeposit2,
-            'deposit_3' => $cleanDeposit3,
-            'deposit_usd' => $cleanDepositUsd,
-            'deposit_2_usd' => $cleanDeposit2Usd,
-            'usd_rate' => $cleanUsdRate,
-            'status' => $this->status,
-            'source' => $this->source,
-            'notes' => $this->notes,
-            'additional_guests' => $processedGuests,
-        ];
-
-        if ($this->editingBookingId) {
-            $booking = \App\Models\Booking::find($this->editingBookingId);
-            $booking->update($data);
-        } else {
-            $booking = \App\Models\Booking::create($data);
-        }
-
-        $syncData = [];
-        foreach ($this->selected_services as $serviceId => $item) {
-            if (!empty($item['selected'])) {
-                $service = \App\Models\Service::find($serviceId);
-                if ($service) {
-                    $pivot = ['unit_price' => $service->unit_price, 'note' => $item['note'] ?? null];
-                    if ($service->type === 'meter') {
-                        // Chỉ số cho phép số lẻ: '.' = nghìn, ',' = thập phân
-                        $pivot['start_index'] = $this->parseMeterNumber($item['start_index'] ?? 0);
-                        $pivot['end_index'] = $this->parseMeterNumber($item['end_index'] ?? 0);
-                        $pivot['usage'] = max(0, $pivot['end_index'] - $pivot['start_index']);
-                        $pivot['total_amount'] = $pivot['usage'] * $pivot['unit_price'];
-                    } else {
-                        $pivot['quantity'] = $item['quantity'] ?? 1;
-                        $pivot['total_amount'] = $pivot['quantity'] * $pivot['unit_price'];
-                    }
-                    $syncData[$serviceId] = $pivot;
-                }
-            }
-        }
-        $booking->services()->sync($syncData);
-
-        if (!$this->editingBookingId) {
-            foreach ($this->usage_logs as $log) {
-                $booking->usageLogs()->create([
-                    'service_id' => $log['service_id'] ?: null,
-                    'type' => $log['type'],
-                    'billing_unit' => $log['billing_unit'],
-                    'start_index' => $log['start_index'] ?? 0,
-                    'end_index' => $log['end_index'] ?? 0,
-                    'quantity' => $log['quantity'] ?? 1,
-                    'unit_price' => $log['unit_price'],
-                    'total_amount' => $log['total_amount'],
-                    'billing_date' => $log['billing_date'],
-                    'notes' => $log['notes'],
-                ]);
-            }
-        }
-
-        $this->dispatch('toast', message: $this->editingBookingId ? 'Cập nhật đặt phòng thành công!' : 'Tạo đặt phòng thành công!', type: 'success');
-
-        $this->reset(['editingBookingId', 'showModal']);
-        $this->dispatch('refreshView');
+        return $query;
     }
 
     /**
-     * Gợi ý NỐI PHÒNG: khi không có phòng nào trống suốt khoảng tìm kiếm,
-     * tìm chuỗi phòng mà các đoạn trống của chúng ghép lại phủ kín khoảng ngày.
-     * VD: cần 5→7, phòng 101 trống 5→6, phòng 201 trống 6→7 => gợi ý ghép 101 + 201.
-     * Phạm vi phòng tuân theo bộ lọc toà nhà hiện tại (chọn 1 hoặc nhiều toà đều được).
+     * Gợi ý NỐI PHÒNG khi không có phòng trống suốt khoảng tìm kiếm.
      */
-    public function getRoomChainProperty()
+    #[Computed]
+    public function roomChain()
     {
         $startStr = $this->parseDate($this->filter_start_date);
         $endStr = $this->parseDate($this->filter_end_date);
-        if (!$startStr || !$endStr) return null;
+        if (!$startStr || !$endStr) {
+            return null;
+        }
 
-        $reqStart = \Carbon\Carbon::parse($startStr)->startOfDay();
-        $reqEnd = \Carbon\Carbon::parse($endStr)->startOfDay();
-        if ($reqEnd->lte($reqStart)) return null;
+        $reqStart = Carbon::parse($startStr)->startOfDay();
+        $reqEnd = Carbon::parse($endStr)->startOfDay();
+        if ($reqEnd->lte($reqStart)) {
+            return null;
+        }
 
-        // Phòng trong phạm vi lọc + booking đang chiếm (pending/checked_in) giao với khoảng tìm
-        $query = \App\Models\Room::query()->with(['area', 'bookings' => function ($q) use ($reqStart, $reqEnd) {
-            $q->whereIn('status', ['pending', 'checked_in'])
+        $rooms = $this->roomScope()->with(['area:id,name', 'bookings' => function ($q) use ($reqStart, $reqEnd) {
+            $q->select('id', 'room_id', 'check_in', 'check_out')
+              ->whereIn('status', Booking::ACTIVE_STATUSES)
               ->where('check_in', '<', $reqEnd)
-              ->where(function ($sub) use ($reqStart) {
-                  $sub->where('check_out', '>', $reqStart)->orWhereNull('check_out');
-              });
-        }]);
-        if (session('admin_selected_area_id')) $query->where('area_id', session('admin_selected_area_id'));
-        if (!empty($this->filter_areas)) $query->whereIn('area_id', $this->filter_areas);
-        elseif ($this->selectedArea) $query->where('area_id', $this->selectedArea);
+              ->where(fn ($s) => $s->where('check_out', '>', $reqStart)->orWhereNull('check_out'));
+        }])->get();
 
-        $rooms = $query->get();
-
-        // Phòng có trống đêm $d không, và nếu trống thì trống được tới ngày nào (reach)
         $freeInfo = function ($room, $d) use ($reqEnd) {
             foreach ($room->bookings as $b) {
-                $ci = \Carbon\Carbon::parse($b->check_in)->startOfDay();
-                $co = $b->check_out ? \Carbon\Carbon::parse($b->check_out)->startOfDay() : null;
+                $ci = $b->check_in->copy()->startOfDay();
+                $co = $b->check_out ? $b->check_out->copy()->startOfDay() : null;
                 if ($ci->lte($d) && ($co === null || $co->gt($d))) {
-                    return [false, null]; // đêm $d đã bị chiếm
+                    return [false, null];
                 }
             }
             $reach = $reqEnd->copy();
             foreach ($room->bookings as $b) {
-                $ci = \Carbon\Carbon::parse($b->check_in)->startOfDay();
-                if ($ci->gt($d) && $ci->lt($reach)) $reach = $ci->copy();
+                $ci = $b->check_in->copy()->startOfDay();
+                if ($ci->gt($d) && $ci->lt($reach)) {
+                    $reach = $ci->copy();
+                }
             }
             return [true, $reach];
         };
 
-        // Tham lam: mỗi bước chọn phòng trống từ mốc hiện tại và kéo dài xa nhất
         $segments = [];
         $current = $reqStart->copy();
         $guard = 0;
-        while ($current->lt($reqEnd) && $guard < 400) {
-            $guard++;
-            $best = null; $bestReach = null;
+        while ($current->lt($reqEnd) && $guard++ < 400) {
+            $best = null;
+            $bestReach = null;
             foreach ($rooms as $room) {
                 [$free, $reach] = $freeInfo($room, $current);
                 if ($free && $reach->gt($current) && ($bestReach === null || $reach->gt($bestReach))) {
@@ -1156,7 +150,6 @@ class BookingCalendar extends Component
                 'room_code' => $best->code,
                 'area' => $best->area->name ?? '',
                 'from' => $current->format('Y-m-d'),
-                'to' => $bestReach->format('Y-m-d'),
                 'from_label' => $current->format('d/m'),
                 'to_label' => $bestReach->format('d/m'),
                 'nights' => $current->diffInDays($bestReach),
@@ -1171,230 +164,92 @@ class BookingCalendar extends Component
         ];
     }
 
-    public function getDaysInMonthProperty()
+    #[Computed]
+    public function daysInMonth()
     {
-        $start = \Carbon\Carbon::parse($this->startDate ?? now()->format('Y-m-d'));
-        
+        $start = Carbon::parse($this->startDate);
         $days = [];
         for ($i = 0; $i < 30; $i++) {
             $days[] = $start->copy()->addDays($i);
         }
-
         return $days;
     }
 
-    public function getRoomsProperty()
+    #[Computed]
+    public function rooms()
     {
-        $query = \App\Models\Room::query()
+        $windowStart = Carbon::parse($this->startDate)->startOfDay();
+        $windowEnd = $windowStart->copy()->addDays(29)->endOfDay();
+
+        $query = $this->roomScope()
+            ->select('id', 'area_id', 'code', 'type', 'status', 'price_day')
             ->with([
-                'area',
-                'bookings' => function ($q) {
-                    $startOfWindow = \Carbon\Carbon::parse($this->startDate ?? now()->format('Y-m-d'))->startOfDay();
-                    $endOfWindow = $startOfWindow->copy()->addDays(29)->endOfDay();
-                    // Eager load bookings for the displayed window
-                    $q->whereNotIn('status', ['checked_out', 'cancelled'])
-                        ->where(function ($query) use ($startOfWindow, $endOfWindow) {
-                        $query->where('check_in', '<=', $endOfWindow)
-                            ->where(function ($sub) use ($startOfWindow) {
-                                $sub->where('check_out', '>=', $startOfWindow)
-                                    ->orWhereNull('check_out');
-                            });
-                    });
-                }
-            ]);
+                'area:id,name',
+                'bookings' => function ($q) use ($windowStart, $windowEnd) {
+                    $q->select('id', 'room_id', 'customer_id', 'check_in', 'check_out', 'price_type', 'status', 'source', 'additional_guests')
+                      ->whereIn('status', Booking::ACTIVE_STATUSES)
+                      ->where('check_in', '<=', $windowEnd)
+                      ->where(fn ($s) => $s->where('check_out', '>=', $windowStart)->orWhereNull('check_out'))
+                      ->with('customer:id,name'); // tránh N+1 khi hiển thị tên khách trên thanh booking
+                },
+            ])
+            ->orderBy('area_id')
+            ->orderBy('code');
 
-        if (session('admin_selected_area_id')) {
-            $query->where('area_id', session('admin_selected_area_id'));
-        }
-
-        if (!empty($this->filter_areas)) {
-            $query->whereIn('area_id', $this->filter_areas);
-        } elseif ($this->selectedArea) {
-            $query->where('area_id', $this->selectedArea);
-        }
-
-        $filterStartStr = $this->parseDate($this->filter_start_date);
-        $filterEndStr = $this->parseDate($this->filter_end_date);
-
-        if (!empty($filterStartStr) && !empty($filterEndStr)) {
-            $start = \Carbon\Carbon::parse($filterStartStr)->startOfDay();
-            $end = \Carbon\Carbon::parse($filterEndStr)->startOfDay();
-
-            $query->whereDoesntHave('bookings', function($q) use ($start, $end) {
-                $q->whereIn('status', ['pending', 'checked_in'])
+        // Chỉ hiện phòng trống trong khoảng ngày tìm kiếm
+        $filterStart = $this->parseDate($this->filter_start_date);
+        $filterEnd = $this->parseDate($this->filter_end_date);
+        if ($filterStart && $filterEnd) {
+            $start = Carbon::parse($filterStart)->startOfDay();
+            $end = Carbon::parse($filterEnd)->startOfDay();
+            $query->whereDoesntHave('bookings', function ($q) use ($start, $end) {
+                $q->whereIn('status', Booking::ACTIVE_STATUSES)
                   ->where('check_in', '<', $end)
-                  ->where(function($sub) use ($start) {
-                      $sub->where('check_out', '>', $start)
-                          ->orWhereNull('check_out');
-                  });
+                  ->where(fn ($s) => $s->where('check_out', '>', $start)->orWhereNull('check_out'));
             });
         }
 
-        return $query->get()->groupBy('area.name')->map(function ($rooms) {
-            foreach ($rooms as $room) {
-                $this->calculateStacking($room);
-            }
-            return $rooms;
-        });
+        return $query->get()
+            ->each(fn ($room) => $this->calculateStacking($room, $windowStart))
+            ->groupBy(fn ($room) => $room->area->name ?? 'Khác');
     }
 
-    public function calculateStacking($room)
+    protected function calculateStacking($room, Carbon $windowStart): void
     {
-        $bookings = $room->bookings->sortBy('check_in');
-        // "k cần xếp chồng nữa mà để 1 dòng hết" -> No lanes needed, stack_index always 0.
+        foreach ($room->bookings as $booking) {
+            $checkIn = $booking->check_in->copy()->startOfDay();
+            $checkOut = $booking->check_out
+                ? $booking->check_out->copy()->startOfDay()
+                : $windowStart->copy()->addDays(31); // hợp đồng không thời hạn -> kéo hết lịch
 
-        foreach ($bookings as $booking) {
-            // Determine Visual Start Day (relative to month start)
-            $windowStart = \Carbon\Carbon::parse($this->startDate ?? now()->format('Y-m-d'))->startOfDay();
-
-            // "lúc này k quan tâm thười gain nữa" -> Normalize to StartOfDay
-            $checkInDate = (is_a($booking->check_in, 'Carbon\Carbon') ? $booking->check_in : \Carbon\Carbon::parse($booking->check_in))->startOfDay();
-            $checkOutDate = ($booking->check_out ? (is_a($booking->check_out, 'Carbon\Carbon') ? $booking->check_out : \Carbon\Carbon::parse($booking->check_out)) : $checkInDate->copy()->addDay())->startOfDay();
-
-            // Raw start index based on Date only
-            $diffStartDays = $windowStart->diffInDays($checkInDate, false); // Int
+            $startDays = $windowStart->diffInDays($checkIn, false);
+            $endDays = $windowStart->diffInDays($checkOut, false);
 
             if ($booking->price_type === 'month') {
-                $visualStart = (float) $diffStartDays;
-                $diffEndDays = $windowStart->diffInDays($checkOutDate, false);
-                $visualDays = $diffEndDays - $diffStartDays;
-
-                if ($visualStart < 0) {
-                    $loss = abs($visualStart);
-                    $visualStart = 0;
-                    $visualDays = max(0, $visualDays - $loss);
-                }
-                
-                // Ensure at least some width if it starts/ends within window
-                if ($visualDays <= 0 && $diffEndDays >= 0) {
-                    $visualDays = 1;
-                }
-            } elseif ($booking->price_type === 'hour') {
-                $visualStart = (float) $diffStartDays;
-                $visualDays = 0.5;
-                if ($visualStart < 0)
-                    $visualStart = 0;
+                $visualStart = (float) $startDays;
+                $visualDays = $endDays - $startDays;
             } else {
-                // Type 'day'.
-                // "chia đổi ngày đó ra" -> Start and End at 0.5 (Noon)
-                // Visual Start = Date + 0.5
-                // Visual End = Date + 0.5
-
-                $rawStartPos = $diffStartDays + 0.5;
-                $diffEndDays = $windowStart->diffInDays($checkOutDate, false);
-                $rawEndPos = $diffEndDays + 0.5;
-
-                $visualStart = $rawStartPos;
-                $visualDays = $rawEndPos - $rawStartPos;
-
-                // Minimum width safety? Request says "chia đôi". 1 day -> 1.5 - 0.5 = 1.0. Correct.
-
-                // Cross-month handling
-                // If started prev month (Start < 0)
-                if ($visualStart < 0) {
-                    $loss = abs($visualStart);
-                    $visualStart = 0;
-                    $visualDays = max(0, $visualDays - $loss);
-                }
+                // Thuê ngày: bắt đầu & kết thúc ở giữa ô ngày (nhận chiều, trả trưa)
+                $visualStart = $startDays + 0.5;
+                $visualDays = $endDays - $startDays;
             }
 
-            $booking->visual_days = $visualDays;
+            if ($visualStart < 0) {
+                $visualDays = max(0, $visualDays + $visualStart);
+                $visualStart = 0;
+            }
+
             $booking->visual_start = $visualStart;
-            $booking->stack_index = 0; // Always top row
-        }
-
-        $room->max_stack_index = 0; // Single row height
-    }
-
-    public function deleteBooking($id)
-    {
-        \Illuminate\Support\Facades\Log::info('BookingCalendar DeleteBooking Triggered', ['id' => $id]);
-        try {
-            $booking = \App\Models\Booking::with('room')->find($id);
-            if (!$booking) {
-                $this->dispatch('toast', message: 'Không tìm thấy đặt phòng.', type: 'error');
-                return;
-            }
-            // Phân quyền toà: chặn xóa booking của toà khác
-            if ($booking->room && !auth()->user()->canAccessArea($booking->room->area_id)) {
-                $this->dispatch('toast', message: 'Bạn không có quyền xóa booking của toà nhà này.', type: 'error');
-                return;
-            }
-            $booking->delete();
-            $this->dispatch('toast', message: 'Đã xóa đặt phòng thành công.', type: 'success');
-            $this->showModal = false;
-            $this->editingBookingId = null;
-            $this->dispatch('refreshView');
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('BookingCalendar DeleteBooking Failed', ['error' => $e->getMessage()]);
-            $this->dispatch('toast', message: 'Lỗi khi xóa đặt phòng.', type: 'error');
+            $booking->visual_days = max(0.5, $visualDays);
         }
     }
 
     public function render()
     {
-        // Chỉ nạp dữ liệu modal + tính tổng khi modal đang mở -> chuyển tháng/lọc/tìm phòng nhẹ hơn nhiều
-        $modalOpen = $this->showModal;
-
-        $logTotal = 0;
-        $basePrice = 0;
-        $pendingServiceTotal = 0;
-        $allServices = collect();
-        $customers = collect();
-        $allRooms = collect();
-
-        if ($modalOpen) {
-            $logTotal = collect($this->usage_logs)->sum('total_amount');
-            $basePrice = (float) str_replace(['.', ','], '', $this->price ?: 0);
-
-            $allServices = \App\Models\Service::where('is_active', true)->get();
-            foreach($allServices as $svc) {
-                if(!empty($this->selected_services[$svc->id]['selected']) && isset($this->service_inputs[$svc->id])) {
-                    $inp = $this->service_inputs[$svc->id];
-                    $up = (float)str_replace(['.',','],'', (string)($inp['unit_price'] ?? '0'));
-                    if($svc->type === 'meter') {
-                        $pendingServiceTotal += max(0, ($this->parseMeterNumber($inp['end_index'] ?? 0) - $this->parseMeterNumber($inp['start_index'] ?? 0))) * $up;
-                    } else {
-                        $pendingServiceTotal += ((float)($inp['quantity'] ?? 1)) * $up;
-                    }
-                }
-            }
-
-            // Dropdown khách: tối đa 50 kết quả theo ô tìm kiếm, kèm khách đang chọn
-            $customers = \App\Models\Customer::query()
-                ->when($this->customer_search, function ($q) {
-                    $q->where(function ($sub) {
-                        $sub->where('name', 'like', '%' . $this->customer_search . '%')
-                            ->orWhere('phone', 'like', '%' . $this->customer_search . '%');
-                    });
-                })
-                ->orderBy('name')
-                ->limit(50)
-                ->get();
-
-            if ($this->customer_id && !$customers->contains('id', $this->customer_id)) {
-                $selected = \App\Models\Customer::find($this->customer_id);
-                if ($selected) {
-                    $customers->prepend($selected);
-                }
-            }
-
-            $allRooms = \App\Models\Room::with('area')->orderBy('code')->get();
-        }
-
-        $grandTotal = $basePrice + $logTotal + $pendingServiceTotal;
-
         return view('livewire.admin.booking-calendar', [
-            'areas' => \App\Models\Area::all(),
+            'areas' => Area::select('id', 'name')->orderBy('name')->get(),
             'roomsData' => $this->rooms,
             'days' => $this->daysInMonth,
-            'customers' => $customers,
-            'all_services' => $allServices,
-            'all_rooms' => $allRooms,
-            'logTotal' => $logTotal,
-            'basePrice' => $basePrice,
-            'pendingServiceTotal' => $pendingServiceTotal,
-            'grandTotal' => $grandTotal,
             'roomChain' => $this->roomChain,
         ])->layout('components.layouts.admin');
     }

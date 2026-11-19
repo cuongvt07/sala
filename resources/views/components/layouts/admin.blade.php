@@ -14,6 +14,12 @@
             display: none !important;
         }
         .flatpickr-calendar { font-size: 13px !important; }
+        /* In hoá đơn: chỉ in vùng .print-area */
+        @media print {
+            body * { visibility: hidden !important; }
+            .print-area, .print-area * { visibility: visible !important; }
+            .print-area { position: absolute; left: 0; top: 0; width: 100%; }
+        }
     </style>
 </head>
 
@@ -46,6 +52,7 @@
                     ['route' => 'admin.booking-calendar', 'label' => 'Lịch đặt phòng', 'icon' => 'calendar-days'],
                     ['route' => 'admin.bookings.index', 'label' => 'Quản lý đặt phòng', 'icon' => 'list-bullet'],
                     ['route' => 'admin.customers.index', 'label' => 'Quản lý khách hàng', 'icon' => 'users'],
+                    ['route' => 'admin.finance.index', 'label' => 'Sổ thu chi', 'icon' => 'banknotes'],
                     [
                         'label' => 'Cấu hình quản trị',
                         'icon' => 'cog-6-tooth',

@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Crypt;
 class Index extends Component
 {
     public $settings = [];
+    public $resetConfirm = '';
 
     protected $rules = [
         'settings.mail_host' => 'required',
@@ -65,6 +66,26 @@ class Index extends Component
         }
 
         $this->dispatch('toast', message: 'Cấu hình đã được lưu thành công!', type: 'success');
+    }
+
+    /**
+     * Xoá toàn bộ dữ liệu khách/đặt phòng/thu chi cũ (giữ toà nhà, phòng, tài khoản, dịch vụ, cài đặt).
+     * Chỉ super_admin, phải gõ đúng cụm xác nhận.
+     */
+    public function resetData()
+    {
+        if (auth()->user()->role !== 'super_admin') {
+            $this->dispatch('toast', message: 'Chỉ Super Admin được thực hiện.', type: 'error');
+            return;
+        }
+        if (trim(mb_strtoupper($this->resetConfirm)) !== 'XOA DU LIEU') {
+            $this->dispatch('toast', message: 'Gõ đúng "XOA DU LIEU" để xác nhận.', type: 'error');
+            return;
+        }
+
+        Artisan::call('app:reset-data', ['--force' => true]);
+        $this->resetConfirm = '';
+        $this->dispatch('toast', message: 'Đã xoá dữ liệu cũ. Toà nhà & phòng được giữ nguyên.', type: 'success');
     }
 
     public function render()

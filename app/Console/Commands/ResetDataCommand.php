@@ -3,72 +3,56 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 
 class ResetDataCommand extends Command
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
-    protected $signature = 'app:reset-data';
+    protected $signature = 'app:reset-data {--force : Bỏ qua câu hỏi xác nhận}';
 
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Xóa toàn bộ dữ liệu hệ thống, chỉ giữ lại thông tin Tòa nhà (Areas).';
+    protected $description = 'Xoá toàn bộ dữ liệu khách hàng, đặt phòng, thu chi, nhật ký. GIỮ LẠI: Toà nhà, Phòng, Tài khoản, Dịch vụ, Cài đặt.';
 
-    /**
-     * Execute the console command.
-     */
     public function handle()
     {
-        if (!$this->confirm('BẠN CÓ CHẮC CHẮN muốn xóa toàn bộ dữ liệu (Account, Phòng, Đặt phòng, Khách hàng, Cài đặt...)? Hành động này không thể hoàn tác!')) {
-            $this->info('Đã hủy lệnh reset data.');
-            return;
-        }
+        $this->warn('Lệnh này sẽ XOÁ: khách hàng, đặt phòng, dịch vụ đã chốt, sổ thu chi, bảo dưỡng phòng, nhật ký hoạt động.');
+        $this->info('GIỮ LẠI: toà nhà, phòng, tài khoản đăng nhập, bảng giá dịch vụ, cài đặt.');
 
-        $this->warn('Đang tiến hành reset dữ liệu...');
+        if (!$this->option('force') && !$this->confirm('Bạn có chắc chắn? Hành động này KHÔNG THỂ hoàn tác!')) {
+            $this->info('Đã huỷ.');
+            return self::SUCCESS;
+        }
 
         $tables = [
             'booking_usage_logs',
-            'room_maintenances',
+            'booking_service',
+            'transactions',
             'bookings',
-            'rooms',
             'customers',
-            'services',
-            'settings',
-            'users',
+            'room_maintenances',
+            'activity_logs',
         ];
 
-        \Illuminate\Support\Facades\Schema::disableForeignKeyConstraints();
-
+        Schema::disableForeignKeyConstraints();
         foreach ($tables as $table) {
-            if (\Illuminate\Support\Facades\Schema::hasTable($table)) {
-                $count = \Illuminate\Support\Facades\DB::table($table)->count();
-                \Illuminate\Support\Facades\DB::table($table)->truncate();
-                $this->line("- Đã xóa <info>{$count}</info> bản ghi từ bảng <comment>{$table}</comment>");
+            if (Schema::hasTable($table)) {
+                $count = DB::table($table)->count();
+                DB::table($table)->truncate();
+                $this->line("- Đã xoá <info>{$count}</info> bản ghi bảng <comment>{$table}</comment>");
             }
         }
+        Schema::enableForeignKeyConstraints();
 
-        \Illuminate\Support\Facades\Schema::enableForeignKeyConstraints();
+        // Ảnh CCCD/hộ chiếu của khách
+        try {
+            Storage::disk('public')->deleteDirectory('customers');
+            $this->line('- Đã xoá ảnh giấy tờ khách hàng');
+        } catch (\Throwable $e) {
+            $this->line('- Không có ảnh khách hàng để xoá');
+        }
 
-        // Recreate default admin
-        \App\Models\User::create([
-            'name' => 'Admin User',
-            'email' => 'admin@sala.vn',
-            'password' => bcrypt('password'),
-        ]);
+        $this->info('✔ Xong. Còn lại ' . DB::table('areas')->count() . ' toà nhà, ' . DB::table('rooms')->count() . ' phòng.');
 
-        $this->info('- Đã tạo lại tài khoản mặc định: <comment>admin@sala.vn</comment> / <comment>password</comment>');
-
-        $this->success('Đã reset dữ liệu thành công! Chỉ còn lại Tòa nhà (Areas) và tài khoản Admin mặc định.');
-    }
-
-    private function success($message)
-    {
-        $this->output->writeln("<info>✔</info> {$message}");
+        return self::SUCCESS;
     }
 }

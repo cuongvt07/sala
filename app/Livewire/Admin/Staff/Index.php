@@ -37,6 +37,7 @@ class Index extends Component
             'admin.booking-calendar' => 'Lịch đặt phòng',
             'admin.bookings.index' => 'Quản lý đặt phòng',
             'admin.customers.index' => 'Quản lý khách hàng',
+            'admin.finance.index' => 'Sổ thu chi',
             'admin.services.index' => 'Dịch vụ',
             'admin.areas.index' => 'Tòa nhà',
             'admin.rooms.index' => 'Phòng',

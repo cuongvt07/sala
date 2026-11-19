@@ -11,6 +11,7 @@ class BookingUsageLog extends Model
 
     protected $fillable = [
         'booking_id',
+        'transaction_id',
         'service_id',
         'type',
         'billing_unit',

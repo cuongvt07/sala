@@ -33,7 +33,15 @@ class InvoiceMail extends Mailable
         $this->roomPrice = $roomPrice !== null ? $roomPrice : (float) $booking->price;
         $this->periodLabel = $periodLabel;
         $this->totalAmount = $usageLogs->sum('total_amount') + $this->roomPrice;
-        $this->totalDeposit = (float)($booking->deposit ?? 0) + (float)($booking->deposit_2 ?? 0) + (float)($booking->deposit_3 ?? 0);
+        // Thuê ngày: tổng đã thanh toán (gồm cọc) từ sổ thu chi. Hợp đồng: tiền cọc đang giữ.
+        $txns = $booking->transactions()->get(['type', 'category', 'amount']);
+        if ($booking->isContract()) {
+            $this->totalDeposit = (float) $txns->where('type', 'income')->where('category', 'Tiền cọc')->sum('amount')
+                - (float) $txns->where('type', 'expense')->where('category', 'Hoàn cọc')->sum('amount');
+        } else {
+            $this->totalDeposit = (float) $txns->where('type', 'income')->sum('amount')
+                - (float) $txns->where('type', 'expense')->sum('amount');
+        }
     }
 
     public function envelope(): Envelope

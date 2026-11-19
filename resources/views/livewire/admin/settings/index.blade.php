@@ -153,4 +153,16 @@
             </div>
         </div>
     </div>
+
+    @if(auth()->user()->role === 'super_admin')
+        <div class="mt-8 rounded-2xl border-2 border-red-200 bg-red-50 p-5 space-y-3">
+            <h3 class="text-sm font-black text-red-700 uppercase">Xoá dữ liệu cũ</h3>
+            <p class="text-xs text-red-700">Xoá TOÀN BỘ khách hàng, đặt phòng, dịch vụ đã chốt, sổ thu chi, bảo dưỡng, nhật ký hoạt động.
+                <b>Giữ lại:</b> toà nhà, phòng, tài khoản, bảng giá dịch vụ, cài đặt. Không thể hoàn tác.</p>
+            <div class="flex flex-wrap gap-2 items-center">
+                <input type="text" wire:model="resetConfirm" placeholder='Gõ "XOA DU LIEU"' class="rounded-lg border-red-300 py-1.5 px-2 text-sm">
+                <button type="button" wire:click="resetData" wire:confirm="Chắc chắn xoá toàn bộ dữ liệu khách & thu chi?" class="px-4 py-2 rounded-lg bg-red-600 text-white text-xs font-black uppercase hover:bg-red-700">Xoá dữ liệu</button>
+            </div>
+        </div>
+    @endif
 </div>
